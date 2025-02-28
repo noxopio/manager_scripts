@@ -54,11 +54,11 @@ if ! grep -q "manager()" "$ALIAS_FILE"; then
      log_info "Creando alias para manager y url_extractor en $ALIAS_FILE"
     
     cat << EOL >> "$ALIAS_FILE"
-manager() {
+tool_mf() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
 
-url_extractor() {
+tool_url() {
     $INSTALL_DIR/url_extractor.sh "\$@"
 }
 EOL

@@ -45,5 +45,6 @@ else
     log_warning "No se encontró la función 'url_extractor()' en: $ALIAS_FILE"
 fi
 
+source ~/.bashrc
 # Mensaje final
 log_info "Desinstalación completada."
