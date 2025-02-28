@@ -149,7 +149,7 @@ kill_node_processes() {
        done <<< "$processes"
 }
 
-
+# Función para mostrar los procesos de Node en ejecución
 ps_process() {
     # Obtener los procesos de Node
     processes=$(ps aux | grep '[n]ode' | awk '{print $1}')
@@ -197,25 +197,25 @@ if [ "$1" == "list" ]; then
     printf "%s\n" "----------------------------------------" 
     exit 0  
 fi
-
+# si el primer argumento es 'kill' llamar a la función kill_node_processes
 if [ "$1" == "kill" ]; then
     kill_node_processes 
     exit 0  
 fi
+# si el primer argumento es 'ps' llamar a la función ps_process
 if [ "$1" = "ps" ]; then
     printf "%s\n" "----------------------------------------" 
     ps_process
     printf "%s\n" "----------------------------------------" 
     exit 0
 fi
+# si el primer argumento es 'uninstall_manager' llamar al script manager_uninstall.sh 
 if [ "$1" = "uninstall_manager" ]; then
     printf "%s\n" "----------------------------------------" 
     $HOME/manager_scripts/manager_uninstall.sh
     printf "%s\n" "----------------------------------------" 
     exit 0
 fi
-
-
 
 
 
