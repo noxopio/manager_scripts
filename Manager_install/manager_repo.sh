@@ -149,6 +149,22 @@ kill_node_processes() {
        done <<< "$processes"
 }
 
+
+ps_process() {
+    # Obtener los procesos de Node
+    processes=$(ps aux | grep '[n]ode' | awk '{print $1}')
+    if [ -z "$processes" ]; then
+        log_error "No hay procesos de Node en ejecución."
+        exit 0 # Retorna un código de error
+    fi
+    while IFS= read -r line; do
+        log_info "Proceso en ejecución: $line"
+    done <<< "$processes"
+}
+
+
+
+
 ## Procesar las opciones de línea de comandos
 while getopts ":b:" opt; do
     case "$opt" in
@@ -176,7 +192,9 @@ if [ $# -lt 1 ]; then
 fi
 ## Verificar si el primer argumento es 'list'
 if [ "$1" == "list" ]; then
+    printf "%s\n" "----------------------------------------" 
  $HOME/manager_scripts/url_extractor.sh
+    printf "%s\n" "----------------------------------------" 
     exit 0  
 fi
 
@@ -184,6 +202,22 @@ if [ "$1" == "kill" ]; then
     kill_node_processes 
     exit 0  
 fi
+if [ "$1" = "ps" ]; then
+    printf "%s\n" "----------------------------------------" 
+    ps_process
+    printf "%s\n" "----------------------------------------" 
+    exit 0
+fi
+if [ "$1" = "uninstall_manager" ]; then
+    printf "%s\n" "----------------------------------------" 
+    $HOME/manager_scripts/manager_uninstall.sh
+    printf "%s\n" "----------------------------------------" 
+    exit 0
+fi
+
+
+
+
 
 ## Verificar si se proporciona un archivo como argumento (segundo parámetro)
 file_name_list="${2:-listRep.txt}"

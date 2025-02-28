@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#Vesion 1 de manager_install.sh primera instalacion de los scripts 
 # Definición de colores
 RED="\e[31m"
 GREEN="\e[32m"
@@ -36,11 +36,13 @@ fi
 # Copiar los scripts a la carpeta
 cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
+cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  # Formato: YYYY-MM-DD HH:MM:SS
-for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh"; do
+for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh"in "$INSTALL_DIR/manager_uninstall.sh"; do
     echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
+    eccho -e "#versión 6.0" | cat - "$script" > temp && mv temp "$script"
 done
 # Dar permisos de ejecución a los scripts
 chmod +x "$INSTALL_DIR/"*.sh
@@ -54,11 +56,11 @@ if ! grep -q "manager()" "$ALIAS_FILE"; then
      log_info "Creando alias para manager y url_extractor en $ALIAS_FILE"
     
     cat << EOL >> "$ALIAS_FILE"
-tool_mf() {
+manager() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
 
-tool_url() {
+url_extractor() {
     $INSTALL_DIR/url_extractor.sh "\$@"
 }
 EOL
@@ -67,7 +69,10 @@ else
 fi
 
 # Mensaje final
-log_info "Instalación completada. Puedes ejecutar tus scripts desde $INSTALL_DIR"
 source ~/.bashrc
-
+log_info "Instalación completada. "
+log_info "Alias para ejecutar los scripts"
+log_info "manager: Para acceder a los repositorios de un usuario"
+log_info "url_extractor: Para extraer las URLs de los repositorios de un usuario"
+ log_info "Abriendo la carpeta de instalación..."
 cd "$INSTALL_DIR" && explorer .
