@@ -41,7 +41,6 @@ BLUE="\e[34m"
 CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
-
 file_name="$(basename "$0")"
 # Funciones de registro
 log_info() {
@@ -87,11 +86,11 @@ log_info "Permisos de ejecución otorgados a los scripts"
 ALIAS_FILE="$HOME/.bashrc"
 
 # Verificar si los alias ya están en .bashrc
-if ! grep -q "manager()" "$ALIAS_FILE"; then
+if ! grep -q "mfs()" "$ALIAS_FILE"; then
      log_info "Creando alias para manager y url_extractor en $ALIAS_FILE"
     
     cat << EOL >> "$ALIAS_FILE"
-manager() {
+mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
 
@@ -107,7 +106,7 @@ fi
 source ~/.bashrc
 log_info "Instalación completada. "
 log_info "Alias para ejecutar los scripts"
-log_info "manager: Para acceder a los repositorios de un usuario"
+log_info "mfs: Para gestionar repositorios"
 log_info "url_extractor: Para extraer las URLs de los repositorios de un usuario"
  log_info "Abriendo la carpeta de instalación..."
 cd "$INSTALL_DIR" && explorer .

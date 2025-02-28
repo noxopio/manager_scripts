@@ -12,12 +12,12 @@
 #
 # Funcionalidades:
 # - Elimina la carpeta de instalación si existe.
-# - Elimina las funciones 'manager()' y 'url_extractor()' del archivo .bashrc.
+# - Elimina las funciones 'mfs()' y 'url_extractor()' del archivo .bashrc.
 # - Muestra mensajes informativos y de advertencia durante el proceso.
 #
 # Uso:
 # Para ejecutar este script, simplemente utiliza el siguiente comando en la terminal:
-#  ./manager_uninstall.sh o con el alias de  manager  manager_uninstall
+#  ./manager_uninstall.sh o con el alias de  mfs  manager_uninstall
 #
 
 # Notas:
@@ -52,13 +52,13 @@ else
     log_warning "La carpeta no existe: $INSTALL_DIR"
 fi
 
-# Eliminar la función manager() del archivo .bashrc
-if grep -q "manager() {" "$ALIAS_FILE"; then
+# Eliminar la función mfs() del archivo .bashrc
+if grep -q "mfs() {" "$ALIAS_FILE"; then
     # Eliminar la función completa
-    sed -i '/manager() {/,/^}/d' "$ALIAS_FILE"
-    log_info "Función 'manager()' eliminada del archivo: $ALIAS_FILE"
+    sed -i '/mfs() {/,/^}/d' "$ALIAS_FILE"
+    log_info "Función 'mfs()' eliminada del archivo: $ALIAS_FILE"
 else
-    log_warning "No se encontró la función 'manager()' en: $ALIAS_FILE"
+    log_warning "No se encontró la función 'mfs()' en: $ALIAS_FILE"
 fi
 
 # Eliminar la función url_extractor() del archivo .bashrc
