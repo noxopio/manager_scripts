@@ -1,6 +1,39 @@
 #!/bin/bash
 # https://github.com/Streamings-Team2
 
+# Documentación del Script
+# ==========================
+# Script para Extraer URLs de Repositorios de GitHub
+# Versión: 1.0
+
+# Fecha: [27/02/2025]
+#
+# Descripción:
+# Este script se encarga de extraer las URLs de los repositorios de una organización
+# de GitHub, ya sea pública o privada, y guardarlas en un archivo llamado listRep.txt.
+# Si se proporciona un token de acceso, el script puede acceder a repositorios privados.
+#
+# Funcionalidades:
+# - Extrae las URLs de los repositorios de la organización especificada.
+# - Maneja la paginación de la API de GitHub para obtener todos los repositorios.
+# - Elimina URLs duplicadas antes de guardarlas en el archivo.
+# - Imprime el total de URLs extraídas al final de la ejecución.
+#
+# Uso:
+# 1. Configura el nombre de la organización en la variable ORG_NAME.
+# 2. Si deseas acceder a repositorios privados, descomenta la línea que define TOKEN
+#    y proporciona tu token de acceso personal de GitHub.
+# 3. Ejecuta el script con el siguiente comando:
+#    ./url_repos.sh o usa  manager list  desde la terminal.
+#
+# Requisitos:
+# - Asegúrate de tener 'curl' instalado en tu sistema.
+#
+# Notas:
+# - Este script modifica el archivo listRep.txt en el directorio actual.
+# - Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
+#   a los repositorios privados, si es aplicable.
+
 ORG_NAME="Streamings-Team2"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
@@ -68,7 +101,7 @@ fi
 sort -u listRep.txt -o listRep.txt
 
 while IFS= read -r repo; do
-  echo " ▶  - $repo..."
+  # echo " ▶  - $repo..."
    ((counter++))
   # git clone "$repo"&
 done < listRep.txt
