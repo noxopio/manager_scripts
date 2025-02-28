@@ -1,5 +1,5 @@
 #!/bin/bash
-#Vesion 1 de manager_install.sh primera instalacion de los scripts 
+
 # Definición de colores
 RED="\e[31m"
 GREEN="\e[32m"
@@ -40,9 +40,9 @@ cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  # Formato: YYYY-MM-DD HH:MM:SS
-for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh"in "$INSTALL_DIR/manager_uninstall.sh"; do
+for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
     echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
-    eccho -e "#versión 6.0" | cat - "$script" > temp && mv temp "$script"
+   
 done
 # Dar permisos de ejecución a los scripts
 chmod +x "$INSTALL_DIR/"*.sh
