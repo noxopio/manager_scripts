@@ -56,6 +56,25 @@ ORG_NAME="Streamings-Team2"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
 
+border() {
+    local color="$1"
+    local message="$2"
+    local length=$(( ${#message} + 4 ))
+    local border_line=$(printf '%0.s─' $(seq 1 $length))
+    
+    echo -e "${color}╭${border_line}╮"
+    echo -e "│  ${message}  │"
+    echo -e "╰${border_line}╯${RESET}"
+}
+
+# Funciones de logging mejoradas
+log_info() {
+    local message="[INFO] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$CIAN" "$message"
+}
 # Para repos privados, descomentar y proporcionar el token
 # TOKEN="tu_token"
 
@@ -74,7 +93,7 @@ extract_urls() {
 # Comprobar si se requiere token
 if [ -n "$TOKEN" ]; then
   # Realizar la solicitud GET a la API con token
-  echo "Accediendo a repositorios privados con token..."
+log_info "Accediendo a repositorios privados con token..."
   while true; do
     response=$(curl -H "Authorization: token $TOKEN" -s -I "$URL")
     body=$(curl -H "Authorization: token $TOKEN" -s "$URL")
@@ -95,7 +114,7 @@ if [ -n "$TOKEN" ]; then
 
 else
   # Acceso a repositorios públicos
-  echo "Accediendo a repositorios públicos..."
+ log_info "Accediendo a repositorios públicos..."
   while true; do
     response=$(curl -s -I "$URL")
     body=$(curl -s "$URL")
@@ -123,5 +142,5 @@ while IFS= read -r repo; do
    ((counter++))
   # git clone "$repo"&
 done < listRep.txt
-echo "Urls: $counter"
+log_info "Urls: $counter"
 

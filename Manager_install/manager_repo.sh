@@ -92,21 +92,50 @@ CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
 
-log_info() {
-    printf "${CIAN} [INFO] $1 ${RESET}\n"
+# Función base para bordes (siempre visible)
+border() {
+    local color="$1"
+    local message="$2"
+    local length=$(( ${#message} + 4 ))
+    local border_line=$(printf '%0.s─' $(seq 1 $length))
+    
+    echo -e "${color}╭${border_line}╮"
+    echo -e "│  ${message}  │"
+    echo -e "╰${border_line}╯${RESET}"
 }
+
+# Funciones de logging mejoradas
+log_info() {
+    local message="[INFO] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$CIAN" "$message"
+}
+
 log_description() {
-    printf "${GREEN} [Descripción]: $1 ${RESET}\n"
+    local message="[DESCRIPCIÓN] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$GREEN" "$message"
 }
 
 log_warning() {
-    printf "${YELLOW} [WARNING] $1 ${RESET}\n"
+    local message="[WARNING] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$YELLOW" "$message"
 }
 
 log_error() {
-    printf "${RED} [ERROR] $1 ${RESET}\n"
+    local message="[ERROR] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$RED" "$message"
 }
-
 file_name="$(basename "$0")"
 commands=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager")
 BRANCH="develop"  # Rama por defecto
@@ -114,54 +143,53 @@ BRANCH="develop"  # Rama por defecto
 ## Función para mostrar el uso correcto del script
 show_usage() {
 
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
-    printf "${CIAN}                          USO DEL SCRIPT: ${RESET}\n"
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
-
+     
+log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
+     
     # Ejemplo de uso para el comando "pull"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]}:" "./$(basename "$0") ${commands[0]} listRep.txt"
-    log_description "Clona o actualiza repositorios desde la lista especificada."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]}:" "./$(basename "$0") ${commands[0]}"
+    log_description "  Clona o actualiza repositorios desde la lista especificada." 
+     
     
     # Ejemplo de uso para el comando "pull" con rama personalizada
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]} (rama personalizada):" "./$(basename "$0") -b main ${commands[0]} listRep.txt"
     log_description "Clona o actualiza repositorios en la rama 'main'."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "run"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[1]}:" "./$(basename "$0") ${commands[1]}"
     log_description "Inicia los microfrontends existentes."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "install"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[2]}:" "./$(basename "$0") ${commands[2]} listRep.txt"
     log_description "Instala las dependencias en cada repositorio de la lista."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "updeps"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[3]}:" "./$(basename "$0") ${commands[3]} listRep.txt"
     log_description "Reinstala o actualiza las dependencias en cada repositorio."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "kill"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[4]}:" "./$(basename "$0") ${commands[4]}"
     log_description "Mata los procesos de Node en ejecución."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "list"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[5]}:" "./$(basename "$0") ${commands[5]}"
     log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
   
    # Ejemplo de uso para el comando "ps"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[6]}:" "./$(basename "$0") ${commands[6]}"
     log_description "Muestra los procesos de Node en ejecución."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
 
     # Ejemplo de uso para el comando "uninstall_manager"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[7]}:" "./$(basename "$0") ${commands[7]}"
-    log_description "Desinstala el script manager."
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+    log_description "Desinstala $file_name."
+     
 
 
 }
@@ -203,15 +231,15 @@ shift $((OPTIND - 1))
 
 ## Verificar si se proporciona el primer argumento 
 if [ $# -lt 1 ]; then
-    printf "${RED} :-------------------------------------------------------------------------------------------------------------------------:${RESET}\n"
-                    log_error "Se requiere al menos un argumento [${commands[*]}] y el archivo .txt."
-    printf "${RED} :-------------------------------------------------------------------------------------------------------------------------:${RESET}\n"
-                     log_warning "Si no se proporciona un archivo .txt,el script buscará uno llamado 'listRep.txt' en el directorio actual."
-    printf "${RED} :-------------------------------------------------------------------------------------------------------------------------:${RESET}\n"
+      
+                    log_error "Se requiere al menos un argumento y el archivo .txt."
+      
+                     log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
+      
 
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
-    printf "${GREEN} |%-79s|${RESET}\n" "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]"
-    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+     
+   log_description "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]" "no-prefix"
+     
 
     show_usage
     exit 1
@@ -243,14 +271,12 @@ if [ "$1" = "uninstall_manager" ]; then
     exit 0
 fi
 
-
-
 ## Verificar si se proporciona un archivo como argumento (segundo parámetro)
 file_name_list="${2:-listRep.txt}"
 
 ## Verificar si el archivo de repositorios existe
 if [ ! -f "$file_name_list" ]; then
-   log_error "El archivo $file_name_list no se encuentra en el directorio. Por favor, crea este archivo con las URLs de los repositorios.\n"
+   log_error "El archivo $file_name_list no existe. Por favor,crea este archivo con las URLs de los repositorios."
     exit 1
 fi
 
@@ -302,12 +328,12 @@ manage_deps() {
                 log_warning "Dependencias ya instaladas en $repo_name"
                     fi
                 else
-                   log_info " Instalando  dependencias en $repo_name...\n"
+                   log_info " Instalando  dependencias en $repo_name..."
                     npm install
                 fi
             ) &
         else
-               log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'\n"
+               log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
         fi
     done
     wait
@@ -334,13 +360,13 @@ start_time=$(date +%s)
 ## Manejar comandos con case
 case "$1" in
 pull)
-    printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+      
     log_info "Iniciando  pull ..."
-    printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+      
     pull_repos
-    printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+      
     log_info "Pull terminado."
-    printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+      
     ;;
 run)
     log_info "Iniciando microfrontends en paralelo..."
@@ -364,10 +390,10 @@ updeps)
       log_info "Dependencias actualizadas."
     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
     ;;
+
 *)
-    printf "${RED} :--------------------------------------------------------:${RESET}\n"
+    
     log_error "Comando inválido. Por favor, verifica la sintaxis."
-    printf "${RED} :--------------------------------------------------------:${RESET}\n"
     show_usage
     exit 1
     ;;
@@ -378,13 +404,13 @@ duration=$((end_time - start_time))
 
 # Mensaje de resumen de repositorios procesados
 
-printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
-printf "${CIAN} |%-20s %-58s| ${RESET}\n" "" "Repositorios procesados: ${#microfrontend_repos[@]}"
-printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+  
+log_info "Repositorios procesados: ${#microfrontend_repos[@]}" "no-prefix"
+  
 
 # Mensaje de tiempo de ejecución
-printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
-printf "${GREEN} |%-50s %-28s | ${RESET}\n" "Tiempo de ejecución:$duration segundos"
-printf "${CIAN} :-------------------------------------------------------------------------------:${RESET}\n"
+
+log_description  "Tiempo de ejecución:$duration segundos" "no-prefix"
+  
 
 log_info "Ejecución Terminada."

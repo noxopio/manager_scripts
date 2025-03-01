@@ -61,37 +61,70 @@ MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
 
+echo -e "\e[31m"  
+cat << "EOF"
 
-# Función de borde mejorada
+__| |_______________________________________| |__  
+__   _______________________________________   __
+  | |                                       | |  
+  | |                                       | |  
+  | |  888b     d888 WELCOME888  .d8888b.   | |  
+  | |  8888b   d8888 888        d88P  Y88b  | |  
+  | |  88888b.d88888 888        Y88b.       | |  
+  | |  888Y88888P888 8888888     "Y888b.    | |  
+  | |  888 Y888P 888 888            "Y88b.  | |  
+  | |  888  Y8P  888 888              "888  | |  
+  | |  888   "   888 888        Y88b  d88P  | |  
+  | |  888       888 888         "YONOFUI"  | |  
+  | |                                       | |  
+__| |_______________________________________| |__
+__   _______________________________________   __
+  | |                                       | |  
+EOF
+echo -e "\e[0m"  # Reset color
+# Función de bordes mejorada (compartida)
 border() {
-    local message="$1"
+    local color="$1"
+    local message="$2"
     local length=$(( ${#message} + 4 ))
     local border_line=$(printf '%0.s─' $(seq 1 $length))
     
-    echo -e "${CIAN}╭${border_line}╮"
+    echo -e "${color}╭${border_line}╮"
     echo -e "│  ${message}  │"
     echo -e "╰${border_line}╯${RESET}"
 }
 
-# Función de registro mejorada
+# Funciones de logging mejoradas
 log_info() {
-    local message="$1"
-    local border_style="$2"
-    
-    if [ "$border_style" = "border"  ]; then
-        border "$message"
-    else
-        printf "${CIAN} [INFO] ${message} ${RESET}\n"
+    local message="[INFO] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
     fi
+    border "$CIAN" "$message"
+}
+
+log_description() {
+    local message="[DESCRIPCIÓN] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$GREEN" "$message"
 }
 
 log_warning() {
-    
-    printf "${YELLOW} [WARNING] $1 ${RESET}\n"
+    local message="[WARNING] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$YELLOW" "$message"
 }
 
 log_error() {
-    printf "${RED} [ERROR] $1 ${RESET}\n"
+    local message="[ERROR] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$RED" "$message"
 }
 
 
@@ -122,10 +155,10 @@ update_manager_repo() {
 # Crear la carpeta si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
     mkdir -p "$INSTALL_DIR"
-    log_info "Carpeta creada en $INSTALL_DIR"
+    log_info "Carpeta creada en $INSTALL_DIR" 
 else
-    log_warning "La carpeta ya existe en $INSTALL_DIR" "border"
-    log_info "si desea reinstalar , ejecute el script con la opción --force"  "border"
+    log_warning " La carpeta ya existe en $INSTALL_DIR" 
+    log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
 
     if [ "$FORCE_REINSTALL" = true ]; then
     clear
@@ -177,12 +210,12 @@ update_bashrc() {
     log_info "Archivo .bashrc actualizado"
 }
 # Mensaje final
-log_info "Instalación completada. "
-log_info "Alias para ejecutar los scripts"
-log_info "mfs: Para gestionar repositorios"
-log_info "url_extractor: Para extraer las URLs de los repositorios de un usuario"
+log_info "Instalación completada exitosamente" 
+log_info "Comandos disponibles:"
+log_info "  mfs: Gestión de repositorios" 
+log_info "  url_extractor: Extracción de URLs" 
 update_bashrc
  log_info "Abriendo la carpeta de instalación..."
+log_warning "$INSTALL_DATE" "no-prefix"	
 cd "$INSTALL_DIR" && explorer .
-
 

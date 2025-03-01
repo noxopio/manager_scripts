@@ -47,38 +47,45 @@
 RED="\e[31m"
 GREEN="\e[32m"
 YELLOW="\e[33m"
+BLUE="\e[34m"
+CIAN="\e[36m"
+MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
 # Funciones de registro
-log_info() {
-    printf "${GREEN} [INFO] $1 ${RESET}\n"
+border() {
+    local color="$1"
+    local message="$2"
+    local length=$(( ${#message} + 4 ))
+    local border_line=$(printf '%0.s─' $(seq 1 $length))
+    
+    echo -e "${color}╭${border_line}╮"
+    echo -e "│  ${message}  │"
+    echo -e "╰${border_line}╯${RESET}"
 }
+
+# Funciones de logging mejoradas
+log_info() {
+    local message="[INFO] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$CIAN" "$message"
+}
+
+INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
 
 log_warning() {
-    printf "${YELLOW} [WARNING] $1 ${RESET}\n"
+    local message="[WARNING] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$YELLOW" "$message"
 }
-echo -e "\e[31m"  
-cat << "EOF"
 
-__| |_______________________________________| |__  
-__   _______________________________________   __
-  | |                                       | |  
-  | |                                       | |  
-  | |  888b     d888 8888888888  .d8888b.   | |  
-  | |  8888b   d8888 888        d88P  Y88b  | |  
-  | |  88888b.d88888 888        Y88b.       | |  
-  | |  888Y88888P888 8888888     "Y888b.    | |  
-  | |  888 Y888P 888 888            "Y88b.  | |  
-  | |  888  Y8P  888 888              "888  | |  
-  | |  888   "   888 888        Y88b  d88P  | |  
-  | |  888       888 888         "Y8888P"   | |  
-  | |                                       | |  
-__| |_______________________________________| |__
-__   _______________________________________   __
-  | |                                       | |  
-EOF
-echo -e "\e[0m"  # Reset color
+
 log_info "Ejecutando $file_name"
+
 # Definir la ruta donde se creó la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
@@ -118,14 +125,15 @@ echo -e "\e[31m"
 cat << "EOF"
      _.-^^---....,,--       
  _--                  --_  
-<                        >)
+<       M   F    S        >)
 |                         | 
  \._                   _./  
     '''--. . ,; .--'''       
           | |   |            
-       .-=||  | |=-.   
-       '-=#%$%$%$%$=-'   
+       .-=||  | |=--.   
+      '-=UNINSTALLED=-'   
           | ;  :|     
   _____.,-#%&$@%#&#~,._____
 EOF
 echo -e "\e[0m"  # Reset color
+log_warning "$INSTALL_DATE" "no-prefix"	
