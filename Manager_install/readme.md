@@ -10,7 +10,7 @@ bash manager_repo.sh
 ```
 
 - **Requisitos**: El script requiere al menos un argumento:
-  - El primer argumento debe ser el comando a ejecutar (`pull`, `run`, `install`, `updeps`, `list`, `ps`,`uninstall_manger`).
+  - El primer argumento debe ser el comando a ejecutar (`pull`, `run`, `install`, `updeps`, `list`, `ps`,`uninstall_managerr`).
   - El segundo argumento  corresponde al archivo que contiene las URLs de los repositorios.
 
 - **Archivo de Repositorios**: 
@@ -84,9 +84,10 @@ bash manager_repo.sh
   ```
 - Luego, usar   el alias toolKill para terminar los procesos de Node en ejecución.
 
-
-# Manger instalado 
-para ejecutar el scrip una vez instladado  se una el alias que fue de finido en dicha installacion , remeplazando manager_repo.sh por mfs 
+## para instalar 
+- abre el script manager_install.sh  y lee la descripción 
+# Uso del Alias mfs
+Una vez instalado el gestor, puedes utilizar el alias mfs en lugar de manager_repo.sh para ejecutar el script. Aquí tienes algunos ejemplos:
 ```  bash 
 #Crear el archivo txt .
 mfs list
@@ -101,6 +102,6 @@ mfs pull listRep.txt
 ```
 ```  bash 
 #Eliminar manager_repo
-mfs uninstall_manger 
+mfs uninstall_managerr 
 
 ```

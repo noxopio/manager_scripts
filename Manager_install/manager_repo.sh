@@ -255,7 +255,7 @@ pull_repos() {
 
         if [ ! -d "$repo_name" ]; then
  
-            git clone -b "$BRANCH" "$repo_url"  &
+            git clone -b "$BRANCH" "$repo_url"               &
             
         else
             (
