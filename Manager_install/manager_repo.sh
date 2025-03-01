@@ -2,6 +2,24 @@
 # Versión 5.0.1 - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
 
 ## Notas de uso:
+# __| |_______________________________________| |__
+# __   _______________________________________   __
+#   | |                                       | |  
+#   | |                                       | |  
+#   | |  888b     d888 8888888888  .d8888b.   | |  
+#   | |  8888b   d8888 888        d88P  Y88b  | |  
+#   | |  88888b.d88888 888        Y88b.       | |  
+#   | |  888Y88888P888 8888888     "Y888b.    | |  
+#   | |  888 Y888P 888 888            "Y88b.  | |  
+#   | |  888  Y8P  888 888              "888  | |  
+#   | |  888   "   888 888        Y88b  d88P  | |  
+#   | |  888       888 888         "Y8888P"   | |  
+#   | |                                       | |  
+# __| |_______________________________________| |__
+# __   _______________________________________   __
+#   | |                                       | |  
+
+
 
 # Este script está diseñado para facilitar la gestión de múltiples repositorios. 
 # El script debe ser ejecutado desde la línea de comandos ;
