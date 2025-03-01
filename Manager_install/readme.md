@@ -86,6 +86,7 @@ bash manager_repo.sh
 
 ## para instalar 
 - abre el script manager_install.sh  y lee la descripción 
+- o ejecuta ./manager_install.sh
 # Uso del Alias mfs
 Una vez instalado el gestor, puedes utilizar el alias mfs en lugar de manager_repo.sh para ejecutar el script. Aquí tienes algunos ejemplos:
 ```  bash 
