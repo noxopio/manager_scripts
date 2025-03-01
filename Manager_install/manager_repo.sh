@@ -298,8 +298,8 @@ pull_repos() {
         log_info "Procesando $repo_name"
 
         if [ ! -d "$repo_name" ]; then
- 
-            git clone -b "$BRANCH" "$repo_url"               &
+        ## Clon parcial de los repositorios, usa   git pull fetch --unshallow para obtener el historial completo.
+             git clone -b "$BRANCH" "$repo_url" --depth=1 &
             
         else
             (
@@ -349,12 +349,14 @@ run_repos() {
     else
     (
          cd "$repo_name" || exit
+         
          npm run start
     ) &
         fi
     done
     wait
 }
+
 
 start_time=$(date +%s)
 ## Manejar comandos con case
@@ -390,7 +392,9 @@ updeps)
       log_info "Dependencias actualizadas."
     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
     ;;
-
+    remove)
+    remove_node
+;;
 *)
     
     log_error "Comando inválido. Por favor, verifica la sintaxis."
