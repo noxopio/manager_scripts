@@ -5,7 +5,7 @@
 # Script de Instalación de Manager Scripts
 # Versión: 1.0
 # Fecha: [27/02/2025]
-#
+
 # Descripción:
 # Este script se encarga de instalar los scripts de gestión de repositorios
 # en un directorio específico y configurar alias en el archivo .bashrc para
@@ -59,12 +59,39 @@ log_info "Ejecutando $file_name"
 # Definir la ruta donde se creará la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")" 
+# Comprobar si se debe forzar la reinstalación
+FORCE_REINSTALL=false
+
+# Procesar argumentos
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --force) FORCE_REINSTALL=true ;;
+        *) log_warning "Opción desconocida: $1" ;;
+    esac
+    shift
+done
+
+update_manager_repo() {
+
+    log_info "Desinstalando ..."
+    "$SOURCE_DIR/manager_uninstall.sh" "$@"
+    
+    log_info "Reinstalando ..."
+    "$SOURCE_DIR/manager_install.sh" "$@"
+}
 # Crear la carpeta si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
     mkdir -p "$INSTALL_DIR"
     log_info "Carpeta creada en $INSTALL_DIR"
 else
-     log_warning "La carpeta ya existe en $INSTALL_DIR"
+    log_warning "La carpeta ya existe en $INSTALL_DIR"
+    log_info "si desea reinstalar , ejecute el script con la opción --force"
+
+    if [ "$FORCE_REINSTALL" = true ]; then
+    clear
+        update_manager_repo
+    fi
+    exit 1
 fi
 
 # Copiar los scripts a la carpeta
@@ -73,7 +100,7 @@ cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
-INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  # Formato: YYYY-MM-DD HH:MM:SS
+INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
 for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
     echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
    
@@ -84,6 +111,9 @@ log_info "Permisos de ejecución otorgados a los scripts"
 
 # Crear alias en .bashrc
 ALIAS_FILE="$HOME/.bashrc"
+
+
+
 
 # Verificar si los alias ya están en .bashrc
 if ! grep -q "mfs()" "$ALIAS_FILE"; then
@@ -102,11 +132,15 @@ else
    log_warning "Los alias ya existen en $ALIAS_FILE"
 fi
 
+update_bashrc() {
+    source "$ALIAS_FILE"
+    log_info "Archivo .bashrc actualizado"
+}
 # Mensaje final
-source ~/.bashrc
 log_info "Instalación completada. "
 log_info "Alias para ejecutar los scripts"
 log_info "mfs: Para gestionar repositorios"
 log_info "url_extractor: Para extraer las URLs de los repositorios de un usuario"
+update_bashrc
  log_info "Abriendo la carpeta de instalación..."
 cd "$INSTALL_DIR" && explorer .

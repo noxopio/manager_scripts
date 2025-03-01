@@ -90,7 +90,7 @@ log_error() {
 }
 
 file_name="$(basename "$0")"
-commands=("pull" "run" "install" "updeps" "kill" "list")
+commands=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager")
 BRANCH="develop"  # Rama por defecto
 
 ## Función para mostrar el uso correcto del script
@@ -135,6 +135,17 @@ show_usage() {
     log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
     printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
   
+   # Ejemplo de uso para el comando "ps"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[6]}:" "./$(basename "$0") ${commands[6]}"
+    log_description "Muestra los procesos de Node en ejecución."
+    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+
+    # Ejemplo de uso para el comando "uninstall_manager"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[7]}:" "./$(basename "$0") ${commands[7]}"
+    log_description "Desinstala el script manager."
+    printf "${GREEN} :-------------------------------------------------------------------------------:${RESET}\n"
+
+
 }
  ## Función para matar los procesos de Node en ejecución
 kill_node_processes() {
@@ -161,9 +172,6 @@ ps_process() {
         log_info "Proceso en ejecución: $line"
     done <<< "$processes"
 }
-
-
-
 
 ## Procesar las opciones de línea de comandos
 while getopts ":b:" opt; do
