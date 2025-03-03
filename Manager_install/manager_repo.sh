@@ -92,7 +92,6 @@ CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
 
-# Función base para bordes (siempre visible)
 border() {
     local color="$1"
     local message="$2"
@@ -104,7 +103,6 @@ border() {
     echo -e "╰${border_line}╯${RESET}"
 }
 
-# Funciones de logging mejoradas
 log_info() {
     local message="[INFO] $1"
     if [ "$2" = "no-prefix" ]; then
@@ -144,7 +142,7 @@ BRANCH="develop"  # Rama por defecto
 show_usage() {
 
      
-log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
+    log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
      
     # Ejemplo de uso para el comando "pull"
      printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]}:" "./$(basename "$0") ${commands[0]}"
@@ -198,7 +196,7 @@ kill_node_processes() {
         processes=$(  ps aux | grep '[n]ode' | awk '{print $1}' )
       if [ -z "$processes" ]; then
         log_error "No hay procesos de Node en ejecución."
-        exit 0 # Retorna un código de error
+        exit 0
     fi
         kill $processes
         while IFS= read -r line; do
@@ -212,7 +210,7 @@ ps_process() {
     processes=$(ps aux | grep '[n]ode' | awk '{print $1}')
     if [ -z "$processes" ]; then
         log_error "No hay procesos de Node en ejecución."
-        exit 0 # Retorna un código de error
+        exit 0
     fi
     while IFS= read -r line; do
         log_info "Proceso en ejecución: $line"
@@ -232,44 +230,75 @@ shift $((OPTIND - 1))
 ## Verificar si se proporciona el primer argumento 
 if [ $# -lt 1 ]; then
       
-                    log_error "Se requiere al menos un argumento y el archivo .txt."
-      
-                     log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
-      
-
-     
-   log_description "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]" "no-prefix"
-     
-
-    show_usage
+        log_error "Se requiere al menos un argumento y el archivo .txt."
+        log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
+        log_description "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]" "no-prefix"
+        show_usage
     exit 1
 fi
-## Verificar si el primer argumento es 'list'
-if [ "$1" == "list" ]; then
-    printf "%s\n" "----------------------------------------" 
- $HOME/manager_scripts/url_extractor.sh
-    printf "%s\n" "----------------------------------------" 
-    exit 0  
-fi
-# si el primer argumento es 'kill' llamar a la función kill_node_processes
-if [ "$1" == "kill" ]; then
-    kill_node_processes 
-    exit 0  
-fi
-# si el primer argumento es 'ps' llamar a la función ps_process
-if [ "$1" = "ps" ]; then
-    printf "%s\n" "----------------------------------------" 
-    ps_process
-    printf "%s\n" "----------------------------------------" 
-    exit 0
-fi
-# si el primer argumento es 'uninstall_manager' llamar al script manager_uninstall.sh 
-if [ "$1" = "uninstall_manager" ]; then
-    printf "%s\n" "----------------------------------------" 
-    $HOME/manager_scripts/manager_uninstall.sh
-    printf "%s\n" "----------------------------------------" 
-    exit 0
-fi
+
+
+handle_non_list_command() {
+     local cmd="$1"
+     case "$cmd" in
+     list)
+     log_info "Ejecutando comando list..."
+    "$HOME/manager_scripts/url_extractor.sh"
+     ;;
+
+     kill)
+     log_info "Ejecutando comando kill..."
+     kill_node_processes
+     ;;
+
+     ps)
+     log_info "Ejecutando comando ps..."
+     ps_process
+     ;;
+
+     uninstall_manager)
+     log_info "Ejecutando comando uninstall_manager..."
+     "$HOME/manager_scripts/manager_uninstall.sh"
+     ;;
+     *)
+     log_error "Comando '$cmd' no reconocido para manejo sin archivo."
+     exit 1
+     ;;
+     esac
+     exit 0
+    }
+
+non_list_commands=("list" "kill" "ps" "uninstall_manager")
+    if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
+    handle_non_list_command "$1"
+    fi
+
+# ## Verificar si el primer argumento es 'list'
+# if [ "$1" == "list" ]; then
+#     printf "%s\n" "----------------------------------------" 
+#  $HOME/manager_scripts/url_extractor.sh
+#     printf "%s\n" "----------------------------------------" 
+#     exit 0  
+# fi
+# # si el primer argumento es 'kill' llamar a la función kill_node_processes
+# if [ "$1" == "kill" ]; then
+#     kill_node_processes 
+#     exit 0  
+# fi
+# # si el primer argumento es 'ps' llamar a la función ps_process
+# if [ "$1" = "ps" ]; then
+#     printf "%s\n" "----------------------------------------" 
+#     ps_process
+#     printf "%s\n" "----------------------------------------" 
+#     exit 0
+# fi
+# # si el primer argumento es 'uninstall_manager' llamar al script manager_uninstall.sh 
+# if [ "$1" = "uninstall_manager" ]; then
+#     printf "%s\n" "----------------------------------------" 
+#     $HOME/manager_scripts/manager_uninstall.sh
+#     printf "%s\n" "----------------------------------------" 
+#     exit 0
+# fi
 
 ## Verificar si se proporciona un archivo como argumento (segundo parámetro)
 file_name_list="${2:-listRep.txt}"
@@ -299,7 +328,7 @@ pull_repos() {
 
         if [ ! -d "$repo_name" ]; then
         ## Clon parcial de los repositorios, usa   git pull fetch --unshallow para obtener el historial completo.
-             git clone -b "$BRANCH" "$repo_url" --depth=1 &
+             git clone -q -b "$BRANCH" "$repo_url" --depth=1 &
             
         else
             (
@@ -328,7 +357,7 @@ manage_deps() {
                 log_warning "Dependencias ya instaladas en $repo_name"
                     fi
                 else
-                   log_info " Instalando  dependencias en $repo_name..."
+                log_info " Instalando  dependencias en $repo_name..."
                     npm install
                 fi
             ) &
@@ -359,44 +388,41 @@ run_repos() {
 
 
 start_time=$(date +%s)
-## Manejar comandos con case
-case "$1" in
-pull)
-      
-    log_info "Iniciando  pull ..."
-      
-    pull_repos
-      
-    log_info "Pull terminado."
-      
-    ;;
-run)
+    case "$1" in
+
+    pull)
+      log_info "Iniciando  pull ..."
+      pull_repos
+      log_info "Pull terminado."
+      ;;
+    run)
     log_info "Iniciando microfrontends en paralelo..."
     run_repos
     log_info "Microfrontends Detenidos."
-    ;;
-install)
-
-    printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
-   log_info               "Instalando dependencias..."
-    printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
-     manage_deps "install"
-    log_info "Dependencias instaladas."
-    ;;
-updeps)
-    printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
-    log_info "Actualizando dependencias"
-    printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
+     ;;
+    
+    install)
+      printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
+      log_info               "Instalando dependencias..."
+      printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
+      manage_deps "install"
+      log_info "Dependencias instaladas."
+     ;;
+    
+    updeps)
+     printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
+     log_info "Actualizando dependencias"
+     printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
      manage_deps "reinstall"
+     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
+     log_info "Dependencias actualizadas."
     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
-      log_info "Dependencias actualizadas."
-    printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
-    ;;
+     ;;
+    
     remove)
     remove_node
-;;
+     ;;
 *)
-    
     log_error "Comando inválido. Por favor, verifica la sintaxis."
     show_usage
     exit 1
