@@ -12,7 +12,7 @@
 #   | |  888b     d888 8888888888  .d8888b.   | |  
 #   | |  8888b   d8888 888        d88P  Y88b  | |  
 #   | |  88888b.d88888 888        Y88b.       | |  
-#   | |  888Y88888P888 8888888     "Y888b.    | |  
+#   | |  88BYE8888P888 4048888     "Y888b.    | |  
 #   | |  888 Y888P 888 888            "Y88b.  | |  
 #   | |  888  Y8P  888 888              "888  | |  
 #   | |  888   "   888 888        Y88b  d88P  | |  
@@ -53,6 +53,26 @@ MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
 # Funciones de registro
+ message(){
+        echo -e "\e[31m"  
+cat << "EOF"
+              _
+             | |
+             | |===( )   //////
+             |_|   |||  | o o|                                 
+                    ||| ( c  )                  ____
+                     ||| \= /                  ||   \_
+                      ||||||                   ||M S F|
+                      ||||||                ...||__/|-"
+                      ||||||             __|________|__
+                        |||             |______________|
+                        |||             || ||      || ||
+                        |||             || ||      || ||
+------------------------|||-------------||-||------||-||-------
+                        |__>            || ||      || ||
+EOF
+echo -e "\e[0m"  # Reset color
+ }
 border() {
     local color="$1"
     local message="$2"
@@ -96,25 +116,23 @@ if [ -d "$INSTALL_DIR" ]; then
     log_info "Carpeta eliminada: $INSTALL_DIR"
 else
     log_warning "La carpeta no existe: $INSTALL_DIR"
+    message
 fi
 
-# Eliminar la función mfs() del archivo .bashrc
-if grep -q "mfs() {" "$ALIAS_FILE"; then
-    # Eliminar la función completa
-    sed -i '/mfs() {/,/^}/d' "$ALIAS_FILE"
-    log_info "Función 'mfs()' eliminada del archivo: $ALIAS_FILE"
-else
-    log_warning "No se encontró la función 'mfs()' en: $ALIAS_FILE"
-fi
+remove_function() {
+    local function_name="$1"
+    if grep -q "${function_name}() {" "$ALIAS_FILE"; then
+        sed -i "/${function_name}() {/,/^}/d" "$ALIAS_FILE"
+        log_info "Función '${function_name}()' eliminada del archivo: $ALIAS_FILE"
+    else
+        log_warning "No se encontró la función '${function_name}()' en: $ALIAS_FILE"
+        exit 1
+    fi
+}
 
-# Eliminar la función url_extractor() del archivo .bashrc
-if grep -q "url_extractor() {" "$ALIAS_FILE"; then
-    # Eliminar la función completa
-    sed -i '/url_extractor() {/,/^}/d' "$ALIAS_FILE"
-    log_info "Función 'url_extractor()' eliminada del archivo: $ALIAS_FILE"
-else
-    log_warning "No se encontró la función 'url_extractor()' en: $ALIAS_FILE"
-fi
+# Eliminar las funciones mfs() y url_extractor() del archivo .bashrc
+remove_function "mfs"
+remove_function "url_extractor"
 
 source ~/.bashrc
 # Mensaje final
@@ -136,4 +154,5 @@ cat << "EOF"
   _____.,-#%&$@%#&#~,._____
 EOF
 echo -e "\e[0m"  # Reset color
+
 log_warning "$INSTALL_DATE" "no-prefix"	

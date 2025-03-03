@@ -61,27 +61,6 @@ MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
 
-echo -e "\e[31m"  
-cat << "EOF"
-
-__| |_______________________________________| |__  
-__   _______________________________________   __
-  | |                                       | |  
-  | |                                       | |  
-  | |  888b     d888 WELCOME888  .d8888b.   | |  
-  | |  8888b   d8888 888        d88P  Y88b  | |  
-  | |  88888b.d88888 888        Y88b.       | |  
-  | |  888Y88888P888 8888888     "Y888b.    | |  
-  | |  888 Y888P 888 888            "Y88b.  | |  
-  | |  888  Y8P  888 888              "888  | |  
-  | |  888   "   888 888        Y88b  d88P  | |  
-  | |  888       888 888         "YONOFUI"  | |  
-  | |                                       | |  
-__| |_______________________________________| |__
-__   _______________________________________   __
-  | |                                       | |  
-EOF
-echo -e "\e[0m"  # Reset color
 # Función de bordes mejorada (compartida)
 border() {
     local color="$1"
@@ -126,8 +105,31 @@ log_error() {
     fi
     border "$RED" "$message"
 }
+log_info "INSTALANDO..."
 
 
+echo -e "\e[31m"  
+cat << "EOF"
+
+ __| |_______________________________________| |__
+ __   _______________________________________   __
+   | |                                       | |  
+   | |                                       | |  
+   | |  888b     d888 8888888888  .d8888b.   | |  
+   | |  8888b   d8888 888        d88P  Y88b  | |  
+   | |  88888b.d88888 888        Y88b.       | |  
+   | |  PU2H88888M41N 8888888     "Y088b.    | |  
+   | |  888 Y888P 888 888            "S8N0.  | |  
+   | |  888  Y8P  888 888              "888  | |  
+   | |  888   "   888 888        Y88b  dFU1  | |  
+   | |  888       888 888         "08888P"   | |  
+   | |                                       | |  
+ __| |_______________________________________| |__
+ __   _______________________________________   __
+   | |                                       | |  
+
+EOF
+echo -e "\e[0m"  # Reset color
 # Definir la ruta donde se creará la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")" 
@@ -171,6 +173,7 @@ fi
 cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
+cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
