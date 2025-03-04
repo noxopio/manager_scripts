@@ -3,7 +3,7 @@
 # Documentación del Script
 # ==========================
 # Script de Instalación de Manager Scripts
-# Versión: 1.0
+# Versión: 2.0.1
 # Fecha: [27/02/2025]
 
 # __| |_______________________________________| |__
@@ -225,6 +225,7 @@ mfs() {
 url_extractor() {
     $INSTALL_DIR/url_extractor.sh "\$@"
 }
+#Instalado en  $INSTALL_DATE
 # <<< Manager Scripts END
 EOL
 else
