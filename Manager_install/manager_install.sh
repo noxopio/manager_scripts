@@ -180,8 +180,6 @@ if [ ! -d "$INSTALL_DIR" ]; then
 else
     log_warning " La carpeta ya existe en $INSTALL_DIR" 
     log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
-   MFS_MANAGER
-
     if [ "$FORCE_REINSTALL" = true ]; then
     clear
         update_manager_repo
