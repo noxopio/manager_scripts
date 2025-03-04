@@ -60,7 +60,7 @@ CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
-
+INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
 # Función de bordes mejorada (compartida)
 border() {
     local color="$1"
@@ -180,6 +180,8 @@ if [ ! -d "$INSTALL_DIR" ]; then
 else
     log_warning " La carpeta ya existe en $INSTALL_DIR" 
     log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
+    MFS_MANAGER
+    log_warning "$INSTALL_DATE" "no-prefix"	
     if [ "$FORCE_REINSTALL" = true ]; then
     clear
         update_manager_repo
@@ -195,7 +197,7 @@ fi
 cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
-INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
+
 for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
     echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
    
