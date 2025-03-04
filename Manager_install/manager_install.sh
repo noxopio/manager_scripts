@@ -107,7 +107,7 @@ log_error() {
 }
 log_info "INSTALANDO..."
 
-
+MFS_MANAGER(){
 echo -e "\e[31m"  
 cat << "EOF"
 
@@ -129,7 +129,25 @@ cat << "EOF"
    | |                                       | |  
 
 EOF
+echo -e "\e[0m"
+}
+message(){
+    echo -e "\e[31m"  
+cat << "EOF"
+         __
+         ||
+        (__)
+  ____  ____  ____
+ /\ M \/\ F \/\ S \
+/  \___\ \___\ \___\
+\  /   / /   / /   /
+ \/___/\/___/\/___/    
+
+EOF
 echo -e "\e[0m"  # Reset color
+    
+    }
+
 # Definir la ruta donde se creará la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")" 
@@ -158,9 +176,12 @@ update_manager_repo() {
 if [ ! -d "$INSTALL_DIR" ]; then
     mkdir -p "$INSTALL_DIR"
     log_info "Carpeta creada en $INSTALL_DIR" 
+ 
 else
     log_warning " La carpeta ya existe en $INSTALL_DIR" 
+    MFS_MANAGER
     log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
+
 
     if [ "$FORCE_REINSTALL" = true ]; then
     clear
@@ -170,10 +191,11 @@ else
 fi
 
 # Copiar los scripts a la carpeta
-cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
-cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
-cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
-cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
+# cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
+# cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
+# cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
+# cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
+cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
 log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
@@ -196,6 +218,7 @@ if ! grep -q "mfs()" "$ALIAS_FILE"; then
      log_info "Creando alias para manager y url_extractor en $ALIAS_FILE"
     
     cat << EOL >> "$ALIAS_FILE"
+    # >>> Manager Scripts START
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
@@ -203,6 +226,7 @@ mfs() {
 url_extractor() {
     $INSTALL_DIR/url_extractor.sh "\$@"
 }
+# <<< Manager Scripts END
 EOL
 else
    log_warning "Los alias ya existen en $ALIAS_FILE"
@@ -219,6 +243,7 @@ log_info "  mfs: Gestión de repositorios"
 log_info "  url_extractor: Extracción de URLs" 
 update_bashrc
  log_info "Abriendo la carpeta de instalación..."
+    message
 log_warning "$INSTALL_DATE" "no-prefix"	
 cd "$INSTALL_DIR" && explorer .
 

@@ -62,7 +62,7 @@ cat << "EOF"
              |_|   |||  | o o|                                 
                     ||| ( c  )                  ____
                      ||| \= /                  ||   \_
-                      ||||||                   ||M S F|
+                      ||||||                   ||M F S|
                       ||||||                ...||__/|-"
                       ||||||             __|________|__
                         |||             |______________|
@@ -73,6 +73,29 @@ cat << "EOF"
 EOF
 echo -e "\e[0m"  # Reset color
  }
+
+message_uninstall(){
+
+echo -e "\e[31m"  
+cat << "EOF"
+     _.-^^---....,,--       
+ _--                  --_  
+<       M   F    S        >)
+|                         | 
+ \._                   _./  
+    '''--. . ,; .--'''       
+          | |   |            
+       .-=||  | |=--.   
+      '-=UNINSTALLED=-'   
+          | ;  :|     
+  _____.,-#%&$@%#&#~,._____
+EOF
+echo -e "\e[0m"  # Reset color
+
+
+}
+
+
 border() {
     local color="$1"
     local message="$2"
@@ -119,40 +142,21 @@ else
     message
 fi
 
-remove_function() {
-    local function_name="$1"
-    if grep -q "${function_name}() {" "$ALIAS_FILE"; then
-        sed -i "/${function_name}() {/,/^}/d" "$ALIAS_FILE"
-        log_info "Función '${function_name}()' eliminada del archivo: $ALIAS_FILE"
+remove_functions() {
+    if grep -q "# >>> Manager Scripts START" "$ALIAS_FILE"; then
+        # Eliminar el bloque completo
+        sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
+        log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
     else
-        log_warning "No se encontró la función '${function_name}()' en: $ALIAS_FILE"
+        log_warning "No se encontraron  funciones de Manager Scripts en: $ALIAS_FILE"
         exit 1
     fi
 }
 
-# Eliminar las funciones mfs() y url_extractor() del archivo .bashrc
-remove_function "mfs"
-remove_function "url_extractor"
+remove_functions
 
 source ~/.bashrc
-# Mensaje final
-
 
 log_info "Desinstalación completada."
-echo -e "\e[31m"  
-cat << "EOF"
-     _.-^^---....,,--       
- _--                  --_  
-<       M   F    S        >)
-|                         | 
- \._                   _./  
-    '''--. . ,; .--'''       
-          | |   |            
-       .-=||  | |=--.   
-      '-=UNINSTALLED=-'   
-          | ;  :|     
-  _____.,-#%&$@%#&#~,._____
-EOF
-echo -e "\e[0m"  # Reset color
-
+message_uninstall
 log_warning "$INSTALL_DATE" "no-prefix"	
