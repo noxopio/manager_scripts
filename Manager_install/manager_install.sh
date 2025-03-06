@@ -105,7 +105,7 @@ log_error() {
     fi
     border "$RED" "$message"
 }
-log_info "INSTALANDO..."
+
 
 MFS_MANAGER(){
 echo -e "\e[31m"  
@@ -147,6 +147,26 @@ EOF
 echo -e "\e[0m"  # Reset color
     
     }
+error_404(){
+        echo -e "\e[31m"  
+cat << "EOF"
+              _
+             | |
+             | |===( )   //////
+             |_|   |||  | o o|                                 
+                    ||| ( c  )                  ____
+                     ||| \= /                  ||   \_
+                      ||||||                   ||4 0 4|
+                      ||||||                ...||__/|-"
+                      ||||||             __|________|__
+                        |||             |______________|
+                        |||             || ||      || ||
+  FDA                   |||             || ||      || ||
+------------------------|||-------------||-||------||-||-------
+                        |__>            || ||      || ||
+EOF
+echo -e "\e[0m"  # Reset color
+ }
 
 # Definir la ruta donde se creará la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
@@ -159,7 +179,11 @@ FORCE_REINSTALL=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --force) FORCE_REINSTALL=true ;;
-        *) log_warning "Opción desconocida: $1" ;;
+        *) log_warning "Opción desconocida: $1"
+        error_404
+        exit 1 ;
+         ;;
+       
     esac
     shift
 done
@@ -168,12 +192,12 @@ update_manager_repo() {
 
     log_info "Desinstalando ..."
     "$SOURCE_DIR/manager_uninstall.sh" "$@"
-    
-    log_info "Reinstalando ..."
+      
     "$SOURCE_DIR/manager_install.sh" "$@"
 }
 # Crear la carpeta si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
+log_info "INSTALANDO..."
     mkdir -p "$INSTALL_DIR"
     log_info "Carpeta creada en $INSTALL_DIR" 
  
@@ -214,7 +238,7 @@ ALIAS_FILE="$HOME/.bashrc"
 
 # Verificar si los alias ya están en .bashrc
 if ! grep -q "mfs()" "$ALIAS_FILE"; then
-     log_info "Creando alias para manager y url_extractor en $ALIAS_FILE"
+     log_info "Creando alias para manager en $ALIAS_FILE"
     
     cat << EOL >> "$ALIAS_FILE"
     # >>> Manager Scripts START
@@ -222,9 +246,6 @@ mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
 
-url_extractor() {
-    $INSTALL_DIR/url_extractor.sh "\$@"
-}
 #Instalado en  $INSTALL_DATE
 # <<< Manager Scripts END
 EOL
@@ -239,10 +260,14 @@ update_bashrc() {
 # Mensaje final
 log_info "Instalación completada exitosamente" 
 log_info "Comandos disponibles:"
-log_info "  mfs: Gestión de repositorios" 
-log_info "  url_extractor: Extracción de URLs" 
+log_info "[mfs] este comando ejecuta el script " 
+log_info "mfs list "
+log_info "mfs pull "
+log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
+
 update_bashrc
  log_info "Abriendo la carpeta de instalación..."
+ log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
     message
 log_warning "$INSTALL_DATE" "no-prefix"	
 cd "$INSTALL_DIR" && explorer .

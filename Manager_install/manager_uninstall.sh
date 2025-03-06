@@ -30,7 +30,7 @@
 #
 # Funcionalidades:
 # - Elimina la carpeta de instalación si existe.
-# - Elimina las funciones 'mfs()' y 'url_extractor()' del archivo .bashrc.
+# - Elimina las funciones de Manager Scripts del archivo .bashrc.
 # - Muestra mensajes informativos y de advertencia durante el proceso.
 #
 # Uso:

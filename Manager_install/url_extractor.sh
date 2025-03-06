@@ -38,11 +38,10 @@
 # - Imprime el total de URLs extraídas al final de la ejecución.
 #
 # Uso:
-# 1. Configura el nombre de la organización en la variable ORG_NAME.
-# 2. Si deseas acceder a repositorios privados, descomenta la línea que define TOKEN
-#    y proporciona tu token de acceso personal de GitHub.
+# 1. Proporciona el nombre de la organización  cuando se solicite en la terminal este campo es obligatorio.
+# 2. Si deseas acceder a repositorios privados, ingresa tu token de acceso  cuando se solicite.
 # 3. Ejecuta el script con el siguiente comando:
-#    ./url_repos.sh o usa  manager list  desde la terminal.
+#    ./url_repos.sh o usa  mfs list  desde la terminal.
 #
 # Requisitos:
 # - Asegúrate de tener 'curl' instalado en tu sistema.
@@ -52,9 +51,15 @@
 # - Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
 #   a los repositorios privados, si es aplicable.
 
-ORG_NAME="Streamings-Team2"
-BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
-URL="$BASE_URL"
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+CIAN="\e[36m"
+MAGENTA="\e[35m"
+RESET="\e[0m"
+
+
 
 border() {
     local color="$1"
@@ -75,19 +80,71 @@ log_info() {
     fi
     border "$CIAN" "$message"
 }
-# Para repos privados, descomentar y proporcionar el token
+
+log_success() {
+    local message="[DESCRIPCIÓN] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$GREEN" "$message"
+}
+
+log_warning() {
+    local message="[WARNING] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$YELLOW" "$message"
+}
+
+log_error() {
+    local message="[ERROR] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$RED" "$message"
+}
+
+# Función para solicitar el nombre de la organización
+get_org_name() {
+    while true; do
+      log_info "Ingrese el nombre de la organización: " "no-prefix"
+        read ORG_NAME
+        if [[ -n "$ORG_NAME" ]]; then
+            break
+        else
+         log_warning "El nombre de la organización no puede estar vacío. Inténtalo de nuevo."
+        fi
+    done
+}
+
+# Función para solicitar el token de acceso
+get_token() {
+    while true; do
+        log_info "Ingrese el token de acceso (deje vacío para acceso público): "
+        read TOKEN
+        break  # No es necesario validar el token, ya que puede estar vacío
+    done
+}
+
+# Llamar a las funciones para obtener la entrada
+get_org_name
+log_info "La organización es: $ORG_NAME"
+BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
+URL="$BASE_URL"
+
+
 # TOKEN="tu_token"
+get_token
 
-# URL de la API de GitHub para obtener los repositorios de una organización
 
-# ------------------------------------------------------------------------------------
 
 # Función para extraer URLs de repositorios y eliminar duplicados
 extract_urls() {
   echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
 
-# Inicializar archivo de salida
+#inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
 > listRep.txt
 
 # Comprobar si se requiere token
@@ -136,11 +193,23 @@ fi
 
 # Eliminar duplicados finales en el archivo
 sort -u listRep.txt -o listRep.txt
-
+counter=0
 while IFS= read -r repo; do
   # echo " ▶  - $repo..."
    ((counter++))
   # git clone "$repo"&
 done < listRep.txt
-log_info "Urls: $counter"
+# log_info "Urls: $counter"
 
+if [ "${counter:-0}" -eq 0 ]; then
+    log_warning "No se encontraron repositorios para la organización '$ORG_NAME'."
+    log_info "Posibles causas:"
+    log_info "1. La organización no existe" "no-prefix"
+    log_info "2. El token no tiene permisos" "no-prefix"
+    log_info "3. No hay repositorios disponibles" "no-prefix"
+    exit 1
+else
+    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"s
+fi
+
+log_info "Proceso completado."
