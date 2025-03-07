@@ -8,7 +8,7 @@ Permite realizar tareas comunes, como iniciar, clonar o detener los microfronten
 > **Nota:** El script debe ser ejecutado desde la línea de comandos
 >
 > ```bash
-> bash manager_repo.sh
+> bash manager_repo.sh help 
 > ```
 
 ---
@@ -20,7 +20,7 @@ Permite realizar tareas comunes, como iniciar, clonar o detener los microfronten
 El script requiere al menos un argumento:
 
 - El primer argumento debe ser el comando a ejecutar:
-  - `pull`, `run`, `install`, `updeps`, `list`, `ps`, `uninstall_managerr`
+  - `pull`, `run`, `install`, `updeps`, `list`, `ps`, `uninstall_managerr`, `help`
 - El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
 
 ### 📌 Archivo de Repositorios
@@ -43,10 +43,14 @@ https://github.com/usuario/repo3.git #EXCLUDE
 ```
 ➡ Ejemplo de uso
 
-```bash
-./manager_repo.sh pull /listas/urlsRepos.txt
-```
-➡ Uso del Script
+
+> [!NOTE] 
+> 
+> Muestra ejemplos de uso 
+>```bash
+>./manager_repo.sh help
+>```
+
 
 🔄 pull - Clonar o actualizar los repositorios
 ```bash
@@ -60,7 +64,7 @@ Clon parcial de los repositorios. Usa git pull --unshallow   para obtener el his
 >```
 ➡ run - Ejecutar los microfrontends
 ```bash
-./manager_repo.sh run listRep.txt
+./manager_repo.sh run 
 ```
 ➡ install - Instalar las dependencias
 ```bash
@@ -143,10 +147,22 @@ Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.s
 
 ## 🛠️ Comandos disponibles:
 
+➡Ver ejemplos de modo de uso.
+```bash
+mfs help
+```
+
+
+
 ➡Crear el archivo de repositorios
 ```bash
 mfs list
 ```
+>[!WARNING]
+ >Este script modifica el archivo listRep.txt en el directorio actual.
+ >Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
+ >a los repositorios privados, si es aplicable.
+
 
 ➡Ejecutar microfrontends
 ```bash
@@ -166,5 +182,13 @@ mfs uninstall_manager
 Este comando ejecuta el script que se encarga de desinstalar el directorio de scripts de gestión
  y eliminar las funciones asociadas del archivo .bashrc. 
  Se asegura de que no queden residuos de la instalación anterior.
+
+>[!TIP]
+>Remover archivos no ratreados 
+>```bash
+> git clean -fn
+>```
+> 
+
 
 

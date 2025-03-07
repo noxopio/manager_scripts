@@ -50,6 +50,13 @@
 #    bash manager_repo.sh kill
 # 6. **List**: Para crear un archivo listRep.txt con los repositorios desde un script externo.
 #    bash manager_repo.sh list
+# 7. **Ps**: Para mostrar los procesos de Node en ejecución.
+#    bash manager_repo.sh ps
+# 8. **Uninstall_manager**: Para desinstalar el script.
+#    bash manager_repo.sh uninstall_manager
+# 9. **Help**: Para mostrar el uso correcto del script.
+#    bash manager_repo.sh help
+
 
 # El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.
 # Los comentarios (líneas que empiezan con `#`) y los repositorios marcados con `#EXCLUDE` serán ignorados.
@@ -135,14 +142,21 @@ log_error() {
     border "$RED" "$message"
 }
 file_name="$(basename "$0")"
-commands=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager")
+commands=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
 BRANCH="develop"  # Rama por defecto
+
+
+
 
 ## Función para mostrar el uso correcto del script
 show_usage() {
 
      
     log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
+
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[8]}:" "./$(basename "$0") ${commands[8]}"
+    log_description "Muestra el uso correcto del script."
+
      
     # Ejemplo de uso para el comando "pull"
      printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]}:" "./$(basename "$0") ${commands[0]}"
@@ -184,12 +198,11 @@ show_usage() {
     log_description "Muestra los procesos de Node en ejecución."
      
 
-    # Ejemplo de uso para el comando "uninstall_manager"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[7]}:" "./$(basename "$0") ${commands[7]}"
-    log_description "Desinstala $file_name."
+    # # Ejemplo de uso para el comando "uninstall_manager"
+    # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[7]}:" "./$(basename "$0") ${commands[7]}"
+    # log_description "Desinstala $file_name."
      
-
-
+     log_warning 'Para más información, consulta el archivo README.md .'
 }
  ## Función para matar los procesos de Node en ejecución
 kill_node_processes() {
@@ -231,9 +244,11 @@ shift $((OPTIND - 1))
 if [ $# -lt 1 ]; then
       
         log_error "Se requiere al menos un argumento y el archivo .txt."
+        log_info 'Usa el comando "help" para ver el uso correcto del script.'
         log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
         log_description "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]" "no-prefix"
-        show_usage
+
+        # show_usage
     exit 1
 fi
 
@@ -260,6 +275,11 @@ handle_non_list_command() {
      log_info "Ejecutando comando uninstall_manager..."
      "$HOME/manager_scripts/manager_uninstall.sh"
      ;;
+
+ help)
+     show_usage
+     ;;
+
      *)
      log_error "Comando '$cmd' no reconocido para manejo sin archivo."
      exit 1
@@ -268,7 +288,7 @@ handle_non_list_command() {
      exit 0
     }
 
-non_list_commands=("list" "kill" "ps" "uninstall_manager")
+non_list_commands=("list" "kill" "ps" "uninstall_manager" "help")
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
     handle_non_list_command "$1"
     fi
@@ -418,10 +438,7 @@ start_time=$(date +%s)
      log_info "Dependencias actualizadas."
     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
      ;;
-    
-    remove)
-    remove_node
-     ;;
+ 
 *)
     log_error "Comando inválido. Por favor, verifica la sintaxis."
     show_usage

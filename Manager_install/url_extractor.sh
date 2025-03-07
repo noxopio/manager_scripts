@@ -105,6 +105,14 @@ log_error() {
     border "$RED" "$message"
 }
 
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    log_info "Uso: $0" "no-prefix"
+    log_info "Este script extrae las URLs de los repositorios de una organización de GitHub." "no-prefix"
+    exit 0
+fi
+
+
+
 # Función para solicitar el nombre de la organización
 get_org_name() {
     while true; do

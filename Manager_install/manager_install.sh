@@ -40,7 +40,7 @@
 # Uso:
 # Para ejecutar este script, simplemente utiliza el siguiente comando en la terminal:
 #  ./manager_install.sh
-#
+# usa --help  para obtener más información.
 # Requisitos:
 # - El script debe tener permisos de ejecución. Puedes otorgar permisos con:
 #   chmod +x manager_install.sh
@@ -50,6 +50,8 @@
 #   que este script.
 # - Este script modifica el archivo .bashrc, por lo que se recomienda hacer
 #   una copia de seguridad de este archivo antes de ejecutar el script.
+# - Si deseas forzar la reinstalación de los scripts, puedes utilizar la opción --force.
+# - Para obtener más información, consulta el archivo README.md en el directorio de instalación.
 
 # Definición de colores
 RED="\e[31m"
@@ -161,7 +163,7 @@ cat << "EOF"
                       ||||||             __|________|__
                         |||             |______________|
                         |||             || ||      || ||
-  FDA                   |||             || ||      || ||
+  DA                   |||             || ||      || ||
 ------------------------|||-------------||-||------||-||-------
                         |__>            || ||      || ||
 EOF
@@ -173,17 +175,29 @@ INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")" 
 # Comprobar si se debe forzar la reinstalación
 FORCE_REINSTALL=false
+HELP=false
 
+help(){
+ log_info "Uso: $0" "no-prefix"
+    log_info "Este script instala los scripts de gestión de repositorios en un directorio específico y configura alias en el archivo .bashrc para facilitar su uso." "no-prefix"
+    exit 1
+   }
+    
 
 # Procesar argumentos
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --force) FORCE_REINSTALL=true ;;
+        --force) FORCE_REINSTALL=true 
+        ;;
+        --help) HELP=true
+        help
+        ;;
+
         *) log_warning "Opción desconocida: $1"
         error_404
         exit 1 ;
          ;;
-       
+      
     esac
     shift
 done

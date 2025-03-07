@@ -36,6 +36,7 @@
 # Uso:
 # Para ejecutar este script, simplemente utiliza el siguiente comando en la terminal:
 #  ./manager_uninstall.sh o con el alias de  mfs  manager_uninstall
+# usa --help  para obtener más información.
 #
 
 # Notas:
@@ -43,7 +44,7 @@
 #   una copia de seguridad de este archivo antes de ejecutar el script.
 
 
-# Definición de colores
+# Definición de colores 
 RED="\e[31m"
 GREEN="\e[32m"
 YELLOW="\e[33m"
@@ -52,10 +53,12 @@ CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
 file_name="$(basename "$0")"
+UNINSTALLED=false
+
 # Funciones de registro
- message(){
-        echo -e "\e[31m"  
-cat << "EOF"
+message() {
+    echo -e "$RED"
+    cat << "EOF"
               _
              | |
              | |===( )   //////
@@ -67,17 +70,16 @@ cat << "EOF"
                       ||||||             __|________|__
                         |||             |______________|
                         |||             || ||      || ||
-  FDA                   |||             || ||      || ||
+  DA                   |||             || ||      || ||
 ------------------------|||-------------||-||------||-||-------
                         |__>            || ||      || ||
 EOF
-echo -e "\e[0m"  # Reset color
- }
+    echo -e "$RESET"
+}
 
-message_uninstall(){
-
-echo -e "\e[31m"  
-cat << "EOF"
+message_uninstall() {
+    echo -e "$RED"
+    cat << "EOF"
      _.-^^---....,,--       
  _--                  --_  
 <       M   F    S        >)
@@ -90,11 +92,8 @@ cat << "EOF"
           | ;  :|     
   _____.,-#%&$@%#&#~,._____
 EOF
-echo -e "\e[0m"  # Reset color
-
-
+    echo -e "$RESET"
 }
-
 
 border() {
     local color="$1"
@@ -116,8 +115,6 @@ log_info() {
     border "$CIAN" "$message"
 }
 
-INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
-
 log_warning() {
     local message="[WARNING] $1"
     if [ "$2" = "no-prefix" ]; then
@@ -126,9 +123,26 @@ log_warning() {
     border "$YELLOW" "$message"
 }
 
+confirm() {
 
+log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): " 
+     read     confirm
+    confirm=$(echo "$confirm" | tr '[:upper:]' '[:lower:]')
+    if [ "$confirm" != "s" ]; then
+        log_warning "Desinstalación cancelada."
+        exit 0
+    fi
+}
+
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    log_info "Uso: $0" "no-prefix"
+    log_info "Desinstala Manager Scripts y elimina las funciones asociadas del archivo .bashrc."
+    exit 0
+fi
+
+
+confirm
 log_info "Ejecutando $file_name"
-
 # Definir la ruta donde se creó la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
@@ -148,7 +162,7 @@ remove_functions() {
         sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
         log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
     else
-        log_warning "No se encontraron  funciones de Manager Scripts en: $ALIAS_FILE"
+        log_warning "No se encontraron funciones de Manager Scripts en: $ALIAS_FILE"
         exit 1
     fi
 }
@@ -159,4 +173,4 @@ source ~/.bashrc
 
 log_info "Desinstalación completada."
 message_uninstall
-log_warning "$INSTALL_DATE" "no-prefix"	
+log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
