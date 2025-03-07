@@ -169,6 +169,17 @@ cat << "EOF"
 EOF
 echo -e "\e[0m"  # Reset color
  }
+BUG_0(){
+        echo -e "\e[31m"  
+cat << "EOF"
+          ___  _   _ ___   _____ ___ _  _  ___   _   ___   _   _ _  _   ___ ___   _     ___ ___ _  _    ___ _   _  ___ ___ 
+  / _ \| | | | __| |_   _| __| \| |/ __| /_\ / __| | | | | \| | |   \_ _| /_\   / __|_ _| \| |  | _ ) | | |/ __/ __|
+ | (_) | |_| | _|    | | | _|| .` | (_ |/ _ \\__ \ | |_| | .` | | |) | | / _ \  \__ \| || .` |  | _ \ |_| | (_ \__ \
+  \__\_\\___/|___|   |_| |___|_|\_|\___/_/ \_\___/  \___/|_|\_| |___/___/_/ \_\ |___/___|_|\_|  |___/\___/ \___|___/
+                                                                                                                    
+EOF
+echo -e "\e[0m"  # Reset color
+ }
 
 # Definir la ruta donde se creará la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
@@ -269,20 +280,33 @@ fi
 
 update_bashrc() {
     source "$ALIAS_FILE"
+  
     log_info "Archivo .bashrc actualizado"
 }
 # Mensaje final
-log_info "Instalación completada exitosamente" 
-log_info "Comandos disponibles:"
-log_info "[mfs] este comando ejecuta el script " 
-log_info "mfs list "
-log_info "mfs pull "
-log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
-
 update_bashrc
- log_info "Abriendo la carpeta de instalación..."
- log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
-    message
-log_warning "$INSTALL_DATE" "no-prefix"	
-cd "$INSTALL_DIR" && explorer .
+    log_info "Instalación completada exitosamente" 
+    log_info "mfs disponible en la terminal"
 
+    log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
+    # log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
+    message
+    log_warning "$INSTALL_DATE" "no-prefix"	
+    log_info "¿Desea abrir la carpeta de instalación? (s/n): "
+    # Abrir la carpeta de instalación
+ read open_directory
+
+    case "$open_directory" in
+        [sS])
+        log_info "Abriendo la carpeta de instalación..."
+        cd "$INSTALL_DIR" && explorer .
+    log_info "Puedes usar el comando   mfs help   para obtener ayuda"
+        exit 1
+            ;;
+        *)
+
+    log_info "Puedes usar el comando   mfs help   para obtener ayuda"
+        exit 1
+            ;;
+
+    esac
