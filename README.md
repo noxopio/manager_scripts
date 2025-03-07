@@ -1,4 +1,4 @@
-# 🚀 Manager Repo - Gestión de Microfrontends en Paralelo
+# 🚀 Manager Repo
 
 **Versión 5.0.1** - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución.
 
