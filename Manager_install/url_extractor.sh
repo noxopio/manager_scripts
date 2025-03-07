@@ -42,14 +42,22 @@
 # 2. Si deseas acceder a repositorios privados, ingresa tu token de acceso  cuando se solicite.
 # 3. Ejecuta el script con el siguiente comando:
 #    ./url_repos.sh o usa  mfs list  desde la terminal.
+# 4. El script generará un archivo llamado listRep.txt en el directorio actual con las URLs de los repositorios.
+# 5. Genera un archivo vacío listRep.txt para configurar manualmente.  
 #
 # Requisitos:
 # - Asegúrate de tener 'curl' instalado en tu sistema.
+# - Si no tienes 'curl', puedes instalarlo con el siguiente comando:
 #
 # Notas:
 # - Este script modifica el archivo listRep.txt en el directorio actual.
 # - Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
 #   a los repositorios privados, si es aplicable.
+# - Si no se proporciona un token de acceso, el script solo podrá acceder a repositorios públicos.
+# - Si no se encuentran repositorios para la organización especificada, se mostrará un mensaje de advertencia.
+# - Si deseas obtener más información sobre la API de GitHub, consulta la documentación oficial en https://docs.github.com/en/rest.
+# - Para obtener ayuda, ejecuta el script con la opción --help.
+#
 
 RED="\e[31m"
 GREEN="\e[32m"
@@ -111,29 +119,44 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     exit 0
 fi
 
-
-
 # Función para solicitar el nombre de la organización
 get_org_name() {
     while true; do
-      log_info "Ingrese el nombre de la organización: " "no-prefix"
+        log_info "Ingrese el nombre de la organización: " "no-prefix"
         read ORG_NAME
         if [[ -n "$ORG_NAME" ]]; then
             break
         else
-         log_warning "El nombre de la organización no puede estar vacío. Inténtalo de nuevo."
+            log_warning "El nombre de la organización no puede estar vacío. Inténtalo de nuevo."
         fi
     done
 }
 
-# Función para solicitar el token de acceso
 get_token() {
     while true; do
         log_info "Ingrese el token de acceso (deje vacío para acceso público): "
         read TOKEN
-        break  # No es necesario validar el token, ya que puede estar vacío
+        break 
     done
 }
+
+generate_empty_file() {
+    > listRep.txt
+    log_info "El archivo listRep.txt se ha generado vacío. Puede configurarlo manualmente."
+    exit 0
+}
+
+# Solicitar al usuario si desea generar el archivo vacío
+log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente? (s/n): "
+read generate_empty
+case "$generate_empty" in
+    [sS])
+        generate_empty_file
+        ;;
+    *)
+        log_info "Continuando con la obtención de repositorios..."
+        ;;
+esac
 
 # Llamar a las funciones para obtener la entrada
 get_org_name
@@ -141,73 +164,56 @@ log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
 
-
-# TOKEN="tu_token"
 get_token
 
-
-
-# Función para extraer URLs de repositorios y eliminar duplicados
 extract_urls() {
-  echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
+    echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
 
-#inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
+# Inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
 > listRep.txt
 
 # Comprobar si se requiere token
 if [ -n "$TOKEN" ]; then
-  # Realizar la solicitud GET a la API con token
-log_info "Accediendo a repositorios privados con token..."
-  while true; do
-    response=$(curl -H "Authorization: token $TOKEN" -s -I "$URL")
-    body=$(curl -H "Authorization: token $TOKEN" -s "$URL")
+    log_info "Accediendo a repositorios privados con token..."
+    while true; do
+        response=$(curl -H "Authorization: token $TOKEN" -s -I "$URL")
+        body=$(curl -H "Authorization: token $TOKEN" -s "$URL")
 
-    # Extraer las URLs de los repositorios y añadirlas al archivo
-    extract_urls "$body" >> listRep.txt
+        extract_urls "$body" >> listRep.txt
 
-    # Verificar si hay más páginas (esto lo indica el encabezado "Link")
-    next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
+        next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
 
-    if [ -z "$next_page" ]; then
-      break
-    fi
+        if [ -z "$next_page" ]; then
+            break
+        fi
 
-    # Actualizar la URL con el enlace de la siguiente página
-    URL="$next_page"
-  done
-
+        URL="$next_page"
+    done
 else
-  # Acceso a repositorios públicos
- log_info "Accediendo a repositorios públicos..."
-  while true; do
-    response=$(curl -s -I "$URL")
-    body=$(curl -s "$URL")
+    log_info "Accediendo a repositorios públicos..."
+    while true; do
+        response=$(curl -s -I "$URL")
+        body=$(curl -s "$URL")
 
-    # Extraer las URLs de los repositorios y añadirlas al archivo
-    extract_urls "$body" >> listRep.txt
+        extract_urls "$body" >> listRep.txt
 
-    # Verificar si hay más páginas (esto lo indica el encabezado "Link")
-    next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
+        next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
 
-    if [ -z "$next_page" ]; then
-      break
-    fi
+        if [ -z "$next_page" ]; then
+            break
+        fi
 
-    # Actualizar la URL con el enlace de la siguiente página
-    URL="$next_page"
-  done
+        URL="$next_page"
+    done
 fi
 
 # Eliminar duplicados finales en el archivo
 sort -u listRep.txt -o listRep.txt
 counter=0
 while IFS= read -r repo; do
-  # echo " ▶  - $repo..."
-   ((counter++))
-  # git clone "$repo"&
+    ((counter++))
 done < listRep.txt
-# log_info "Urls: $counter"
 
 if [ "${counter:-0}" -eq 0 ]; then
     log_warning "No se encontraron repositorios para la organización '$ORG_NAME'."
@@ -217,7 +223,7 @@ if [ "${counter:-0}" -eq 0 ]; then
     log_info "3. No hay repositorios disponibles" "no-prefix"
     exit 1
 else
-    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"s
+    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"
 fi
 
 log_info "Proceso completado."
