@@ -4,7 +4,7 @@
 # Documentación del Script
 # ==========================
 # Script para Extraer URLs de Repositorios de GitHub
-# Versión: 1.0
+# Versión: 3.0
 
 # Fecha: [27/02/2025]
 # __| |_______________________________________| |__
@@ -68,7 +68,6 @@ MAGENTA="\e[35m"
 RESET="\e[0m"
 
 
-
 border() {
     local color="$1"
     local message="$2"
@@ -80,7 +79,6 @@ border() {
     echo -e "╰${border_line}╯${RESET}"
 }
 
-# Funciones de logging mejoradas
 log_info() {
     local message="[INFO] $1"
     if [ "$2" = "no-prefix" ]; then
@@ -132,6 +130,19 @@ get_org_name() {
     done
 }
 
+
+# Validar el nombre de la organización
+validate_org_name() {
+    response=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/orgs/$ORG_NAME")
+    if [ "$response" -ne 200 ]; then
+        log_error "La organización '$ORG_NAME' no es válida o no se puede acceder."
+        log_info "Posibles causas:"
+        log_info "1. La organización no existe" "no-prefix"
+        log_info "2. Error tipográfico en el nombre de la organización" "no-prefix"
+        exit 1
+    fi
+}
+
 get_token() {
     while true; do
         log_info "Ingrese el token de acceso (deje vacío para acceso público): "
@@ -140,13 +151,26 @@ get_token() {
     done
 }
 
+validate_token() {
+    if [ -n "$TOKEN" ]; then
+        response=$(curl -H "Authorization: token $TOKEN" -s -o /dev/null -w "%{http_code}" "https://api.github.com")
+        if [ "$response" -ne 200 ]; then
+            log_error "El token proporcionado no es válido o no tiene permisos suficientes."
+            exit 1
+        fi
+    fi
+}
+
 generate_empty_file() {
     > listRep.txt
     log_info "El archivo listRep.txt se ha generado vacío. Puede configurarlo manualmente."
+     log_info "Abra el directorio actual para editar el archivo listRep.txt."
+     log_info 'explorer  . (Windows)' "no-prefix"
+      
+   
     exit 0
-}
 
-# Solicitar al usuario si desea generar el archivo vacío
+
 log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente? (s/n): "
 read generate_empty
 case "$generate_empty" in
@@ -158,22 +182,20 @@ case "$generate_empty" in
         ;;
 esac
 
-# Llamar a las funciones para obtener la entrada
 get_org_name
+validate_org_name
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
 
 get_token
-
+validate_token
 extract_urls() {
     echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
 
-# Inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
 > listRep.txt
 
-# Comprobar si se requiere token
 if [ -n "$TOKEN" ]; then
     log_info "Accediendo a repositorios privados con token..."
     while true; do
@@ -208,7 +230,6 @@ else
     done
 fi
 
-# Eliminar duplicados finales en el archivo
 sort -u listRep.txt -o listRep.txt
 counter=0
 while IFS= read -r repo; do
