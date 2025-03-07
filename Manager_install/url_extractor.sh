@@ -194,13 +194,13 @@ esac
 
 # Llamar a las funciones para obtener la entrada y validar
 get_org_name
-validate_org_name
+# validate_org_name
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
 
 get_token
-validate_token
+# validate_token
 
 extract_urls() {
     echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
