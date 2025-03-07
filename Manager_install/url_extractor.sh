@@ -164,10 +164,19 @@ validate_token() {
 generate_empty_file() {
     > listRep.txt
     log_info "El archivo listRep.txt se ha generado vacío. Puede configurarlo manualmente."
-     log_info "Abra el directorio actual para editar el archivo listRep.txt."
-     log_info 'explorer  . (Windows)' "no-prefix"
-      
-   
+    log_info "Abra el directorio actual para editar el archivo listRep.txt."
+    log_info "¿Desea abrir el directorio actual? (s/n): "
+    read open_directory
+
+    case "$open_directory" in
+        [sS])
+            explorer .
+            ;;
+        *)
+          log_info "Proceso completado."   
+            ;;
+
+    esac
     exit 0
 }
 
@@ -183,18 +192,16 @@ case "$generate_empty" in
         ;;
 esac
 
-# Llamar a las funciones para obtener la entrada
+# Llamar a las funciones para obtener la entrada y validar
 get_org_name
 validate_org_name
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
 
-
-
-
 get_token
 validate_token
+
 extract_urls() {
     echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
@@ -253,6 +260,20 @@ if [ "${counter:-0}" -eq 0 ]; then
     exit 1
 else
     log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"
+      log_info "Abra el directorio actual para editar el archivo listRep.txt."
+    log_info "¿Desea abrir el directorio actual? (s/n): "
+    read open_directory
+
+    case "$open_directory" in
+        [sS])
+            explorer .
+            ;;
+        *)
+        log_info "Proceso completado."
+        exit 1
+            ;;
+
+    esac
 fi
 
 log_info "Proceso completado."
