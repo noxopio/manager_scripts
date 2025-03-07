@@ -4,7 +4,7 @@
 # Documentación del Script
 # ==========================
 # Script para Extraer URLs de Repositorios de GitHub
-# Versión: 3.0
+# Versión: 1.0
 
 # Fecha: [27/02/2025]
 # __| |_______________________________________| |__
@@ -169,8 +169,9 @@ generate_empty_file() {
       
    
     exit 0
+}
 
-
+# Solicitar al usuario si desea generar el archivo vacío
 log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente? (s/n): "
 read generate_empty
 case "$generate_empty" in
@@ -182,11 +183,15 @@ case "$generate_empty" in
         ;;
 esac
 
+# Llamar a las funciones para obtener la entrada
 get_org_name
 validate_org_name
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
+
+
+
 
 get_token
 validate_token
@@ -194,8 +199,10 @@ extract_urls() {
     echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
 
+# Inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
 > listRep.txt
 
+# Comprobar si se requiere token
 if [ -n "$TOKEN" ]; then
     log_info "Accediendo a repositorios privados con token..."
     while true; do
@@ -230,6 +237,7 @@ else
     done
 fi
 
+# Eliminar duplicados finales en el archivo
 sort -u listRep.txt -o listRep.txt
 counter=0
 while IFS= read -r repo; do
