@@ -61,9 +61,13 @@ BLUE="\e[34m"
 CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
-file_name="$(basename "$0")"
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
-# Función de bordes mejorada (compartida)
+INSTALL_DIR="$HOME/manager_scripts"
+SOURCE_DIR="$(dirname "$0")" 
+FORCE_REINSTALL=false
+HELP=false
+ALIAS_FILE="$HOME/.bashrc"
+
 border() {
     local color="$1"
     local message="$2"
@@ -75,7 +79,6 @@ border() {
     echo -e "╰${border_line}╯${RESET}"
 }
 
-# Funciones de logging mejoradas
 log_info() {
     local message="[INFO] $1"
     if [ "$2" = "no-prefix" ]; then
@@ -169,31 +172,20 @@ cat << "EOF"
 EOF
 echo -e "\e[0m"  # Reset color
  }
-BUG_0(){
-        echo -e "\e[31m"  
-cat << "EOF"
-          ___  _   _ ___   _____ ___ _  _  ___   _   ___   _   _ _  _   ___ ___   _     ___ ___ _  _    ___ _   _  ___ ___ 
-  / _ \| | | | __| |_   _| __| \| |/ __| /_\ / __| | | | | \| | |   \_ _| /_\   / __|_ _| \| |  | _ ) | | |/ __/ __|
- | (_) | |_| | _|    | | | _|| .` | (_ |/ _ \\__ \ | |_| | .` | | |) | | / _ \  \__ \| || .` |  | _ \ |_| | (_ \__ \
-  \__\_\\___/|___|   |_| |___|_|\_|\___/_/ \_\___/  \___/|_|\_| |___/___/_/ \_\ |___/___|_|\_|  |___/\___/ \___|___/
-                                                                                                                    
-EOF
-echo -e "\e[0m"  # Reset color
- }
 
-# Definir la ruta donde se creará la carpeta para los scripts
-INSTALL_DIR="$HOME/manager_scripts"
-SOURCE_DIR="$(dirname "$0")" 
-# Comprobar si se debe forzar la reinstalación
-FORCE_REINSTALL=false
-HELP=false
+
 
 help(){
  log_info "Uso: $0" "no-prefix"
     log_info "Este script instala los scripts de gestión de repositorios en un directorio específico y configura alias en el archivo .bashrc para facilitar su uso." "no-prefix"
     exit 1
-   }
+}
     
+update_manager_repo() {
+    log_info "Desinstalando ..."
+    "$SOURCE_DIR/manager_uninstall.sh" "$@"
+    "$SOURCE_DIR/manager_install.sh" "$@"
+}
 
 # Procesar argumentos
 while [[ "$#" -gt 0 ]]; do
@@ -213,16 +205,9 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-update_manager_repo() {
-
-    log_info "Desinstalando ..."
-    "$SOURCE_DIR/manager_uninstall.sh" "$@"
-      
-    "$SOURCE_DIR/manager_install.sh" "$@"
-}
 # Crear la carpeta si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
-log_info "INSTALANDO..."
+    log_info "INSTALANDO..."
     mkdir -p "$INSTALL_DIR"
     log_info "Carpeta creada en $INSTALL_DIR" 
  
@@ -233,7 +218,7 @@ else
     log_warning "$INSTALL_DATE" "no-prefix"	
     if [ "$FORCE_REINSTALL" = true ]; then
     clear
-        update_manager_repo
+    update_manager_repo
     fi
     exit 1
 fi
@@ -244,7 +229,7 @@ fi
 # cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
 # cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
 cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
-log_info "Scripts copiados a $INSTALL_DIR"
+    log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
 
 for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
@@ -253,12 +238,7 @@ for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$I
 done
 # Dar permisos de ejecución a los scripts
 chmod +x "$INSTALL_DIR/"*.sh
-log_info "Permisos de ejecución otorgados a los scripts"
-
-# Crear alias en .bashrc
-ALIAS_FILE="$HOME/.bashrc"
-
-
+    log_info "Permisos de ejecución otorgados a los scripts"
 
 
 # Verificar si los alias ya están en .bashrc
@@ -280,21 +260,19 @@ fi
 
 update_bashrc() {
     source "$ALIAS_FILE"
-  
-    log_info "Archivo .bashrc actualizado"
+     log_info "Archivo .bashrc actualizado"
 }
 # Mensaje final
 update_bashrc
     log_info "Instalación completada exitosamente" 
     log_info "mfs disponible en la terminal"
-
     log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
     # log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
     message
     log_warning "$INSTALL_DATE" "no-prefix"	
     log_info "¿Desea abrir la carpeta de instalación? (s/n): "
-    # Abrir la carpeta de instalación
- read open_directory
+# Abrir la carpeta de instalación
+read open_directory
 
     case "$open_directory" in
         [sS])
@@ -304,7 +282,6 @@ update_bashrc
         exit 1
             ;;
         *)
-
     log_info "Puedes usar el comando   mfs help   para obtener ayuda"
         exit 1
             ;;
