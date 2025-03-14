@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Documentación del Script
 # ==========================
 # Script de Desinstalación de Manager Scripts
@@ -52,8 +53,42 @@ BLUE="\e[34m"
 CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
-file_name="$(basename "$0")"
+FILE_NAME="$(basename "$0")"
 UNINSTALLED=false
+
+# Definir la ruta donde se creó la carpeta para los scripts
+INSTALL_DIR="$HOME/manager_scripts"
+ALIAS_FILE="$HOME/.bashrc"
+
+# Inicio  de funciones de mensajes 
+border() {
+    local color="$1"
+    local message="$2"
+    local length=$(( ${#message} + 4 ))
+    local border_line=$(printf '%0.s─' $(seq 1 $length))
+    
+    echo -e "${color}╭${border_line}╮"
+    echo -e "│  ${message}  │"
+    echo -e "╰${border_line}╯${RESET}"
+}
+
+# Funciones de logging mejoradas
+log_info() {
+    local message="[INFO] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$CIAN" "$message"
+}
+
+log_warning() {
+    local message="[WARNING] $1"
+    if [ "$2" = "no-prefix" ]; then
+        message="$1"
+    fi
+    border "$YELLOW" "$message"
+}
+
 
 # Funciones de registro
 message() {
@@ -95,82 +130,57 @@ EOF
     echo -e "$RESET"
 }
 
-border() {
-    local color="$1"
-    local message="$2"
-    local length=$(( ${#message} + 4 ))
-    local border_line=$(printf '%0.s─' $(seq 1 $length))
-    
-    echo -e "${color}╭${border_line}╮"
-    echo -e "│  ${message}  │"
-    echo -e "╰${border_line}╯${RESET}"
-}
-
-# Funciones de logging mejoradas
-log_info() {
-    local message="[INFO] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$CIAN" "$message"
-}
-
-log_warning() {
-    local message="[WARNING] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$YELLOW" "$message"
+logs(){
+    log_info "Desinstalación completada."
+    message_uninstall
+    log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
 }
 
 confirm() {
-
-log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): " 
+    log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): " 
      read     confirm
     confirm=$(echo "$confirm" | tr '[:upper:]' '[:lower:]')
-    if [ "$confirm" != "s" ]; then
+        if [ "$confirm" != "s" ]; then
         log_warning "Desinstalación cancelada."
         exit 0
     fi
 }
 
+remove_functions() {
+    
+    if grep -q "# >>> Manager Scripts START" "$ALIAS_FILE"; then
+        # Eliminar el bloque completo
+        sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
+        log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
+        source ~/.bashrc
+        logs
+    else
+        log_warning "No se encontraron funciones de Manager Scripts en: $ALIAS_FILE"
+        message
+        log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
+        exit 1
+    fi
+}
+
+
+## Confirmar la desinstalación
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     log_info "Uso: $0" "no-prefix"
     log_info "Desinstala Manager Scripts y elimina las funciones asociadas del archivo .bashrc."
     exit 0
 fi
 
-
 confirm
-log_info "Ejecutando $file_name"
-# Definir la ruta donde se creó la carpeta para los scripts
-INSTALL_DIR="$HOME/manager_scripts"
-ALIAS_FILE="$HOME/.bashrc"
+log_info "Ejecutando $FILE_NAME"
 
 # Eliminar la carpeta de instalación si existe
 if [ -d "$INSTALL_DIR" ]; then
-    rm -rf "$INSTALL_DIR"
+    rm  -rf "$INSTALL_DIR"
     log_info "Carpeta eliminada: $INSTALL_DIR"
+    remove_functions
 else
     log_warning "La carpeta no existe: $INSTALL_DIR"
+    remove_functions
     message
 fi
-
-remove_functions() {
-    if grep -q "# >>> Manager Scripts START" "$ALIAS_FILE"; then
-        # Eliminar el bloque completo
-        sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
-        log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
-    else
-        log_warning "No se encontraron funciones de Manager Scripts en: $ALIAS_FILE"
-        exit 1
-    fi
-}
-
-remove_functions
-
-source ~/.bashrc
-
-log_info "Desinstalación completada."
-message_uninstall
-log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
+exit 0

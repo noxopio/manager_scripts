@@ -422,21 +422,15 @@ start_time=$(date +%s)
      ;;
     
     install)
-      printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
       log_info               "Instalando dependencias..."
-      printf "${GREEN} <-------------------------------------------------------->${RESET}\n"
       manage_deps "install"
       log_info "Dependencias instaladas."
      ;;
     
     updeps)
-     printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
      log_info "Actualizando dependencias"
-     printf "${GREEN} :--------------------------------------------------------:${RESET}\n"
      manage_deps "reinstall"
-     printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
      log_info "Dependencias actualizadas."
-    printf "${CIAN} :--------------------------------------------------------:${RESET}\n"
      ;;
  
 *)
