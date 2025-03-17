@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -e
 # Documentación del Script
 # ==========================
 # Script de Desinstalación de Manager Scripts

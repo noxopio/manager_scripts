@@ -1,6 +1,6 @@
 #!/bin/bash
 # Versión 5.0.1 - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
-set -eu
+set -e
 ## Notas de uso:
 # __| |_______________________________________| |__
 # __   _______________________________________   __
