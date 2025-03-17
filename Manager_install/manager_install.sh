@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -eu
 # Documentación del Script
 # ==========================
 # Script de Instalación de Manager Scripts

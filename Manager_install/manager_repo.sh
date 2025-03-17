@@ -1,6 +1,6 @@
 #!/bin/bash
 # Versión 5.0.1 - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
-
+set -eu
 ## Notas de uso:
 # __| |_______________________________________| |__
 # __   _______________________________________   __
@@ -98,6 +98,9 @@ BLUE="\e[34m"
 CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
+FILE_NAME="$(basename "$0")"
+COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
+BRANCH="develop"  # Rama por defecto
 
 border() {
     local color="$1"
@@ -141,9 +144,7 @@ log_error() {
     fi
     border "$RED" "$message"
 }
-file_name="$(basename "$0")"
-commands=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
-BRANCH="develop"  # Rama por defecto
+
 
 
 
@@ -154,53 +155,53 @@ show_usage() {
      
     log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
 
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[8]}:" "./$(basename "$0") ${commands[8]}"
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "./$(basename "$0") ${COMMANDS[8]}"
     log_description "Muestra el uso correcto del script."
 
      
     # Ejemplo de uso para el comando "pull"
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]}:" "./$(basename "$0") ${commands[0]}"
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "./$(basename "$0") ${COMMANDS[0]}"
     log_description "  Clona o actualiza repositorios desde la lista especificada." 
      
     
     # Ejemplo de uso para el comando "pull" con rama personalizada
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[0]} (rama personalizada):" "./$(basename "$0") -b main ${commands[0]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "./$(basename "$0") -b main ${COMMANDS[0]} listRep.txt"
     log_description "Clona o actualiza repositorios en la rama 'main'."
      
 
     # Ejemplo de uso para el comando "run"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[1]}:" "./$(basename "$0") ${commands[1]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "./$(basename "$0") ${COMMANDS[1]}"
     log_description "Inicia los microfrontends existentes."
      
 
     # Ejemplo de uso para el comando "install"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[2]}:" "./$(basename "$0") ${commands[2]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "./$(basename "$0") ${COMMANDS[2]} listRep.txt"
     log_description "Instala las dependencias en cada repositorio de la lista."
      
 
     # Ejemplo de uso para el comando "updeps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[3]}:" "./$(basename "$0") ${commands[3]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "./$(basename "$0") ${COMMANDS[3]} listRep.txt"
     log_description "Reinstala o actualiza las dependencias en cada repositorio."
      
 
     # Ejemplo de uso para el comando "kill"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[4]}:" "./$(basename "$0") ${commands[4]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "./$(basename "$0") ${COMMANDS[4]}"
     log_description "Mata los procesos de Node en ejecución."
      
 
     # Ejemplo de uso para el comando "list"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[5]}:" "./$(basename "$0") ${commands[5]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "./$(basename "$0") ${COMMANDS[5]}"
     log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
      
   
    # Ejemplo de uso para el comando "ps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[6]}:" "./$(basename "$0") ${commands[6]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "./$(basename "$0") ${COMMANDS[6]}"
     log_description "Muestra los procesos de Node en ejecución."
      
 
     # # Ejemplo de uso para el comando "uninstall_manager"
-    # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${commands[7]}:" "./$(basename "$0") ${commands[7]}"
-    # log_description "Desinstala $file_name."
+    # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[7]}:" "./$(basename "$0") ${COMMANDS[7]}"
+    # log_description "Desinstala $FILE_NAME."
      
      log_warning 'Para más información, consulta el archivo README.md .'
 }
@@ -246,7 +247,7 @@ if [ $# -lt 1 ]; then
         log_error "Se requiere al menos un argumento y el archivo .txt."
         log_info 'Usa el comando "help" para ver el uso correcto del script.'
         log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
-        log_description "Uso: ./$(basename "$0") [${commands[*]}] [archivo_lista]" "no-prefix"
+        log_description "Uso: ./$(basename "$0") [${COMMANDS[*]}] [archivo_lista]" "no-prefix"
 
         # show_usage
     exit 1
