@@ -330,20 +330,20 @@ if [ ! -f "$file_name_list" ]; then
     exit 1
 fi
 
-microfrontend_repos=()
+source_repos=()
 while IFS= read -r repo; do
     # Ignorar líneas vacías o repos con "#EXCLUDE"
     if [[ -z "$repo" || "$repo" == *"#EXCLUDE"* ]]; then
         continue
     fi
-    microfrontend_repos+=("$repo")
+    source_repos+=("$repo")
 done <"$file_name_list"
 
 ## Leer repositorios desde el archivo proporcionado en una sola línea
-# mapfile -t microfrontend_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
+# mapfile -t source_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
 
 pull_repos() {
-    for repo_url in "${microfrontend_repos[@]}"; do
+    for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
 
@@ -364,7 +364,7 @@ pull_repos() {
 # manejar dependencias 
 manage_deps() {
     local action=$1 
-    for repo_url in "${microfrontend_repos[@]}"; do
+    for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
 
@@ -390,7 +390,7 @@ manage_deps() {
 }
 
 run_repos() {
-    for repo_url in "${microfrontend_repos[@]}"; do
+    for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
 
@@ -447,7 +447,7 @@ duration=$((end_time - start_time))
 # Mensaje de resumen de repositorios procesados
 
   
-log_info "Repositorios procesados: ${#microfrontend_repos[@]}" "no-prefix"
+log_info "Repositorios procesados: ${#source_repos[@]}" "no-prefix"
   
 
 # Mensaje de tiempo de ejecución
