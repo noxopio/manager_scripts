@@ -59,57 +59,7 @@
 # - Para obtener ayuda, ejecuta el script con la opción --help.
 #
 
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-BLUE="\e[34m"
-CIAN="\e[36m"
-MAGENTA="\e[35m"
-RESET="\e[0m"
-
-
-border() {
-    local color="$1"
-    local message="$2"
-    local length=$(( ${#message} + 4 ))
-    local border_line=$(printf '%0.s─' $(seq 1 $length))
-    
-    echo -e "${color}╭${border_line}╮"
-    echo -e "│  ${message}  │"
-    echo -e "╰${border_line}╯${RESET}"
-}
-
-log_info() {
-    local message="[INFO] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$CIAN" "$message"
-}
-
-log_success() {
-    local message="[DESCRIPCIÓN] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$GREEN" "$message"
-}
-
-log_warning() {
-    local message="[WARNING] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$YELLOW" "$message"
-}
-
-log_error() {
-    local message="[ERROR] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$RED" "$message"
-}
+source "$(dirname "$0")/manager_logs.sh"
 
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     log_info "Uso: $0" "no-prefix"
@@ -132,16 +82,16 @@ get_org_name() {
 
 
 # Validar el nombre de la organización
-validate_org_name() {
-    response=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/orgs/$ORG_NAME")
-    if [ "$response" -ne 200 ]; then
-        log_error "La organización '$ORG_NAME' no es válida o no se puede acceder."
-        log_info "Posibles causas:"
-        log_info "1. La organización no existe" "no-prefix"
-        log_info "2. Error tipográfico en el nombre de la organización" "no-prefix"
-        exit 1
-    fi
-}
+# validate_org_name() {
+#     response=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/orgs/$ORG_NAME")
+#     if [ "$response" -ne 200 ]; then
+#         log_error "La organización '$ORG_NAME' no es válida o no se puede acceder."
+#         log_info "Posibles causas:"
+#         log_info "1. La organización no existe" "no-prefix"
+#         log_info "2. Error tipográfico en el nombre de la organización" "no-prefix"
+#         exit 1
+#     fi
+# }
 
 get_token() {
     while true; do
@@ -151,15 +101,15 @@ get_token() {
     done
 }
 
-validate_token() {
-    if [ -n "$TOKEN" ]; then
-        response=$(curl -H "Authorization: token $TOKEN" -s -o /dev/null -w "%{http_code}" "https://api.github.com")
-        if [ "$response" -ne 200 ]; then
-            log_error "El token proporcionado no es válido o no tiene permisos suficientes."
-            exit 1
-        fi
-    fi
-}
+# validate_token() {
+#     if [ -n "$TOKEN" ]; then
+#         response=$(curl -H "Authorization: token $TOKEN" -s -o /dev/null -w "%{http_code}" "https://api.github.com")
+#         if [ "$response" -ne 200 ]; then
+#             log_error "El token proporcionado no es válido o no tiene permisos suficientes."
+#             exit 1
+#         fi
+#     fi
+# }
 
 generate_empty_file() {
     > listRep.txt
@@ -188,12 +138,11 @@ case "$generate_empty" in
         generate_empty_file
         ;;
     *)
-        log_info "Continuando con la obtención de repositorios..."
+        get_org_name
         ;;
 esac
 
 # Llamar a las funciones para obtener la entrada y validar
-get_org_name
 # validate_org_name
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"

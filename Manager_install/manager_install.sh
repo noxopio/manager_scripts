@@ -53,125 +53,17 @@ set -e
 # - Si deseas forzar la reinstalación de los scripts, puedes utilizar la opción --force.
 # - Para obtener más información, consulta el archivo README.md en el directorio de instalación.
 
-# Definición de colores
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-BLUE="\e[34m"
-CIAN="\e[36m"
-MAGENTA="\e[35m"
-RESET="\e[0m"
+
+source "$(dirname "$0")/manager_logs.sh"
+SHOW_BORDER=true
+
+
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
 INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")" 
 FORCE_REINSTALL=false
 HELP=false
 ALIAS_FILE="$HOME/.bashrc"
-
-border() {
-    local color="$1"
-    local message="$2"
-    local length=$(( ${#message} + 4 ))
-    local border_line=$(printf '%0.s─' $(seq 1 $length))
-    
-    echo -e "${color}╭${border_line}╮"
-    echo -e "│  ${message}  │"
-    echo -e "╰${border_line}╯${RESET}"
-}
-
-log_info() {
-    local message="[INFO] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$CIAN" "$message"
-}
-
-log_description() {
-    local message="[DESCRIPCIÓN] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$GREEN" "$message"
-}
-
-log_warning() {
-    local message="[WARNING] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$YELLOW" "$message"
-}
-
-log_error() {
-    local message="[ERROR] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$RED" "$message"
-}
-
-
-MFS_MANAGER(){
-echo -e "\e[31m"  
-cat << "EOF"
-
- __| |_______________________________________| |__
- __   _______________________________________   __
-   | |                                       | |  
-   | |                                       | |  
-   | |  888b     d888 8888888888  .d8888b.   | |  
-   | |  8888b   d8888 888        d88P  Y88b  | |  
-   | |  88888b.d88888 888        Y88b.       | |  
-   | |  PU2H88888M41N 8888888     "Y088b.    | |  
-   | |  888 Y888P 888 888            "S8N0.  | |  
-   | |  888  Y8P  888 888              "888  | |  
-   | |  888   "   888 888        Y88b  dFU1  | |  
-   | |  888       888 888         "08888P"   | |  
-   | |                                       | |  
- __| |_______________________________________| |__
- __   _______________________________________   __
-   | |                                       | |  
-
-EOF
-echo -e "\e[0m"
-}
-message(){
-    echo -e "\e[31m"  
-cat << "EOF"
-         __
-         ||
-        (__)
-  ____  ____  ____
- /\ M \/\ F \/\ S \
-/  \___\ \___\ \___\
-\  /   / /   / /   /
- \/___/\/___/\/___/    
-
-EOF
-echo -e "\e[0m"  # Reset color
-    
-    }
-error_404(){
-        echo -e "\e[31m"  
-cat << "EOF"
-              _
-             | |
-             | |===( )   //////
-             |_|   |||  | o o|                                 
-                    ||| ( c  )                  ____
-                     ||| \= /                  ||   \_
-                      ||||||                   ||4 0 4|
-                      ||||||                ...||__/|-"
-                      ||||||             __|________|__
-                        |||             |______________|
-                        |||             || ||      || ||
-  DA                   |||             || ||      || ||
-------------------------|||-------------||-||------||-||-------
-                        |__>            || ||      || ||
-EOF
-echo -e "\e[0m"  # Reset color
- }
 
 
 
@@ -180,13 +72,11 @@ help(){
     log_info "Este script instala los scripts de gestión de repositorios en un directorio específico y configura alias en el archivo .bashrc para facilitar su uso." "no-prefix"
     exit 1
 }
-    
 update_manager_repo() {
     log_info "Desinstalando ..."
     "$SOURCE_DIR/manager_uninstall.sh" "$@"
     "$SOURCE_DIR/manager_install.sh" "$@"
 }
-
 # Procesar argumentos
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -204,13 +94,11 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
-
 # Crear la carpeta si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
     log_info "INSTALANDO..."
     mkdir -p "$INSTALL_DIR"
     log_info "Carpeta creada en $INSTALL_DIR" 
- 
 else
     log_warning " La carpeta ya existe en $INSTALL_DIR" 
     log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
@@ -222,7 +110,6 @@ else
     fi
     exit 1
 fi
-
 # Copiar los scripts a la carpeta
 # cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
 # cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
@@ -231,15 +118,12 @@ fi
 cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
     log_info "Scripts copiados a $INSTALL_DIR"
 # Agregar fecha y hora de creación y de instalación a los scripts
-
 for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
     echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
-   
 done
 # Dar permisos de ejecución a los scripts
 chmod +x "$INSTALL_DIR/"*.sh
-    log_info "Permisos de ejecución otorgados a los scripts"
-
+log_info "Permisos de ejecución otorgados a los scripts"
 
 # Verificar si los alias ya están en .bashrc
 if ! grep -q "mfs()" "$ALIAS_FILE"; then

@@ -19,8 +19,6 @@ set -e
 # __   _______________________________________   __
 #   | |                                       | |  
 
-
-
 # Este script está diseñado para facilitar la gestión de múltiples repositorios. 
 # El script debe ser ejecutado desde la línea de comandos ;
 # bash manager_repo.sh
@@ -89,122 +87,11 @@ set -e
 
 # Si tiene problemas con los permisos de ejecución, puede usar el siguiente comando
 # chmod +x manager_repo.sh
-
-## Colores
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-BLUE="\e[34m"
-CIAN="\e[36m"
-MAGENTA="\e[35m"
-RESET="\e[0m"
+source "$(dirname "$0")/manager_logs.sh"
 FILE_NAME="$(basename "$0")"
 COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
 BRANCH="develop"  # Rama por defecto
 
-border() {
-    local color="$1"
-    local message="$2"
-    local length=$(( ${#message} + 4 ))
-    local border_line=$(printf '%0.s─' $(seq 1 $length))
-    
-    echo -e "${color}╭${border_line}╮"
-    echo -e "│  ${message}  │"
-    echo -e "╰${border_line}╯${RESET}"
-}
-
-log_info() {
-    local message="[INFO] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$CIAN" "$message"
-}
-
-log_description() {
-    local message="[DESCRIPCIÓN] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$GREEN" "$message"
-}
-
-log_warning() {
-    local message="[WARNING] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$YELLOW" "$message"
-}
-
-log_error() {
-    local message="[ERROR] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$RED" "$message"
-}
-
-
-
-
-
-## Función para mostrar el uso correcto del script
-show_usage() {
-
-     
-    log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
-
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "./$(basename "$0") ${COMMANDS[8]}"
-    log_description "Muestra el uso correcto del script."
-
-     
-    # Ejemplo de uso para el comando "pull"
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "./$(basename "$0") ${COMMANDS[0]}"
-    log_description "  Clona o actualiza repositorios desde la lista especificada." 
-     
-    
-    # Ejemplo de uso para el comando "pull" con rama personalizada
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "./$(basename "$0") -b main ${COMMANDS[0]} listRep.txt"
-    log_description "Clona o actualiza repositorios en la rama 'main'."
-     
-
-    # Ejemplo de uso para el comando "run"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "./$(basename "$0") ${COMMANDS[1]}"
-    log_description "Inicia los microfrontends existentes."
-     
-
-    # Ejemplo de uso para el comando "install"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "./$(basename "$0") ${COMMANDS[2]} listRep.txt"
-    log_description "Instala las dependencias en cada repositorio de la lista."
-     
-
-    # Ejemplo de uso para el comando "updeps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "./$(basename "$0") ${COMMANDS[3]} listRep.txt"
-    log_description "Reinstala o actualiza las dependencias en cada repositorio."
-     
-
-    # Ejemplo de uso para el comando "kill"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "./$(basename "$0") ${COMMANDS[4]}"
-    log_description "Mata los procesos de Node en ejecución."
-     
-
-    # Ejemplo de uso para el comando "list"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "./$(basename "$0") ${COMMANDS[5]}"
-    log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
-     
-  
-   # Ejemplo de uso para el comando "ps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "./$(basename "$0") ${COMMANDS[6]}"
-    log_description "Muestra los procesos de Node en ejecución."
-     
-
-    # # Ejemplo de uso para el comando "uninstall_manager"
-    # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[7]}:" "./$(basename "$0") ${COMMANDS[7]}"
-    # log_description "Desinstala $FILE_NAME."
-     
-     log_warning 'Para más información, consulta el archivo README.md .'
-}
  ## Función para matar los procesos de Node en ejecución
 kill_node_processes() {
         processes=$(  ps aux | grep '[n]ode' | awk '{print $1}' )
@@ -230,7 +117,6 @@ ps_process() {
         log_info "Proceso en ejecución: $line"
     done <<< "$processes"
 }
-
 ## Procesar las opciones de línea de comandos
 while getopts ":b:" opt; do
     case "$opt" in
@@ -238,9 +124,7 @@ while getopts ":b:" opt; do
         \?) echo "Opción no válida: -$OPTARG"; exit 1 ;;
     esac
 done
-
 shift $((OPTIND - 1))
-
 ## Verificar si se proporciona el primer argumento 
 if [ $# -lt 1 ]; then
       
@@ -248,12 +132,9 @@ if [ $# -lt 1 ]; then
         log_info 'Usa el comando "help" para ver el uso correcto del script.'
         log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
         log_description "Uso: ./$(basename "$0") [${COMMANDS[*]}] [archivo_lista]" "no-prefix"
-
         # show_usage
     exit 1
 fi
-
-
 handle_non_list_command() {
      local cmd="$1"
      case "$cmd" in
@@ -261,26 +142,24 @@ handle_non_list_command() {
      log_info "Ejecutando comando list..."
     "$HOME/manager_scripts/url_extractor.sh"
      ;;
-
      kill)
      log_info "Ejecutando comando kill..."
      kill_node_processes
      ;;
-
      ps)
      log_info "Ejecutando comando ps..."
      ps_process
      ;;
-
      uninstall_manager)
      log_info "Ejecutando comando uninstall_manager..."
      "$HOME/manager_scripts/manager_uninstall.sh"
      ;;
-
- help)
+     help)
      show_usage
      ;;
-
+     border)
+     border_show
+     ;;
      *)
      log_error "Comando '$cmd' no reconocido para manejo sin archivo."
      exit 1
@@ -289,11 +168,10 @@ handle_non_list_command() {
      exit 0
     }
 
-non_list_commands=("list" "kill" "ps" "uninstall_manager" "help")
+non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border")
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
     handle_non_list_command "$1"
     fi
-
 # ## Verificar si el primer argumento es 'list'
 # if [ "$1" == "list" ]; then
 #     printf "%s\n" "----------------------------------------" 
@@ -320,7 +198,6 @@ non_list_commands=("list" "kill" "ps" "uninstall_manager" "help")
 #     printf "%s\n" "----------------------------------------" 
 #     exit 0
 # fi
-
 ## Verificar si se proporciona un archivo como argumento (segundo parámetro)
 file_name_list="${2:-listRep.txt}"
 
@@ -329,7 +206,6 @@ if [ ! -f "$file_name_list" ]; then
    log_error "El archivo $file_name_list no existe. Por favor,crea este archivo con las URLs de los repositorios."
     exit 1
 fi
-
 source_repos=()
 while IFS= read -r repo; do
     # Ignorar líneas vacías o repos con "#EXCLUDE"
@@ -338,19 +214,15 @@ while IFS= read -r repo; do
     fi
     source_repos+=("$repo")
 done <"$file_name_list"
-
 ## Leer repositorios desde el archivo proporcionado en una sola línea
 # mapfile -t source_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
-
 pull_repos() {
     for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
-
         if [ ! -d "$repo_name" ]; then
         ## Clon parcial de los repositorios, usa   git pull fetch --unshallow para obtener el historial completo.
              git clone -q -b "$BRANCH" "$repo_url" --depth=1 &
-            
         else
             (
                 cd "$repo_name" || exit
@@ -367,7 +239,6 @@ manage_deps() {
     for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
-
         if [ -d "$repo_name" ]; then
             (
                 cd "$repo_name" || exit
@@ -388,18 +259,15 @@ manage_deps() {
     done
     wait
 }
-
 run_repos() {
     for repo_url in "${source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
-
     if [[ "$repo_name" == *"mse"* ]]; then
         start bash -c "cd $repo_name; npm run dev" &
     else
     (
          cd "$repo_name" || exit
-         
          npm run start
     ) &
         fi
@@ -410,7 +278,6 @@ run_repos() {
 
 start_time=$(date +%s)
     case "$1" in
-
     pull)
       log_info "Iniciando  pull ..."
       pull_repos
@@ -443,16 +310,9 @@ esac
 
 end_time=$(date +%s)
 duration=$((end_time - start_time))
-
 # Mensaje de resumen de repositorios procesados
-
   
 log_info "Repositorios procesados: ${#source_repos[@]}" "no-prefix"
-  
-
 # Mensaje de tiempo de ejecución
-
 log_description  "Tiempo de ejecución:$duration segundos" "no-prefix"
-  
-
 log_info "Ejecución Terminada."

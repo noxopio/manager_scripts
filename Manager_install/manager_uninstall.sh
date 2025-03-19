@@ -44,91 +44,18 @@ set -e
 # - Este script modifica el archivo .bashrc, por lo que se recomienda hacer
 #   una copia de seguridad de este archivo antes de ejecutar el script.
 
+# Inicio de funciones de mensajes
+source "$(dirname "$0")/manager_logs.sh"
+SHOW_BORDER=true 
 
-# Definición de colores 
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-BLUE="\e[34m"
-CIAN="\e[36m"
-MAGENTA="\e[35m"
-RESET="\e[0m"
+#Nombre del archivo
 FILE_NAME="$(basename "$0")"
-UNINSTALLED=false
 
+UNINSTALLED=false
 # Definir la ruta donde se creó la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
 
-# Inicio  de funciones de mensajes 
-border() {
-    local color="$1"
-    local message="$2"
-    local length=$(( ${#message} + 4 ))
-    local border_line=$(printf '%0.s─' $(seq 1 $length))
-    
-    echo -e "${color}╭${border_line}╮"
-    echo -e "│  ${message}  │"
-    echo -e "╰${border_line}╯${RESET}"
-}
-
-# Funciones de logging mejoradas
-log_info() {
-    local message="[INFO] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$CIAN" "$message"
-}
-
-log_warning() {
-    local message="[WARNING] $1"
-    if [ "$2" = "no-prefix" ]; then
-        message="$1"
-    fi
-    border "$YELLOW" "$message"
-}
-
-
-# Funciones de registro
-message() {
-    echo -e "$RED"
-    cat << "EOF"
-              _
-             | |
-             | |===( )   //////
-             |_|   |||  | o o|                                 
-                    ||| ( c  )                  ____
-                     ||| \= /                  ||   \_
-                      ||||||                   ||4 0 4|
-                      ||||||                ...||__/|-"
-                      ||||||             __|________|__
-                        |||             |______________|
-                        |||             || ||      || ||
-  DA                   |||             || ||      || ||
-------------------------|||-------------||-||------||-||-------
-                        |__>            || ||      || ||
-EOF
-    echo -e "$RESET"
-}
-
-message_uninstall() {
-    echo -e "$RED"
-    cat << "EOF"
-     _.-^^---....,,--       
- _--                  --_  
-<       M   F    S        >)
-|                         | 
- \._                   _./  
-    '''--. . ,; .--'''       
-          | |   |            
-       .-=||  | |=--.   
-      '-=UNINSTALLED=-'   
-          | ;  :|     
-  _____.,-#%&$@%#&#~,._____
-EOF
-    echo -e "$RESET"
-}
 
 logs(){
     log_info "Desinstalación completada."
@@ -156,7 +83,7 @@ remove_functions() {
         logs
     else
         log_warning "No se encontraron funciones de Manager Scripts en: $ALIAS_FILE"
-        message
+        error_404
         log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
         exit 1
     fi
@@ -181,6 +108,6 @@ if [ -d "$INSTALL_DIR" ]; then
 else
     log_warning "La carpeta no existe: $INSTALL_DIR"
     remove_functions
-    message
+    error_404
 fi
 exit 0
