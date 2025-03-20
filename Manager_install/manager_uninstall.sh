@@ -65,6 +65,7 @@ logs(){
 
 confirm() {
     log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): " 
+    printf "\t[s/n]: "
      read     confirm
     confirm=$(echo "$confirm" | tr '[:upper:]' '[:lower:]')
         if [ "$confirm" != "s" ]; then

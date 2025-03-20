@@ -152,10 +152,11 @@ update_bashrc
     log_info "mfs disponible en la terminal"
     log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
     # log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
-    message
+    MFS_MESSAGE
     log_warning "$INSTALL_DATE" "no-prefix"	
-    log_info "¿Desea abrir la carpeta de instalación? (s/n): "
+    log_info "¿Desea abrir la carpeta de instalación?"
 # Abrir la carpeta de instalación
+printf "\t[s/n]: "
 read open_directory
 
     case "$open_directory" in

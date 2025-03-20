@@ -104,7 +104,6 @@ kill_node_processes() {
        log_info "Proceso terminado 👻: $line"
        done <<< "$processes"
 }
-
 # Función para mostrar los procesos de Node en ejecución
 ps_process() {
     # Obtener los procesos de Node
@@ -172,32 +171,12 @@ non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border")
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
     handle_non_list_command "$1"
     fi
-# ## Verificar si el primer argumento es 'list'
-# if [ "$1" == "list" ]; then
-#     printf "%s\n" "----------------------------------------" 
-#  $HOME/manager_scripts/url_extractor.sh
-#     printf "%s\n" "----------------------------------------" 
-#     exit 0  
-# fi
 # # si el primer argumento es 'kill' llamar a la función kill_node_processes
 # if [ "$1" == "kill" ]; then
 #     kill_node_processes 
 #     exit 0  
 # fi
-# # si el primer argumento es 'ps' llamar a la función ps_process
-# if [ "$1" = "ps" ]; then
-#     printf "%s\n" "----------------------------------------" 
-#     ps_process
-#     printf "%s\n" "----------------------------------------" 
-#     exit 0
-# fi
-# # si el primer argumento es 'uninstall_manager' llamar al script manager_uninstall.sh 
-# if [ "$1" = "uninstall_manager" ]; then
-#     printf "%s\n" "----------------------------------------" 
-#     $HOME/manager_scripts/manager_uninstall.sh
-#     printf "%s\n" "----------------------------------------" 
-#     exit 0
-# fi
+
 ## Verificar si se proporciona un archivo como argumento (segundo parámetro)
 file_name_list="${2:-listRep.txt}"
 
@@ -274,7 +253,6 @@ run_repos() {
     done
     wait
 }
-
 
 start_time=$(date +%s)
     case "$1" in

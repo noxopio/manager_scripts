@@ -1,3 +1,45 @@
+#!/bin/bash
+# FILE_NAME=$(basename "$0")
+# __| |_______________________________________| |__
+# __   _______________________________________   __
+#   | |                                       | |  
+#   | |                                       | |  
+#   | |  888b     d888 8888888888  .d8888b.   | |  
+#   | |  8888b   d8888 888        d88P  Y88b  | |  
+#   | |  88888b.d88888 888        Y88b.       | |  
+#   | |  888Y88888P888 8888888     "Y888b.    | |  
+#   | |  888 Y888P 888 888            "Y88b.  | |  
+#   | |  888  Y8P  888 888              "888  | |  
+#   | |  888   "   888 888        Y88b  d88P  | |  
+#   | |  888       888 888         "08888P"   | |  
+#   | |                                       | |  
+# __| |_______________________________________| |__
+# __   _______________________________________   __
+#   | |                                       | | 
+# Variables de Color
+# El script define varias variables de color para formatear los mensajes:
+# RED: Rojo (\e[31m)
+# GREEN: Verde (\e[32m)
+# YELLOW: Amarillo (\e[33m)
+# BLUE: Azul (\e[34m)
+# CIAN: Cian (\e[36m)
+# MAGENTA: Magenta (\e[35m)
+# RESET: Reset (\e[0m)
+# Funciones de Logs
+# border_show() Esta función permite al usuario decidir si mostrar bordes alrededor de los mensajes de log.
+# Lee el estado actual de la variable SHOW_BORDER desde un archivo externo.
+# border(color, message)
+# Esta función muestra un mensaje con o sin bordes, dependiendo del valor de SHOW_BORDER.
+# log_info(message, [no-prefix])
+# Muestra un mensaje de información.
+# log_success(message, [no-prefix])
+# Muestra un mensaje de éxito.
+# log_description(message, [no-prefix])
+# Muestra un mensaje de descripción.
+# log_warning(message, [no-prefix])
+# Muestra un mensaje de advertencia.
+# log_error(message, [no-prefix])
+# Muestra un mensaje de error.
 ## Colores
 RED="\e[31m"
 GREEN="\e[32m"
@@ -43,7 +85,7 @@ border() {
         echo -e "│  ${message}  │"
         echo -e "╰${border_line}╯${RESET}"
     else
-           echo -e "\n${color}${message}{RESET}\n"
+           echo -e "\n${color}${message}\n"
     fi
 }
 
@@ -216,7 +258,7 @@ EOF
 echo -e "\e[0m"
 }
 
-message(){
+MFS_MESSAGE(){
     echo -e "\e[31m"  
 cat << "EOF"
          __

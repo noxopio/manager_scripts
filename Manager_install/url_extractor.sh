@@ -71,6 +71,7 @@ fi
 get_org_name() {
     while true; do
         log_info "Ingrese el nombre de la organización: " "no-prefix"
+        printf "\t[ORG_NAME]: "
         read ORG_NAME
         if [[ -n "$ORG_NAME" ]]; then
             break
@@ -80,42 +81,28 @@ get_org_name() {
     done
 }
 
-
-# Validar el nombre de la organización
-# validate_org_name() {
-#     response=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/orgs/$ORG_NAME")
-#     if [ "$response" -ne 200 ]; then
-#         log_error "La organización '$ORG_NAME' no es válida o no se puede acceder."
-#         log_info "Posibles causas:"
-#         log_info "1. La organización no existe" "no-prefix"
-#         log_info "2. Error tipográfico en el nombre de la organización" "no-prefix"
-#         exit 1
-#     fi
-# }
-
 get_token() {
     while true; do
         log_info "Ingrese el token de acceso (deje vacío para acceso público): "
+        printf "\t [TOKEN]: "
         read TOKEN
         break 
     done
 }
 
-# validate_token() {
-#     if [ -n "$TOKEN" ]; then
-#         response=$(curl -H "Authorization: token $TOKEN" -s -o /dev/null -w "%{http_code}" "https://api.github.com")
-#         if [ "$response" -ne 200 ]; then
-#             log_error "El token proporcionado no es válido o no tiene permisos suficientes."
-#             exit 1
-#         fi
-#     fi
-# }
-
 generate_empty_file() {
-    > listRep.txt
-    log_info "El archivo listRep.txt se ha generado vacío. Puede configurarlo manualmente."
+    cat <<EOL > listRep.txt
+#EXCLUDE ##Este es un archivo de ejemplo para listar los repositorios.
+#EXCLUDE #Cada línea debe contener la URL de un repositorio.
+#EXCLUDE #Puedes excluir repositorios específicos agregando '#EXCLUDE'.
+https://github.com/usuario/repo2
+https://github.com/usuario/repo3 #EXCLUDE
+#EXCLUDE Puedes borrar todo lo anterior y agregar tus propias URLs.
+EOL
+    log_info "El archivo listRep.txt se ha generado con ejemplos. Puede configurarlo manualmente."
     log_info "Abra el directorio actual para editar el archivo listRep.txt."
-    log_info "¿Desea abrir el directorio actual? (s/n): "
+    log_info "¿Desea abrir el directorio actual?:"
+    printf "\t[s/n]: "
     read open_directory
 
     case "$open_directory" in
@@ -131,14 +118,15 @@ generate_empty_file() {
 }
 
 # Solicitar al usuario si desea generar el archivo vacío
-log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente? (s/n): "
+log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente?:  "
+printf "\t[s/n]: "
 read generate_empty
 case "$generate_empty" in
     [sS])
         generate_empty_file
         ;;
     *)
-        get_org_name
+get_org_name
         ;;
 esac
 
@@ -210,7 +198,8 @@ if [ "${counter:-0}" -eq 0 ]; then
 else
     log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"
       log_info "Abra el directorio actual para editar el archivo listRep.txt."
-    log_info "¿Desea abrir el directorio actual? (s/n): "
+    log_info "¿Desea abrir el directorio actual? : "
+    printf "\t[s/n]: "
     read open_directory
 
     case "$open_directory" in

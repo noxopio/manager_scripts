@@ -32,6 +32,7 @@ El script requiere al menos un argumento:
 ### 📝 Formato del Archivo `listRep.txt`
 
 El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.\
+No deben existir espacios el final del cada url,en la ultima debe existir un salto de linea
 Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con `#EXCLUDE` serán ignorados.
 
 #### ➡ Ejemplo de `listRep.txt`
@@ -41,6 +42,7 @@ https://github.com/usuario/repo1.git
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE
 ```
+---
 ➡ Ejemplo de uso
 
 
@@ -50,6 +52,7 @@ https://github.com/usuario/repo3.git #EXCLUDE
 >```bash
 >./manager_repo.sh help
 >```
+---
 
 
 🔄 pull - Clonar o actualizar los repositorios
@@ -58,18 +61,35 @@ https://github.com/usuario/repo3.git #EXCLUDE
 ./manager_repo.sh pull listRep.txt
 ```
 >[!NOTE]
-Clon parcial de los repositorios. Usa git pull --unshallow   para obtener el historial completo.
+> Clon parcial de los repositorios.  
+> Usa git pull --unshallow   para obtener el historial completo.
 >```bash
 > git pull --unshallow 
 >```
-➡ run - Ejecutar los microfrontends
-```bash
-./manager_repo.sh run 
-```
+---
+➡ Uso de una Rama Personalizada
+>[!NOTE]
+>Se puede especificar una rama mediante la opción -b.
+>Si no se especifica una rama, el script usará develop por defecto.
+>
+>➡ Ejemplo
+>```bash
+>./manager_repo.sh -b fix/branch pull listRep.txt
+>```
+>En este ejemplo, el script ejecutará pull en todos los repositorios usando la rama fix/branch en lugar de develop.
+
+---
+
 ➡ install - Instalar las dependencias
 ```bash
 ./manager_repo.sh install listRep.txt
 ```
+---
+➡ run - Ejecutar los microfrontends
+```bash
+./manager_repo.sh run 
+```
+---
 >[!NOTE]
 >⬆️ updeps - Actualizar dependencias
 >```bash
@@ -77,12 +97,14 @@ Clon parcial de los repositorios. Usa git pull --unshallow   para obtener el his
 >```
 > Reinstala las dependencias.
 
+---
 >[!NOTE]
 >➡ ps - Lista  procesos en ejecución
 >```bash
 >bash manager_repo.sh ps
 >```
 >Lista los proceso de node
+---
 
 >[!NOTE]
 >❌ kill - Detener procesos en ejecución
@@ -90,59 +112,36 @@ Clon parcial de los repositorios. Usa git pull --unshallow   para obtener el his
 >bash manager_repo.sh kill
 >```
 >Este comando detiene todos los procesos de node en ejecucion.
+---
 
-
-➡ Uso de una Rama Personalizada
-
->[!NOTE]
-Se puede especificar una rama mediante la opción -b.
-Si no se especifica una rama, el script usará develop por defecto.
-
-➡ Ejemplo
-```bash
-./manager_repo.sh -b fix/branch pull listRep.txt
-```
-En este ejemplo, el script ejecutará pull en todos los repositorios usando la rama fix/branch en lugar de develop.
-
-
-❌ Matar Procesos de Node
+❌ 
 Matar un puerto específico:
 ```bash
 npx kill-port 4200
  ```
- ---
->[!TIP]
-Eliminar la carpeta node_modules innecesarias,con la herramienta npkill de npm .
- Esto es útil para liberar espacio en disco.
 
-```bash
-npx npkill
-```
 
 ---
 ---
 ---
-### INSTALACIÓN
+>[!IMPORTANT]
+>### INSTALACIÓN
+>
+>📦 Abre el archivo  manager_install.sh y revisa la descripción o ejecuta:
+>
+>```bash
+>./manager_install.sh
+>```
 
-
-📦 Instalación del Script
-Abre el script manager_install.sh y revisa la descripción o ejecuta:
-
-```bash
-./manager_install.sh
-```
->[!TIP]
+>[!NOTE]
  Este script se encarga de instalar los scripts de gestión de repositorios
  en un directorio específico y configurar alias en el archivo .bashrc para
  facilitar su uso. También se asegura de que los scripts tengan permisos
  de ejecución.
 
 
-
-
-✔ Uso del Alias mfs
-Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.sh.
-
+>[!NOTE]✔ Uso del Alias mfs
+>Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.sh.
 
 
 ## 🛠️ Comandos disponibles:
@@ -152,14 +151,15 @@ Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.s
 mfs help
 ```
 
-
-
 ➡Crear el archivo de repositorios
 ```bash
 mfs list
 ```
 >[!WARNING]
- >Este script modifica el archivo listRep.txt en el directorio actual.
+ >Este comando modifica el archivo listRep.txt en el directorio actual.
+ >
+ >Si el usuario asi lo requiere se crea un archivo vacio.
+ >
  >Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
  >a los repositorios privados, si es aplicable.
 
@@ -173,15 +173,38 @@ mfs run
 ```bash
 mfs pull listRep.txt
 ```
+>[!TIP]
+> con el comado border  en false se puede desactivar los bordes alrededor de los mensjaes .
+> ```bash
+> mfs border  
+>```
+> opciones true false.
 
-➡Desinstalar manager_repo
+> [!IMPORTANT]
+>➡Desinstalar manager_repo
+>```bash
+>mfs uninstall_manager
+>```
+
+>[!CAUTION] 
+>Este comando ejecuta el script que se encarga de desinstalar el directorio de scripts de gestión
+> y eliminar las funciones asociadas del archivo .bashrc. \
+> Se asegura de que no queden residuos de la instalación.
+***
+***
+>[!NOTE] Notas Adicionales
+>Dependencias: Asegúrate de tener instalados los comandos y herramientas necesarias tales como  npm, git.
+
+ ---
+>[!TIP]
+ ____Eliminar la carpeta node_modules innecesarias,con la herramienta npkill de npm .
+ Esto es útil para liberar espacio en disco.____
+
 ```bash
-mfs uninstall_manager
+npx npkill
 ```
->[!WARNING]
-Este comando ejecuta el script que se encarga de desinstalar el directorio de scripts de gestión
- y eliminar las funciones asociadas del archivo .bashrc. 
- Se asegura de que no queden residuos de la instalación anterior.
+
+
 
 >[!TIP]
 >Remover archivos no ratreados 
@@ -189,6 +212,4 @@ Este comando ejecuta el script que se encarga de desinstalar el directorio de sc
 > git clean -fn
 >```
 > 
-
-
 
