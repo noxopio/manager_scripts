@@ -41,6 +41,10 @@ Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con 
 https://github.com/usuario/repo1.git
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE
+https://github.com/usuario/repo3.git external
+https://github.com/usuario/repo3.git npm run dev ""
+
+
 ```
 ---
 ➡ Ejemplo de uso

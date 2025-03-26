@@ -98,7 +98,7 @@ done
 if [ ! -d "$INSTALL_DIR" ]; then
     log_info "INSTALANDO..."
     mkdir -p "$INSTALL_DIR"
-    log_info "Carpeta creada en $INSTALL_DIR" 
+    log_success "Carpeta creada en $INSTALL_DIR" 
 else
     log_warning " La carpeta ya existe en $INSTALL_DIR" 
     log_info "Para reinstalar ejecute: ./manager_install.sh --force" 
@@ -144,13 +144,13 @@ fi
 
 update_bashrc() {
     source "$ALIAS_FILE"
-     log_info "Archivo .bashrc actualizado"
+     log_success "Archivo .bashrc actualizado"
 }
 # Mensaje final
 update_bashrc
-    log_info "Instalación completada exitosamente" 
     log_info "mfs disponible en la terminal"
     log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
+    log_success "Instalación completada exitosamente" 
     # log_warning "Para reinstalar ejecute: ./manager_install.sh --force"
     MFS_MESSAGE
     log_warning "$INSTALL_DATE" "no-prefix"	

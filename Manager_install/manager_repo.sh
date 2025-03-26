@@ -106,7 +106,6 @@ kill_node_processes() {
 }
 # Función para mostrar los procesos de Node en ejecución
 ps_process() {
-    # Obtener los procesos de Node
     processes=$(ps aux | grep '[n]ode' | awk '{print $1}')
     if [ -z "$processes" ]; then
         log_error "No hay procesos de Node en ejecución."
@@ -116,6 +115,7 @@ ps_process() {
         log_info "Proceso en ejecución: $line"
     done <<< "$processes"
 }
+
 ## Procesar las opciones de línea de comandos
 while getopts ":b:" opt; do
     case "$opt" in
@@ -185,23 +185,52 @@ if [ ! -f "$file_name_list" ]; then
    log_error "El archivo $file_name_list no existe. Por favor,crea este archivo con las URLs de los repositorios."
     exit 1
 fi
-source_repos=()
-while IFS= read -r repo; do
-    # Ignorar líneas vacías o repos con "#EXCLUDE"
-    if [[ -z "$repo" || "$repo" == *"#EXCLUDE"* ]]; then
+# source_repos=()
+declare -A source_repos        # Almacenar URL → comando
+declare -A external_repos      # Almacenar URL → flag de ventana externa
+
+# Leer el archivo y procesar las líneas
+while IFS= read -r line; do
+    # Ignorar líneas vacías o que contengan "#EXCLUDE"
+    if [[ -z "$line" || "$line" == *"#EXCLUDE"* ]]; then
         continue
     fi
-    source_repos+=("$repo")
-done <"$file_name_list"
+
+    # Extraer URL, comando y flag opcional
+    repo_url=$(echo "$line" | awk '{print $1}')
+    repo_command=$(echo "$line" | awk '{$1=""; $NF=""; print $0}' | xargs)  # Extrae el comando sin el flag
+    repo_flag=$(echo "$line" | awk '{print $NF}')  # Extrae la última palabra (posible flag)
+
+    # Si el flag no es "#NEW" ni vacío, considera que no hay flag
+    if [[ "$repo_flag" != *"#NEW"* && "$repo_flag" != "\"\"" ]]; then
+        repo_command=$(echo "$line" | awk '{$1=""; print $0}' | xargs)  # Recupera el comando completo
+        repo_flag=""
+    fi
+
+
+    # Si no hay comando, usar "npm run start"
+    [[ -z "$repo_command" || "$repo_command" == "$repo_url" ]] && repo_command="npm run start"
+
+    # Guardar en array asociativo
+    source_repos["$repo_url"]="$repo_command"
+
+    # Si el flag es "#NEW", marcarlo
+    [[ "$repo_flag" == *"#NEW"* ]] && external_repos["$repo_url"]=true
+done < "$file_name_list"
+
+# Función para obtener URLs de repositorios
+get_repo_urls() {
+    echo "${!source_repos[@]}"
+}
 ## Leer repositorios desde el archivo proporcionado en una sola línea
 # mapfile -t source_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
 pull_repos() {
-    for repo_url in "${source_repos[@]}"; do
+    for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
         if [ ! -d "$repo_name" ]; then
-        ## Clon parcial de los repositorios, usa   git pull fetch --unshallow para obtener el historial completo.
-             git clone -q -b "$BRANCH" "$repo_url" --depth=1 &
+            # Clon parcial de los repositorios,usar git pull fetch --unshallow para obtener el historial completo.
+            git clone -q -b "$BRANCH" "$repo_url" --depth=1 &
         else
             (
                 cd "$repo_name" || exit
@@ -214,8 +243,8 @@ pull_repos() {
 }
 # manejar dependencias 
 manage_deps() {
-    local action=$1 
-    for repo_url in "${source_repos[@]}"; do
+    local action=$1
+    for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
         log_info "Procesando $repo_name"
         if [ -d "$repo_name" ]; then
@@ -225,36 +254,48 @@ manage_deps() {
                     if [ ! -d "node_modules" ]; then
                         npm install
                     else
-                log_warning "Dependencias ya instaladas en $repo_name"
+                        log_warning "Dependencias ya instaladas en $repo_name"
                     fi
                 else
-                log_info " Instalando  dependencias en $repo_name..."
+                    log_info "Instalando dependencias en $repo_name..."
                     npm install
                 fi
             ) &
         else
-               log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
+            log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
         fi
     done
     wait
 }
+##Función para ejecutar los repositorios.
 run_repos() {
-    for repo_url in "${source_repos[@]}"; do
+    for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url")
+        run_command="${source_repos[$repo_url]}"
+        is_external="${external_repos[$repo_url]}"
+
         log_info "Procesando $repo_name"
-    if [[ "$repo_name" == *"mse"* ]]; then
-        start bash -c "cd $repo_name; npm run dev" &
-    else
-    (
-         cd "$repo_name" || exit
-         npm run start
-    ) &
+        if [ ! -d "$repo_name" ]; then
+            log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'."
+            continue
+        fi
+        log_info "Ejecutando: $run_command"
+
+        if [[ "$is_external" == "true" ]]; then
+            log_info "Abriendo en ventana externa..."
+            start bash -c "cd $repo_name; $run_command" &  # Para Windows
+        else
+            (
+                cd "$repo_name" || exit
+                eval "$run_command"
+            ) &
         fi
     done
     wait
 }
-
+# start_time , end_time y duration son variables para medir el tiempo de ejecución
 start_time=$(date +%s)
+
     case "$1" in
     pull)
       log_info "Iniciando  pull ..."
@@ -270,13 +311,13 @@ start_time=$(date +%s)
     install)
       log_info               "Instalando dependencias..."
       manage_deps "install"
-      log_info "Dependencias instaladas."
+      log_success "Dependencias instaladas."
      ;;
     
     updeps)
      log_info "Actualizando dependencias"
      manage_deps "reinstall"
-     log_info "Dependencias actualizadas."
+     log_success "Dependencias actualizadas."
      ;;
  
 *)
@@ -293,4 +334,4 @@ duration=$((end_time - start_time))
 log_info "Repositorios procesados: ${#source_repos[@]}" "no-prefix"
 # Mensaje de tiempo de ejecución
 log_description  "Tiempo de ejecución:$duration segundos" "no-prefix"
-log_info "Ejecución Terminada."
+log_success "Ejecución Terminada."

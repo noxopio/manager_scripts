@@ -110,7 +110,7 @@ EOL
             explorer .
             ;;
         *)
-          log_info "Proceso completado."   
+        log_success "Proceso completado." 
             ;;
 
     esac
@@ -196,7 +196,7 @@ if [ "${counter:-0}" -eq 0 ]; then
     log_info "3. No hay repositorios disponibles" "no-prefix"
     exit 1
 else
-    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." "no-prefix"
+    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." 
       log_info "Abra el directorio actual para editar el archivo listRep.txt."
     log_info "¿Desea abrir el directorio actual? : "
     printf "\t[s/n]: "
@@ -207,11 +207,11 @@ else
             explorer .
             ;;
         *)
-        log_info "Proceso completado."
-        exit 1
+        log_success "Proceso completado." 
+        exit 0
             ;;
 
     esac
 fi
 
-log_info "Proceso completado."
+        log_success "Proceso completado." 

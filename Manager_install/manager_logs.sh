@@ -97,7 +97,7 @@ log_info() {
     border "$CIAN" "$message"
 }
 log_success() {
-    local message="[DESCRIPCIÓN] $1"
+    local message="[COMPLETED] $1"
     if [ "$2" = "no-prefix" ]; then
         message="$1"
     fi
@@ -105,7 +105,7 @@ log_success() {
 }
 
 log_description() {
-    local message="[DESCRIPCIÓN] $1"
+    local message="[DESCRIPTION] $1"
     if [ "$2" = "no-prefix" ]; then
         message="$1"
     fi
@@ -182,7 +182,7 @@ show_usage() {
     # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[7]}:" "./$(basename "$0") ${COMMANDS[7]}"
     # log_description "Desinstala $FILE_NAME."
      
-     log_warning 'Para más información, consulta el archivo README.md .'
+     log_info 'Para más información, consulta el archivo README.md .'
 }
 ##-----------------------------------------------------------------------------------#
                     # Funciones de mensajes
