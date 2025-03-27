@@ -3,7 +3,7 @@ set -e
 # Documentación del Script
 # ==========================
 # Script de Desinstalación de Manager Scripts
-# Versión: 1.0
+# Versión: 1.0.2
 # Fecha: [27-02-2025]
 #
 # __| |_______________________________________| |__
@@ -45,22 +45,20 @@ set -e
 #   una copia de seguridad de este archivo antes de ejecutar el script.
 
 # Inicio de funciones de mensajes
+
 source "$(dirname "$0")/manager_logs.sh"
-SHOW_BORDER=true 
-
-#Nombre del archivo
 FILE_NAME="$(basename "$0")"
-
+SHOW_BORDER=true 
 UNINSTALLED=false
-# Definir la ruta donde se creó la carpeta para los scripts
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
 
 
-logs(){
-    log_info "Desinstalación completada."
-    message_uninstall
-    log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
+
+show_help() {
+    log_info "Uso: $0" "no-prefix"
+    log_info "Desinstala Manager Scripts y elimina las funciones asociadas del archivo .bashrc."
+    exit 0
 }
 
 confirm() {
@@ -72,16 +70,26 @@ confirm() {
         log_warning "Desinstalación cancelada."
         exit 0
     fi
+
+}
+remove_install_dir() {
+    if [ -d "$INSTALL_DIR" ]; then
+        rm -rf "$INSTALL_DIR"
+        log_info "Carpeta eliminada: $INSTALL_DIR"
+    else
+        log_warning "La carpeta no existe: $INSTALL_DIR"
+    fi
 }
 
 remove_functions() {
-    
     if grep -q "# >>> Manager Scripts START" "$ALIAS_FILE"; then
         # Eliminar el bloque completo
         sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
         log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
         source ~/.bashrc
-        logs
+        log_success "Desinstalación completada."
+        message_uninstall
+        log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
     else
         log_warning "No se encontraron funciones de Manager Scripts en: $ALIAS_FILE"
         error_404
@@ -91,24 +99,17 @@ remove_functions() {
 }
 
 
-## Confirmar la desinstalación
-if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    log_info "Uso: $0" "no-prefix"
-    log_info "Desinstala Manager Scripts y elimina las funciones asociadas del archivo .bashrc."
+main() {
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        show_help
+    fi
+
+    confirm
+    log_info "Ejecutando $FILE_NAME"
+
+    remove_install_dir
+    remove_functions
     exit 0
-fi
+}
 
-confirm
-log_info "Ejecutando $FILE_NAME"
-
-# Eliminar la carpeta de instalación si existe
-if [ -d "$INSTALL_DIR" ]; then
-    rm  -rf "$INSTALL_DIR"
-    log_info "Carpeta eliminada: $INSTALL_DIR"
-    remove_functions
-else
-    log_warning "La carpeta no existe: $INSTALL_DIR"
-    remove_functions
-    error_404
-fi
-exit 0
+main "$@"
