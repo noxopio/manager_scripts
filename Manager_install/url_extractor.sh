@@ -59,7 +59,10 @@
 # - Para obtener ayuda, ejecuta el script con la opción --help.
 #
 
-source "$(dirname "$0")/manager_logs.sh"
+initialize_script() {
+    source "$(dirname "$0")/manager_logs.sh"
+   
+}
 
 
 show_help() {
@@ -71,6 +74,7 @@ show_help() {
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     show_help
 fi
+
 
 # Función para solicitar el nombre de la organización
 get_org_name() {
@@ -99,7 +103,7 @@ generate_empty_file() {
 cat <<EOL > listRep.txt
 # EXCLUDE ## Este es un archivo de ejemplo para listar repositorios.
 # EXCLUDE # Cada línea debe contener la URL de un repositorio.
-# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE' al inicio de la línea.
+# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE'.
 # EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
 # EXCLUDE # Opcionalmente, puedes indicar el comando a ejecutar al final de la URL.
 https://github.com/usuario/repo1.git #NEW
@@ -111,26 +115,11 @@ https://github.com/usuario/repo5.git npm run dev
 EOL
     log_success "El archivo listRep.txt se ha generado con ejemplos. Puede configurarlo manualmente."
     log_info "Abra el directorio actual para editar el archivo listRep.txt."
-    log_info "¿Desea abrir el directorio actual?:"
-    printf "\t[s/n]: "
-    read open_directory
-
-    case "$open_directory" in
-        [sS])
-            log_success "Abriendo el directorio actual..."
-            explorer .
-            ;;
-        *)
-        log_success "Proceso completado." 
-            ;;
-
-    esac
-    exit 0
+    message_open_directory
 }
 
-
-# Solicitar al usuario si desea generar el archivo vacío
-log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente?:  "
+message_empty_file(){
+log_info "¿Desea generar un archivo listRep.txt  para configurar manualmente?:  "
 log_warning "Si listRep.txt ya existe, se sobrescribirá."
 printf "\t[s/n]: "
 read generate_empty
@@ -139,92 +128,62 @@ case "$generate_empty" in
         generate_empty_file
         ;;
     *)
-get_org_name
+        get_org_name
         ;;
 esac
+}
 
-# Llamar a las funciones para obtener la entrada y validar
-# validate_org_name
+
+show_org(){
 log_info "La organización es: $ORG_NAME"
 BASE_URL="https://api.github.com/orgs/$ORG_NAME/repos"
 URL="$BASE_URL"
-
-get_token
-# validate_token
-
+}
 extract_urls() {
+     > listRep.txt
     echo "$1" | grep -o '"html_url": "[^"]*' | sed 's/"html_url": "//' | sort | uniq
 }
-
-# Inicializar el archivo listRep.txt para almacenar las URLs de los repositorios de GitHub con >> para no sobreescribir
-> listRep.txt
-
-# Comprobar si se requiere token
-if [ -n "$TOKEN" ]; then
-    log_info "Accediendo a repositorios privados con token..."
+fetch_repositories() {
+    local headers=()
+    [ -n "$TOKEN" ] && headers=(-H "Authorization: token $TOKEN")
     while true; do
-        response=$(curl -H "Authorization: token $TOKEN" -s -I "$URL")
-        body=$(curl -H "Authorization: token $TOKEN" -s "$URL")
+        response=$(curl "${headers[@]}" -s -I "$URL")
+        body=$(curl "${headers[@]}" -s "$URL")
 
         extract_urls "$body" >> listRep.txt
 
         next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
-
         if [ -z "$next_page" ]; then
             break
         fi
-
         URL="$next_page"
     done
-else
-    log_info "Accediendo a repositorios públicos..."
-    while true; do
-        response=$(curl -s -I "$URL")
-        body=$(curl -s "$URL")
+}
 
-        extract_urls "$body" >> listRep.txt
 
-        next_page=$(echo "$response" | grep -i "Link: " | grep -o '<[^>]*>; rel="next"' | sed -e 's/<\(.*\)>; rel="next"/\1/')
+end_process() {
+    sort -u listRep.txt -o listRep.txt
+    local counter=$(wc -l < listRep.txt)
 
-        if [ -z "$next_page" ]; then
-            break
-        fi
+    if [ "$counter" -eq 0 ]; then
+        log_warning "No se encontraron repositorios para la organización '$ORG_NAME'."
+        log_info "Posibles causas:"
+        log_info "1. La organización no existe" "no-prefix"
+        log_info "2. El token no tiene permisos" "no-prefix"
+        log_info "3. No hay repositorios disponibles" "no-prefix"
+        exit 1
+    else
+        log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'."
+        message_open_directory
+    fi
+}
 
-        URL="$next_page"
-    done
-fi
-
-# Eliminar duplicados finales en el archivo
-sort -u listRep.txt -o listRep.txt
-counter=0
-while IFS= read -r repo; do
-    ((counter++))
-done < listRep.txt
-
-if [ "${counter:-0}" -eq 0 ]; then
-    log_warning "No se encontraron repositorios para la organización '$ORG_NAME'."
-    log_info "Posibles causas:"
-    log_info "1. La organización no existe" "no-prefix"
-    log_info "2. El token no tiene permisos" "no-prefix"
-    log_info "3. No hay repositorios disponibles" "no-prefix"
-    exit 1
-else
-    log_success "Se han extraído $counter URLs de repositorios de '$ORG_NAME'." 
-      log_info "Abra el directorio actual para editar el archivo listRep.txt."
-    log_info "¿Desea abrir el directorio actual? : "
-    printf "\t[s/n]: "
-    read open_directory
-
-    case "$open_directory" in
-        [sS])
-            explorer .
-            ;;
-        *)
-        log_success "Proceso completado." 
-        exit 0
-            ;;
-
-    esac
-fi
-
-        log_success "Proceso completado." 
+main() {
+    initialize_script
+    message_empty_file
+    show_org
+    fetch_repositories
+    get_token
+    end_process
+}
+main

@@ -274,3 +274,19 @@ EOF
 echo -e "\e[0m"  # Reset color
     
     }
+
+message_open_directory() {
+     log_info "¿Desea abrir el directorio actual?:"
+    printf "\t[s/n]: "
+    read open_directory
+    case "$open_directory" in
+        [sS])
+            log_success "Abriendo el directorio ..."
+            explorer .
+            ;;
+        *)
+        log_success "Proceso completado." 
+            ;;
+    esac
+    exit 0
+}
