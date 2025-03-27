@@ -1,6 +1,6 @@
 # 🚀 Manager Repo - Gestión de Microfrontends en Paralelo
 
-**Versión 5.0.1** - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución.
+**Versión 6.0.1** - Paquete instalacion para uso global.
 
 Este script ha sido diseñado para simplificar la gestión de múltiples repositorios y microfrontends (Mf).\
 Permite realizar tareas comunes, como iniciar, clonar o detener los microfrontends, de manera eficiente.
