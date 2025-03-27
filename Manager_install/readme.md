@@ -38,11 +38,12 @@ Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con 
 #### ➡ Ejemplo de `listRep.txt`
 
 ```text
-https://github.com/usuario/repo1.git
+https://github.com/usuario/repo1.git #NEW
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE
-https://github.com/usuario/repo3.git external
-https://github.com/usuario/repo3.git npm run dev ""
+https://github.com/usuario/repo3.git npm run dev  #NEW
+https://github.com/usuario/repo3.git npm run dev 
+
 
 
 ```

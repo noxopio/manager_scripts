@@ -61,10 +61,15 @@
 
 source "$(dirname "$0")/manager_logs.sh"
 
-if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+
+show_help() {
     log_info "Uso: $0" "no-prefix"
     log_info "Este script extrae las URLs de los repositorios de una organización de GitHub." "no-prefix"
     exit 0
+}
+
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    show_help
 fi
 
 # Función para solicitar el nombre de la organización
@@ -91,15 +96,20 @@ get_token() {
 }
 
 generate_empty_file() {
-    cat <<EOL > listRep.txt
-#EXCLUDE ##Este es un archivo de ejemplo para listar los repositorios.
-#EXCLUDE #Cada línea debe contener la URL de un repositorio.
-#EXCLUDE #Puedes excluir repositorios específicos agregando '#EXCLUDE'.
-https://github.com/usuario/repo2
-https://github.com/usuario/repo3 #EXCLUDE
-#EXCLUDE Puedes borrar todo lo anterior y agregar tus propias URLs.
+cat <<EOL > listRep.txt
+# EXCLUDE ## Este es un archivo de ejemplo para listar repositorios.
+# EXCLUDE # Cada línea debe contener la URL de un repositorio.
+# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE' al inicio de la línea.
+# EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
+# EXCLUDE # Opcionalmente, puedes indicar el comando a ejecutar al final de la URL.
+https://github.com/usuario/repo1.git #NEW
+https://github.com/usuario/repo2.git
+https://github.com/usuario/repo3.git #EXCLUDE
+https://github.com/usuario/repo4.git npm run dev #NEW
+https://github.com/usuario/repo5.git npm run dev
+# EXCLUDE Borrar todo lo anterior y agregar nuevas URLs aquí.
 EOL
-    log_info "El archivo listRep.txt se ha generado con ejemplos. Puede configurarlo manualmente."
+    log_success "El archivo listRep.txt se ha generado con ejemplos. Puede configurarlo manualmente."
     log_info "Abra el directorio actual para editar el archivo listRep.txt."
     log_info "¿Desea abrir el directorio actual?:"
     printf "\t[s/n]: "
@@ -107,6 +117,7 @@ EOL
 
     case "$open_directory" in
         [sS])
+            log_success "Abriendo el directorio actual..."
             explorer .
             ;;
         *)
@@ -117,8 +128,10 @@ EOL
     exit 0
 }
 
+
 # Solicitar al usuario si desea generar el archivo vacío
 log_info "¿Desea generar un archivo listRep.txt vacío para configurar manualmente?:  "
+log_warning "Si listRep.txt ya existe, se sobrescribirá."
 printf "\t[s/n]: "
 read generate_empty
 case "$generate_empty" in
