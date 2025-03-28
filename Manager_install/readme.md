@@ -28,7 +28,7 @@ ___
 El script requiere al menos un argumento:
 
 - El primer argumento debe ser el comando a ejecutar:
-  - `pull`, `run`, `install`, `updeps`, `list`, `ps`, `uninstall_managerr`, `help`
+  - `pull`, `run`, `install`, `updeps`, `ps`, `uninstall_managerr`, `help`
 - El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
 
 ### 📌 Archivo de Repositorios
