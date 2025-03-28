@@ -23,6 +23,7 @@ ___
 
 
 ## 📌 Notas de Uso
+---
 
 El script requiere al menos un argumento:
 
@@ -31,21 +32,28 @@ El script requiere al menos un argumento:
 - El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
 
 ### 📌 Archivo de Repositorios
+---
 
 - Si no se proporciona un archivo, el script buscará uno llamado `listRep.txt` en directorio actual.
 - Si no se encuentra el archivo, se mostrará un mensaje de error y la ejecución se detendrá.
 - Si el archivo `listRep.txt` está en un directorio diferente o tiene otro nombre, se debe especificar el nombre del archivo o la ruta completa en el segundo argumento.
 
 ### 📝 Formato del Archivo `listRep.txt`
+---
+>[!NOTE]
+>El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.\
+>No deben existir espacios el final del cada url,en la ultima debe existir un salto de linea
+>Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con `#EXCLUDE` serán >ignorados.
+---
 
-El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.\
-No deben existir espacios el final del cada url,en la ultima debe existir un salto de linea
-Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con `#EXCLUDE` serán ignorados.
 >[!TIP] Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
+---
 
 >[!TIP] Se puede indicar el comando a ejecutar al final de la URL.
+---
 
->[!IMPORTANT] ➡ Ejemplo de `listRep.txt`
+>[!IMPORTANT] 
+>➡ Ejemplo de `listRep.txt`
 >```text
 >https://github.com/usuario/repo1.git #NEW
 >https://github.com/usuario/repo2.git
