@@ -2,6 +2,7 @@
 # Versión 5.0.1 - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
 set -e
 ## Notas de uso:
+##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
 # __| |_______________________________________| |__
 # __   _______________________________________   __
 #   | |                                       | |  

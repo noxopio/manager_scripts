@@ -5,17 +5,24 @@
 Este script ha sido diseñado para simplificar la gestión de múltiples repositorios y microfrontends (Mf).\
 Permite realizar tareas comunes, como iniciar, clonar o detener los microfrontends, de manera eficiente.
 
-> **Nota:** El script debe ser ejecutado desde la línea de comandos
+### 📌 Requisitos
+>[!IMPORTANT]  El script debe ser ejecutado desde la línea de comandos
 >
 > ```bash
 > bash manager_repo.sh help 
 > ```
 
----
+>[!IMPORTANT]  El script debe tener permisos de ejecución. Puedes otorgar permisos con:
+> ```bash
+>  chmod +x manager_repo.sh  
+> ```
+
+>[!WARNING]
+>Esta version requiere estar en el mismo directorio con el script manager_logs.sh ,ya que este contiene las funciones de mensajes. 
+___
+
 
 ## 📌 Notas de Uso
-
-### 📌 Requisitos
 
 El script requiere al menos un argumento:
 
@@ -34,22 +41,19 @@ El script requiere al menos un argumento:
 El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.\
 No deben existir espacios el final del cada url,en la ultima debe existir un salto de linea
 Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con `#EXCLUDE` serán ignorados.
+>[!TIP] Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
 
-#### ➡ Ejemplo de `listRep.txt`
+>[!TIP] Se puede indicar el comando a ejecutar al final de la URL.
 
-```text
-https://github.com/usuario/repo1.git #NEW
-https://github.com/usuario/repo2.git
-https://github.com/usuario/repo3.git #EXCLUDE
-https://github.com/usuario/repo3.git npm run dev  #NEW
-https://github.com/usuario/repo3.git npm run dev 
-
-
-
-```
+>[!IMPORTANT] ➡ Ejemplo de `listRep.txt`
+>```text
+>https://github.com/usuario/repo1.git #NEW
+>https://github.com/usuario/repo2.git
+>https://github.com/usuario/repo3.git #EXCLUDE
+>https://github.com/usuario/repo3.git npm run dev  #NEW
+>https://github.com/usuario/repo3.git npm run dev 
+>```
 ---
-➡ Ejemplo de uso
-
 
 > [!NOTE] 
 > 
@@ -118,35 +122,35 @@ https://github.com/usuario/repo3.git npm run dev
 >```
 >Este comando detiene todos los procesos de node en ejecucion.
 ---
-
-❌ 
-Matar un puerto específico:
-```bash
-npx kill-port 4200
- ```
-
-
 ---
----
----
->[!IMPORTANT]
->### INSTALACIÓN
+
+>[!NOTE]
+># INSTALACIÓN 
+>*manager_install.sh*
+
+>[!NOTE] 
+Este script (manager_install.sh)se encarga de instalar los scripts de gestión de repositorios
+> en un directorio específico y configurar alias en el archivo .bashrc para
+>facilitar su uso. También se asegura de que los scripts tengan permisos
+> de ejecución.
 >
+
+>[!IMPORTANT]
 >📦 Abre el archivo  manager_install.sh y revisa la descripción o ejecuta:
 >
 >```bash
 >./manager_install.sh
 >```
 
->[!NOTE]
- Este script se encarga de instalar los scripts de gestión de repositorios
- en un directorio específico y configurar alias en el archivo .bashrc para
- facilitar su uso. También se asegura de que los scripts tengan permisos
- de ejecución.
+>[!IMPORTANT]  El script debe tener permisos de ejecución. Puedes otorgar permisos con:
+> ```bash
+>  chmod +x manager_install.sh 
+> ```
+
 
 
 >[!NOTE]✔ Uso del Alias mfs
->Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.sh.
+>Una vez instalado el gestor, puedes usar el alias ***mfs*** en lugar de manager_repo.sh.
 
 
 ## 🛠️ Comandos disponibles:
@@ -182,8 +186,22 @@ mfs pull listRep.txt
 > con el comado border  en false se puede desactivar los bordes alrededor de los mensjaes .
 > ```bash
 > mfs border  
+>
+>Mostrar bordes? (true/false): false
+>
+>[INFO] Ocultando bordes...
 >```
-> opciones true false.
+
+>[!TIP]
+> con el comado border  en true se pueden activar los bordes alrededor de los mensjaes .
+> ```bash
+> mfs border  
+>
+>Mostrar bordes? (true/false): true
+>╭──────────────────────────────╮
+>│  [INFO] Mostrando bordes                                           │
+>╰──────────────────────────────╯
+>```
 
 > [!IMPORTANT]
 >➡Desinstalar manager_repo
@@ -192,7 +210,7 @@ mfs pull listRep.txt
 >```
 
 >[!CAUTION] 
->Este comando ejecuta el script que se encarga de desinstalar el directorio de scripts de gestión
+>Este comando ejecuta el script que se encarga de desinstalar 
 > y eliminar las funciones asociadas del archivo .bashrc. \
 > Se asegura de que no queden residuos de la instalación.
 ***
@@ -202,19 +220,23 @@ mfs pull listRep.txt
 
  ---
 >[!TIP]
- ____Eliminar la carpeta node_modules innecesarias,con la herramienta npkill de npm .
- Esto es útil para liberar espacio en disco.____
-
-```bash
-npx npkill
-```
-
-
+>Eliminar la carpeta node_modules innecesarias,con la herramienta npkill de npm .
+> Esto es útil para liberar espacio en disco.____
+>
+>```bash
+>npx npkill
+>```
 
 >[!TIP]
 >Remover archivos no ratreados 
 >```bash
 > git clean -fn
 >```
-> 
+
+>[!TIP]
+>❌ 
+>Matar un puerto específico:
+>```bash
+>npx kill-port 4200
+> ``` 
 

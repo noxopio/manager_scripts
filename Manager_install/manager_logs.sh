@@ -1,5 +1,7 @@
 #!/bin/bash
 # FILE_NAME=$(basename "$0")
+#version="2.0.3"
+#Ya que el script es transversal,debe estar  en el mismo directorio que los scripts que lo llaman.
 # __| |_______________________________________| |__
 # __   _______________________________________   __
 #   | |                                       | |  

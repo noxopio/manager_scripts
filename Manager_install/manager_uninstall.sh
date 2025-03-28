@@ -3,9 +3,9 @@ set -e
 # Documentación del Script
 # ==========================
 # Script de Desinstalación de Manager Scripts
-# Versión: 1.0.2
+# Versión: 2.0.2
 # Fecha: [27-02-2025]
-#
+###Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
 # __| |_______________________________________| |__
 # __   _______________________________________   __
 #   | |                                       | |  

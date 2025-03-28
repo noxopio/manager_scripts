@@ -4,9 +4,10 @@
 # Documentación del Script
 # ==========================
 # Script para Extraer URLs de Repositorios de GitHub
-# Versión: 1.0
+# Versión: 2.0
 
 # Fecha: [27/02/2025]
+##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
 # __| |_______________________________________| |__
 # __   _______________________________________   __
 #   | |                                       | |  
@@ -105,7 +106,7 @@ cat <<EOL > listRep.txt
 # EXCLUDE # Cada línea debe contener la URL de un repositorio.
 # EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE'.
 # EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
-# EXCLUDE # Opcionalmente, puedes indicar el comando a ejecutar al final de la URL.
+# EXCLUDE #Se puede indicar el comando a ejecutar al final de la URL.
 https://github.com/usuario/repo1.git #NEW
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE

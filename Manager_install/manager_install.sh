@@ -5,7 +5,7 @@ set -e
 # Script de Instalación de Manager Scripts
 # Versión: 2.0.3
 # Fecha: [27/02/2025]
-
+##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
 # __| |_______________________________________| |__
 # __   _______________________________________   __
 #   | |                                       | |  
@@ -47,7 +47,7 @@ set -e
 #
 # Notas:
 # - Asegúrate de que los scripts que se van a copiar existan en el mismo directorio
-#   que este script.
+#   de este script.
 # - Este script modifica el archivo .bashrc, por lo que se recomienda hacer
 #   una copia de seguridad de este archivo antes de ejecutar el script.
 # - Si deseas forzar la reinstalación de los scripts, puedes utilizar la opción --force.
@@ -107,24 +107,26 @@ create_install_directory() {
         exit 1
     fi
 }
-# Copiar los scripts a la carpeta
+
+
+copy_scripts() {
+    # Copiar los scripts a la carpeta
 # cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
 # cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
 # cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
 # cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
 
-copy_scripts() {
     cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
     log_info "Scripts copiados a $INSTALL_DIR"
 }
 # Agregar fecha y hora de creación y de instalación a los scripts
-add_dates_to_scripts() {
+add_dates() {
     for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
         echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
     done
 }
 # Dar permisos de ejecución a los scripts
-grant_execution_permissions() {
+permissions() {
     chmod +x "$INSTALL_DIR/"*.sh
     log_info "Permisos de ejecución otorgados a los scripts"
 }
@@ -135,8 +137,14 @@ create_alias() {
         log_info "Creando alias para manager en $ALIAS_FILE"
         cat << EOL >> "$ALIAS_FILE"
 # >>> Manager Scripts START
+# Alias para ejecutar los scripts de gestión de repositorios.
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
+}
+# Alias para hacer commit con mensaje capitalizado.
+commit() { 
+  message=$(echo "$1" | sed -E 's/^(.)/\U\1/')  
+  git commit -am "feat: $message"
 }
 
 # Instalado en $INSTALL_DATE
@@ -163,7 +171,7 @@ open_install_directory() {
             exit 1
             ;;
         *)
-            log_info "Si desea abrirla más tarde, dirígete a $INSTALL_DIR"
+            log_info "Para abrir la carpeta  más tarde, ir a  $INSTALL_DIR"
             exit 1
             ;;
     esac
@@ -173,8 +181,8 @@ main() {
     process_arguments "$@"
     create_install_directory
     copy_scripts
-    add_dates_to_scripts
-    grant_execution_permissions
+    add_dates
+    permissions
     create_alias
     update_bashrc
     log_info "mfs disponible en la terminal"
