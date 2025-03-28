@@ -144,8 +144,19 @@ mfs() {
 # Alias para hacer commit con mensaje capitalizado.
 commit() { 
   message=$(echo "$1" | sed -E 's/^(.)/\U\1/')  
-  git commit -am "feat: $message"
+  git commit -S -am "feat: $message"
 }
+alias new='git checkout -b '
+alias .='cd '
+alias ..='cd ..'
+alias ...='cd ../..'
+alias gs='git status -s'   
+alias push-current='git push origin @'  # Push a la rama actual
+alias resetC='git reset --soft HEAD~1'        # Revierte el último commit sin perder cambios
+alias last='git log -1 --oneline'             # Último commit en una línea
+alias +='git add .'                    # Agrega todos los cambios al área de staging
+alias runM='start bash -c "npm run start"' 
+
 
 # Instalado en $INSTALL_DATE
 # <<< Manager Scripts END
