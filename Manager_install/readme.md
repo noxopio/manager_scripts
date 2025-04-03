@@ -1,11 +1,11 @@
-# 🚀 Manager Repo - Gestión de Microfrontends en Paralelo
+#  Manager Repo - Gestión de Microfrontends en Paralelo
 
 **Versión 6.0.1** - Paquete instalacion para uso global.
 
 Este script ha sido diseñado para simplificar la gestión de múltiples repositorios y microfrontends (Mf).\
 Permite realizar tareas comunes, como iniciar, clonar o detener los microfrontends, de manera eficiente.
 
-### 📌 Requisitos
+### Requisitos
 >[!IMPORTANT]  El script debe ser ejecutado desde la línea de comandos
 >
 > ```bash
@@ -22,7 +22,7 @@ Permite realizar tareas comunes, como iniciar, clonar o detener los microfronten
 ___
 
 
-## 📌 Notas de Uso
+## Notas de Uso
 ---
 
 El script requiere al menos un argumento:
@@ -31,7 +31,7 @@ El script requiere al menos un argumento:
   - `pull`, `run`, `install`, `updeps`, `ps`, `uninstall_managerr`, `help`
 - El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
 
-### 📌 Archivo de Repositorios
+### Archivo de Repositorios
 ---
 
 - Si no se proporciona un archivo, el script buscará uno llamado `listRep.txt` en directorio actual.
@@ -144,7 +144,7 @@ Este script (manager_install.sh)se encarga de instalar los scripts de gestión d
 >
 
 >[!IMPORTANT]
->📦 Abre el archivo  manager_install.sh y revisa la descripción o ejecuta:
+> Abre el archivo  manager_install.sh y revisa la descripción o ejecuta:
 >
 >```bash
 >./manager_install.sh
@@ -161,7 +161,7 @@ Este script (manager_install.sh)se encarga de instalar los scripts de gestión d
 >Una vez instalado el gestor, puedes usar el alias ***mfs*** en lugar de manager_repo.sh.
 
 
-## 🛠️ Comandos disponibles:
+##  Comandos disponibles:
 
 ➡Ver ejemplos de modo de uso.
 ```bash
