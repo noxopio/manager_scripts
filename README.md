@@ -1,4 +1,4 @@
-# 🚀 Manager Repo
+#  Manager Repo
 
 **Versión 5.0.1** - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución.
 
@@ -13,9 +13,9 @@ Permite realizar tareas comunes, como iniciar, clonar o detener los microfronten
 
 ---
 
-## 📌 Notas de Uso
+##  Notas de Uso
 
-### 📌 Requisitos
+###  Requisitos
 
 El script requiere al menos un argumento:
 
@@ -23,7 +23,7 @@ El script requiere al menos un argumento:
   - `pull`, `run`, `install`, `updeps`, `list`, `ps`, `uninstall_managerr`
 - El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
 
-### 📌 Archivo de Repositorios
+###  Archivo de Repositorios
 
 - Si no se proporciona un archivo, el script buscará uno llamado `listRep.txt` en directorio actual.
 - Si no se encuentra el archivo, se mostrará un mensaje de error y la ejecución se detendrá.
@@ -121,7 +121,7 @@ npx npkill
 ### INSTALACIÓN
 
 
-📦 Instalación del Script
+ Instalación del Script
 Abre el script manager_install.sh y revisa la descripción o ejecuta:
 
 ```bash
@@ -141,7 +141,7 @@ Una vez instalado el gestor, puedes usar el alias mfs en lugar de manager_repo.s
 
 
 
-## 🛠️ Comandos disponibles:
+##  Comandos disponibles:
 
 ➡Crear el archivo de repositorios
 ```bash
