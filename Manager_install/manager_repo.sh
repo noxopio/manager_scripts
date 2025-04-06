@@ -89,6 +89,7 @@ set -e
 # Si tiene problemas con los permisos de ejecución, puede usar el siguiente comando
 # chmod +x manager_repo.sh
 source "$(dirname "$0")/manager_logs.sh"
+
 FILE_NAME="$(basename "$0")"
 COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
 BRANCH="develop"  # Rama por defecto
@@ -155,7 +156,7 @@ handle_non_list_command() {
      "$HOME/manager_scripts/manager_uninstall.sh"
      ;;
      help)
-     show_usage
+     help
      ;;
      border)
      border_show

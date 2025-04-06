@@ -50,11 +50,10 @@ BLUE="\e[34m"
 CIAN="\e[36m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
-
+INSTALL_DIR="$HOME/manager_scripts"
 SHOW_BORDER=true
 SCRIPT_DIR="$(dirname "$0")"
 SHOW_BORDER_FILE="$SCRIPT_DIR/show_border_state"
-
 border_show(){
     read -p "Mostrar bordes? (true/false): " SHOW_BORDER
     if [ "$SHOW_BORDER" = true ]; then
@@ -137,7 +136,7 @@ show_usage() {
     log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
 
      printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "./$(basename "$0") ${COMMANDS[8]}"
-    log_description "Muestra el uso correcto del script."
+    log_description "Muestra la documentación de uso del script."
 
      
     # Ejemplo de uso para el comando "pull"
@@ -178,15 +177,12 @@ show_usage() {
    # Ejemplo de uso para el comando "ps"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "./$(basename "$0") ${COMMANDS[6]}"
     log_description "Muestra los procesos de Node en ejecución."
-     
-
-    # # Ejemplo de uso para el comando "uninstall_manager"
-    # printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[7]}:" "./$(basename "$0") ${COMMANDS[7]}"
-    # log_description "Desinstala $FILE_NAME."
-     
-     log_info 'Para más información, consulta el archivo README.md .'
+   
+# Ejemplo de uso para el comando "help"
+     log_warning "Consultar el archivo README.md ubicado en $INSTALL_DIR"
 }
 ##-----------------------------------------------------------------------------------#
+    
                     # Funciones de mensajes
 ##-----------------------------------------------------------------------------------#
 error_404() {
@@ -291,4 +287,10 @@ message_open_directory() {
             ;;
     esac
     exit 0
+}
+help() {
+    show_usage
+     cd $INSTALL_DIR && start bash -c "less README.md"     
+    log_success 'Consultando el archivo README.md '
+
 }

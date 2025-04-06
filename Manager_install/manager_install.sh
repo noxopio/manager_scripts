@@ -141,21 +141,24 @@ create_alias() {
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
-# Alias para hacer commit con mensaje capitalizado.
-commit() { 
-  message=$(echo "$1" | sed -E 's/^(.)/\U\1/')  
-  git commit -S -am "feat: $message"
-}
-alias new='git checkout -b '
-alias .='cd '
-alias ..='cd ..'
-alias ...='cd ../..'
-alias gs='git status -s'   
-alias push-current='git push origin @'  # Push a la rama actual
-alias resetC='git reset --soft HEAD~1'        # Revierte el último commit sin perder cambios
-alias last='git log -1 --oneline'             # Último commit en una línea
-alias +='git add .'                    # Agrega todos los cambios al área de staging
-alias runM='start bash -c "npm run start"' 
+
+#Navegación
+
+alias ..='cd ..'      # Cambia al directorio padre
+alias ...='cd ../..'  # Cambia al directorio abuelo
+
+# Git
+alias new='git checkout -b '                    # Crear nueva rama y cambiar a ella
+alias gs='git status -s'                        # Estado de git en formato corto   
+alias push-current='git push origin @'          # Push a la rama actual
+alias resetC='git reset --soft HEAD~1'          # Revierte el último commit sin perder cambios
+alias last='git log -1 --oneline'               # Último commit en una línea
+alias +='git add .'                             # Agrega todos los cambios al área de staging
+alias runW='start bash -c "npm run start"'      # Inicia la app en una nueva ventana 
+alias logGr='git log --all --decorate --oneline --graph'  # Muestra el log con gráfico
+
+#terminal
+alias list='ls -1 | nl'                         # Lista archivos numerados
 
 
 # Instalado en $INSTALL_DATE
