@@ -1,249 +1,198 @@
-#  Manager Repo - Gestión de Microfrontends en Paralelo
+# Manager Repo 
 
-**Versión 6.0.1** - Paquete instalacion para uso global.
+**Versión 6.0.1** - Paquete de instalación para uso global.
 
-Este script ha sido diseñado para simplificar la gestión de múltiples repositorios y microfrontends (Mf).\
-Permite realizar tareas comunes, como iniciar, clonar o detener los microfrontends, de manera eficiente.
-
-### Requisitos
->[!IMPORTANT]  El script debe ser ejecutado desde la línea de comandos
->
-> ```bash
-> bash manager_repo.sh help 
-> ```
-
->[!IMPORTANT]  El script debe tener permisos de ejecución. Puedes otorgar permisos con:
-> ```bash
->  chmod +x manager_repo.sh  
-> ```
-
->[!WARNING]
->Esta version requiere estar en el mismo directorio con el script manager_logs.sh ,ya que este contiene las funciones de mensajes. 
-___
-
-
-## Notas de Uso
----
-
-El script requiere al menos un argumento:
-
-- El primer argumento debe ser el comando a ejecutar:
-  - `pull`, `run`, `install`, `updeps`, `ps`, `uninstall_managerr`, `help`
-- El segundo argumento corresponde al archivo que contiene las URLs de los repositorios.
-
-### Archivo de Repositorios
----
-
-- Si no se proporciona un archivo, el script buscará uno llamado `listRep.txt` en directorio actual.
-- Si no se encuentra el archivo, se mostrará un mensaje de error y la ejecución se detendrá.
-- Si el archivo `listRep.txt` está en un directorio diferente o tiene otro nombre, se debe especificar el nombre del archivo o la ruta completa en el segundo argumento.
-
-### 📝 Formato del Archivo `listRep.txt`
----
->[!NOTE]
->El archivo `listRep.txt` (nombre por defecto) debe contener las URLs de los repositorios, una por línea.\
->No deben existir espacios el final del cada url,en la ultima debe existir un salto de linea
->Los comentarios (líneas que comienzan con `#`) y los repositorios marcados con `#EXCLUDE` serán >ignorados.
----
-
->[!TIP] Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.
----
-
->[!TIP] Se puede indicar el comando a ejecutar al final de la URL.
----
-
->[!IMPORTANT] 
->➡ Ejemplo de `listRep.txt`
->```text
->https://github.com/usuario/repo1.git #NEW
->https://github.com/usuario/repo2.git
->https://github.com/usuario/repo3.git #EXCLUDE
->https://github.com/usuario/repo3.git npm run dev  #NEW
->https://github.com/usuario/repo3.git npm run dev 
->```
----
-
-> [!NOTE] 
-> 
-> Muestra ejemplos de uso 
->```bash
->./manager_repo.sh help
->```
----
-
-
-🔄 pull - Clonar o actualizar los repositorios
-```bash
-
-./manager_repo.sh pull listRep.txt
-```
->[!NOTE]
-> Clon parcial de los repositorios.  
-> Usa git pull --unshallow   para obtener el historial completo.
->```bash
-> git pull --unshallow 
->```
----
-➡ Uso de una Rama Personalizada
->[!NOTE]
->Se puede especificar una rama mediante la opción -b.
->Si no se especifica una rama, el script usará develop por defecto.
->
->➡ Ejemplo
->```bash
->./manager_repo.sh -b fix/branch pull listRep.txt
->```
->En este ejemplo, el script ejecutará pull en todos los repositorios usando la rama fix/branch en lugar de develop.
+Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
 
 ---
 
-➡ install - Instalar las dependencias
-```bash
-./manager_repo.sh install listRep.txt
-```
----
-➡ run - Ejecutar los microfrontends
-```bash
-./manager_repo.sh run 
-```
----
->[!NOTE]
->⬆️ updeps - Actualizar dependencias
->```bash
->./manager_repo.sh updeps listRep.txt
->```
-> Reinstala las dependencias.
+## Características Principales
+
+- Gestión centralizada de múltiples repositorios mediante un archivo de configuración (`listRep.txt`).
+- Instalación y actualización de dependencias en paralelo.
+- Ejecución y monitoreo de microfrontends.
+- Comandos para detener procesos y liberar recursos del sistema.
+- Configuración simplificada y personalizable.
 
 ---
->[!NOTE]
->➡ ps - Lista  procesos en ejecución
->```bash
->bash manager_repo.sh ps
->```
->Lista los proceso de node
----
 
->[!NOTE]
->❌ kill - Detener procesos en ejecución
->```bash
->bash manager_repo.sh kill
->```
->Este comando detiene todos los procesos de node en ejecucion.
----
----
-
->[!NOTE]
-># INSTALACIÓN 
->*manager_install.sh*
-
->[!NOTE] 
-Este script (manager_install.sh)se encarga de instalar los scripts de gestión de repositorios
-> en un directorio específico y configurar alias en el archivo .bashrc para
->facilitar su uso. También se asegura de que los scripts tengan permisos
-> de ejecución.
->
+## Requisitos
 
 >[!IMPORTANT]
-> Abre el archivo  manager_install.sh y revisa la descripción o ejecuta:
->
->```bash
->./manager_install.sh
->```
-
->[!IMPORTANT]  El script debe tener permisos de ejecución. Puedes otorgar permisos con:
+> **El script debe ejecutarse desde la línea de comandos.**
+> 
+> Ejemplo:
 > ```bash
->  chmod +x manager_install.sh 
+> sh manager_install.sh
 > ```
 
+1. **Dependencias necesarias**:
+   - `npm`
+   - `git`
 
+2. **Permisos de ejecución**:
+   Es necesario asegurarse de que los scripts tengan permisos de ejecución:
+   ```bash
+   chmod +x *.sh
+   ```
 
->[!NOTE]✔ Uso del Alias mfs
->Una vez instalado el gestor, puedes usar el alias ***mfs*** en lugar de manager_repo.sh.
+---
 
+## Instalación de la Herramienta
 
-##  Comandos disponibles:
+El script `manager_install.sh` automatiza la instalación de la herramienta `mfs` y configura un alias global para facilitar su uso desde cualquier ubicación.
 
-➡Ver ejemplos de modo de uso.
-```bash
-mfs help
+### Pasos de Instalación
+
+1. Ejecutar el script de instalación:
+   ```bash
+   ./manager_install.sh
+   ```
+
+2. Una vez completada la instalación, el alias `mfs` estará disponible para ejecutar los comandos de la herramienta.
+
+>[!NOTE]
+> En caso de que el script no tenga permisos de ejecución, estos pueden otorgarse con el siguiente comando:
+> ```bash
+> chmod +x manager_install.sh
+> ```
+
+---
+
+## Archivo de Repositorios (`listRep.txt`)
+
+El archivo `listRep.txt` actúa como el núcleo de configuración de la herramienta `mfs`. Contiene las URLs de los repositorios que serán gestionados.
+
+### Formato del Archivo
+
+- Cada línea debe incluir una URL de repositorio.
+- Las líneas que comienzan con `#` serán tratadas como comentarios.
+- Etiquetas disponibles:
+  - `#NEW`: Abre el repositorio en una nueva ventana de terminal.
+  - `#EXCLUDE`: Excluye el repositorio de las operaciones.
+- Es posible agregar comandos específicos al final de la URL.
+
+**Ejemplo**:
+```text
+https://github.com/usuario/repo1.git #NEW
+https://github.com/usuario/repo2.git
+https://github.com/usuario/repo3.git #EXCLUDE
+https://github.com/usuario/repo4.git npm run dev #NEW
 ```
 
-➡Crear el archivo de repositorios
-```bash
-mfs list
-```
+>[!TIP]
+> Es importante asegurarse de que no haya espacios al final de cada URL y que la última línea del archivo contenga un salto de línea.
+
+---
+
+## Comandos Disponibles
+
+| Comando                  | Descripción                                      |
+|--------------------------|--------------------------------------------------|
+| `mfs help`               | Muestra ejemplos de uso y documentación básica. |
+| `mfs list`               | Crea o edita el archivo `listRep.txt`.          |
+| `mfs pull listRep.txt`   | Clona o actualiza los repositorios especificados.|
+| `mfs run`                | Ejecuta los microfrontends configurados.        |
+| `mfs install listRep.txt`| Instala las dependencias de los repositorios.   |
+| `mfs updeps listRep.txt` | Actualiza las dependencias de los repositorios. |
+| `mfs ps`                 | Lista los procesos en ejecución.                |
+| `mfs kill`               | Detiene todos los procesos de Node.js activos.  |
+| `mfs uninstall`          | Desinstala la herramienta y elimina configuraciones.|
+
 >[!WARNING]
- >Este comando modifica el archivo listRep.txt en el directorio actual.
- >
- >Si el usuario asi lo requiere se crea un archivo vacio.
- >
- >Asegúrate de que el token de acceso tenga los permisos necesarios para acceder
- >a los repositorios privados, si es aplicable.
+> El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.
 
+---
 
-➡Ejecutar microfrontends
+## Ejemplos de Uso
+
+### Clonar o Actualizar Repositorios (Historial Parcial)
+```bash
+mfs pull listRep.txt
+```
+
+>[!NOTE]
+> Para obtener el historial completo ir al respositorio en cuestion y usar :
+> ```bash
+> git pull --unshallow
+> ```
+
+### Usar una Rama Personalizada
+```bash
+mfs -b fix/branch pull listRep.txt
+```
+- Si no se especifica una rama, se utilizará `develop` como valor predeterminado.
+
+### Instalar Dependencias
+```bash
+mfs install listRep.txt
+```
+
+### Ejecutar Microfrontends
 ```bash
 mfs run
 ```
 
-➡ Hacer pull de los repositorios
+### Actualizar Dependencias
 ```bash
-mfs pull listRep.txt
+mfs updeps listRep.txt
+```
+
+### Listar Procesos en Ejecución
+```bash
+mfs ps
+```
+
+### Detener Procesos en Ejecución
+```bash
+mfs kill
 ```
 >[!TIP]
-> con el comado border  en false se puede desactivar los bordes alrededor de los mensjaes .
+> Utilice el comando `mfs help` para acceder a ejemplos de uso y documentación básica.
+>
+>
+
+---
+---
+---
+## Notas Adicionales
+
+- Si no se proporciona un archivo al ejecutar un comando, el script buscará uno llamado `listRep.txt` en el directorio actual.
+- Si no se encuentra el archivo, se mostrará un mensaje de error y la ejecución se detendrá.
+- Para especificar un archivo diferente, proporcione la ruta completa como segundo argumento.
+
+- Asi `mfs run  ../repos/archivo.txt`  
+ 
+
+- **Activar o desactivar bordes en los mensajes de salida**:
+  ```bash
+  mfs border
+  Mostrar bordes? (true/false): true
+  ```
+ 
+- **Eliminar carpetas `node_modules` innecesarias**:
+  ```bash
+  npx npkill
+  ```
+
+- **Remover archivos no rastreados**:
+  ```bash
+  git clean -fn
+  ```
+
+- **Liberar un puerto específico**:
+  ```bash
+  npx kill-port 4200
+  ```
+---
+---
+>[!CAUTION] Desinstalación de la Herramienta
+
+>[!CAUTION]
+> Este comando eliminará todas las configuraciones asociadas a la herramienta `mfs`. Se recomienda respaldar cualquier archivo importante antes de proceder.
 > ```bash
-> mfs border  
->
->Mostrar bordes? (true/false): false
->
->[INFO] Ocultando bordes...
->```
+> mfs uninstall
+> ```
 
->[!TIP]
-> con el comado border  en true se pueden activar los bordes alrededor de los mensjaes .
-> ```bash
-> mfs border  
->
->Mostrar bordes? (true/false): true
->╭──────────────────────────────╮
->│  [INFO] Mostrando bordes                                           │
->╰──────────────────────────────╯
->```
 
-> [!IMPORTANT]
->➡Desinstalar manager_repo
->```bash
->mfs uninstall_manager
->```
 
->[!CAUTION] 
->Este comando ejecuta el script que se encarga de desinstalar 
-> y eliminar las funciones asociadas del archivo .bashrc. \
-> Se asegura de que no queden residuos de la instalación.
-***
-***
->[!NOTE] Notas Adicionales
->Dependencias: Asegúrate de tener instalados los comandos y herramientas necesarias tales como  npm, git.
-
- ---
->[!TIP]
->Eliminar la carpeta node_modules innecesarias,con la herramienta npkill de npm .
-> Esto es útil para liberar espacio en disco.____
->
->```bash
->npx npkill
->```
-
->[!TIP]
->Remover archivos no ratreados 
->```bash
-> git clean -fn
->```
-
->[!TIP]
->❌ 
->Matar un puerto específico:
->```bash
->npx kill-port 4200
-> ``` 
