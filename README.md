@@ -80,7 +80,7 @@ https://github.com/usuario/repo3.git #EXCLUDE
 https://github.com/usuario/repo4.git npm run dev #NEW
 ```
 
->[!TIP]
+>[!NOTE]
 > Es importante asegurarse de que no haya espacios al final de cada URL y que la última línea del archivo contenga un salto de línea.
 
 ---
@@ -154,9 +154,8 @@ mfs kill
 
 ---
 ---
----
-## Notas Adicionales
 
+>[!TIP] Notas Adicionales
 - Si no se proporciona un archivo al ejecutar un comando, el script buscará uno llamado `listRep.txt` en el directorio actual.
 - Si no se encuentra el archivo, se mostrará un mensaje de error y la ejecución se detendrá.
 - Para especificar un archivo diferente, proporcione la ruta completa como segundo argumento.

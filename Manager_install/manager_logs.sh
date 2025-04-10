@@ -290,7 +290,22 @@ message_open_directory() {
 }
 help() {
     show_usage
-     cd $INSTALL_DIR && start bash -c "less README.md"     
-    log_success 'Consultando el archivo README.md '
+    log_info "¿Desea abrir la documentacion en la terminal?:"
+    printf "\t[s/n]: "
+    read open_directory
+    case "$open_directory" in
+        [sS])
+            cd $INSTALL_DIR && start bash -c "less README.md"     
+            log_success 'Consultando el archivo README.md '
+            ;;
+        *)
+    exit 0
+            ;;
+    esac
+
+
+
+
+
 
 }
