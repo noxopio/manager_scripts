@@ -193,5 +193,10 @@ mfs kill
 > mfs uninstall
 > ```
 
-
-
+>[!NOTE]Clonar e instalar 
+>Ejecutando este script 
+>```bash 
+>sh manager_setup
+>```
+>
+----
