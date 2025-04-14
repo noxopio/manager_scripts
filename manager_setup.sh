@@ -1,6 +1,11 @@
 #!/bin/bash
 # manager_setup.sh
-# Script para clonar, preparar e instalar Manager.
+# Script para clonar e instalar el paquete Manager.
+# Funciones incluidas:
+# 1. clone_repo: Clona la última versión del repositorio desde la rama principal.
+# 2. install: Realiza la instalación de la herramienta Manager según las opciones del usuario.
+# Uso:
+# Ejecuta este script en tu terminal y sigue las instrucciones.
 
 set -e
 
