@@ -135,47 +135,47 @@ show_usage() {
      
     log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
 
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "./$(basename "$0") ${COMMANDS[8]}"
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "mfs ${COMMANDS[8]}"
     log_description "Muestra la documentación de uso del script."
 
      
     # Ejemplo de uso para el comando "pull"
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "./$(basename "$0") ${COMMANDS[0]}"
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "mfs ${COMMANDS[0]}"
     log_description "  Clona o actualiza repositorios desde la lista especificada." 
      
     
     # Ejemplo de uso para el comando "pull" con rama personalizada
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "./$(basename "$0") -b main ${COMMANDS[0]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "mfs -b main ${COMMANDS[0]} listRep.txt"
     log_description "Clona o actualiza repositorios en la rama 'main'."
      
 
     # Ejemplo de uso para el comando "run"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "./$(basename "$0") ${COMMANDS[1]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "mfs ${COMMANDS[1]}"
     log_description "Inicia los microfrontends existentes."
      
 
     # Ejemplo de uso para el comando "install"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "./$(basename "$0") ${COMMANDS[2]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "mfs ${COMMANDS[2]} listRep.txt"
     log_description "Instala las dependencias en cada repositorio de la lista."
      
 
     # Ejemplo de uso para el comando "updeps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "./$(basename "$0") ${COMMANDS[3]} listRep.txt"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "mfs ${COMMANDS[3]} listRep.txt"
     log_description "Reinstala o actualiza las dependencias en cada repositorio."
      
 
     # Ejemplo de uso para el comando "kill"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "./$(basename "$0") ${COMMANDS[4]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "mfs ${COMMANDS[4]}"
     log_description "Mata los procesos de Node en ejecución."
      
 
     # Ejemplo de uso para el comando "list"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "./$(basename "$0") ${COMMANDS[5]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "mfs ${COMMANDS[5]}"
     log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
      
   
    # Ejemplo de uso para el comando "ps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "./$(basename "$0") ${COMMANDS[6]}"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "mfs ${COMMANDS[6]}"
     log_description "Muestra los procesos de Node en ejecución."
    
 # Ejemplo de uso para el comando "help"
@@ -290,12 +290,13 @@ message_open_directory() {
 }
 help() {
     show_usage
-    log_info "¿Desea abrir la documentacion en la terminal?:"
+    log_info "¿Desea leer el README?:"
     printf "\t[s/n]: "
     read open_directory
     case "$open_directory" in
         [sS])
-            cd $INSTALL_DIR && start bash -c "less README.md"     
+            # cd $INSTALL_DIR && start bash -c "less README.md"     
+            cd $INSTALL_DIR && code README.md     
             log_success 'Consultando el archivo README.md '
             ;;
         *)
