@@ -194,9 +194,14 @@ mfs kill
 > ```
 
 >[!NOTE]Clonar e instalar 
->Ejecutando este script 
+>Copiar estos comandos 
 >```bash 
->sh manager_setup
+>git clone --depth=1 https://github.com/noxopio/manager_scripts.git
+>mv manager_scripts/Manager_install .
+>rm -rf  manager_scripts 
+>cd Manager_install
+>chmod +x *.sh
+>sh manager_install.sh
 >```
->
+
 ----
