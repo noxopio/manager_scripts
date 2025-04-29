@@ -205,3 +205,12 @@ mfs kill
 >```
 
 ----
+
+
+
+>[!NOTE]Flujo de instalación 
+><div align="center" >
+>
+>![Diagrama del flujo de instalación](./bashFlujo.svg "Flujo de instalación")
+>
+></div>
