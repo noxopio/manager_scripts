@@ -66,14 +66,14 @@ set -e
 
 ## Uso de la rama personalizada:
 # Puedes especificar una rama  para todas las operaciones mediante la opción -b. 
-# Si no se especifica la rama, el script usará la rama predeterminada 'develop'.
+# Si no se especifica la rama, el script usará la rama predeterminada 'main'.
 #
 # Ejemplo de uso:
 # ./manager_repo.sh -b fix/branch pull listRep.txt
 # En este ejemplo, el script ejecutará el comando pull en todos los repositorios de la lista especificada en listRep.txt,
-# utilizando la rama 'fix/branch' en lugar de la rama predeterminada 'develop'.
+# utilizando la rama 'fix/branch' en lugar de la rama predeterminada 'main'.
 #
-# Si no se usa la opción -b, el script usará la rama 'develop' por defecto para todas las operaciones de git clone, git pull.
+# Si no se usa la opción -b, el script usará la rama 'main' por defecto para todas las operaciones de git clone, git pull.
 # Al ejecutar cualquiera de los comandos, el script mostrará el progreso y los resultados de cada operación en la terminal.
  
 
@@ -92,7 +92,7 @@ source "$(dirname "$0")/manager_logs.sh"
 
 FILE_NAME="$(basename "$0")"
 COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
-BRANCH="develop"  # Rama por defecto
+BRANCH="main"  # Rama por defecto
 
  ## Función para matar los procesos de Node en ejecución
 kill_node_processes() {

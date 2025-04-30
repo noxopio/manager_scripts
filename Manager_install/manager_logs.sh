@@ -135,48 +135,48 @@ show_usage() {
      
     log_info                 "                     EJEMPLOS DE USO DEL SCRIPT                        "  "no-prefix"
 
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "mfs ${COMMANDS[8]}"
     log_description "Muestra la documentación de uso del script."
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[8]}:" "mfs ${COMMANDS[8]}"
 
      
     # Ejemplo de uso para el comando "pull"
-     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "mfs ${COMMANDS[0]}"
     log_description "  Clona o actualiza repositorios desde la lista especificada." 
+     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]}:" "mfs ${COMMANDS[0]}"
      
     
     # Ejemplo de uso para el comando "pull" con rama personalizada
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "mfs -b main ${COMMANDS[0]} listRep.txt"
-    log_description "Clona o actualiza repositorios en la rama 'main'."
+    log_description "Clona o actualiza repositorios en la rama 'dev'."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[0]} (rama personalizada):" "mfs -b dev ${COMMANDS[0]} [opcional: custom.txt]"
      
 
     # Ejemplo de uso para el comando "run"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "mfs ${COMMANDS[1]}"
     log_description "Inicia los microfrontends existentes."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[1]}:" "mfs ${COMMANDS[1]}"
      
 
     # Ejemplo de uso para el comando "install"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "mfs ${COMMANDS[2]} listRep.txt"
     log_description "Instala las dependencias en cada repositorio de la lista."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]}:" "mfs ${COMMANDS[2]} [opcional: custom.txt]"
      
 
     # Ejemplo de uso para el comando "updeps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "mfs ${COMMANDS[3]} listRep.txt"
     log_description "Reinstala o actualiza las dependencias en cada repositorio."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "mfs ${COMMANDS[3]} [opcional: custom.txt]"
      
 
     # Ejemplo de uso para el comando "kill"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "mfs ${COMMANDS[4]}"
     log_description "Mata los procesos de Node en ejecución."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[4]}:" "mfs ${COMMANDS[4]}"
      
 
     # Ejemplo de uso para el comando "list"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "mfs ${COMMANDS[5]}"
     log_description "Crea un archivo listRep.txt con las URLs de los repositorios."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[5]}:" "mfs ${COMMANDS[5]}"
      
   
    # Ejemplo de uso para el comando "ps"
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "mfs ${COMMANDS[6]}"
     log_description "Muestra los procesos de Node en ejecución."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "mfs ${COMMANDS[6]}"
    
 # Ejemplo de uso para el comando "help"
      log_warning "Consultar el archivo README.md ubicado en $INSTALL_DIR"

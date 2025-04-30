@@ -121,7 +121,7 @@ mfs pull listRep.txt
 ```bash
 mfs -b fix/branch pull listRep.txt
 ```
-- Si no se especifica una rama, se utilizará `develop` como valor predeterminado.
+- Si no se especifica una rama, se utilizará `main` como valor predeterminado.
 
 ### Instalar Dependencias
 ```bash
