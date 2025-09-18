@@ -117,7 +117,30 @@ ps_process() {
         log_info "Proceso en ejecución: $line"
     done <<< "$processes"
 }
+  cdlist() {
+  echo "📁 Directorios disponibles:"
+  log_info "📁 Directorios disponibles:" "no-prefix"
+  dirs=($(ls -d */))
+  for i in "${!dirs[@]}"; do
+    printf "%3d) %s\n" $((i+1)) "${dirs[$i]}"
+  done
+  echo "  0) Salir"
+  log_info "🔢 Ingresa el número del directorio al que quieres ir (0 para salir): "
+  read num
 
+  if [ "$num" = "0" ]; then
+    log_info "🚪 Saliendo sin cambiar de directorio."
+    return 0
+  fi
+
+  index=$((num-1))
+  if [ "$index" -ge 0 ] && [ "$index" -lt "${#dirs[@]}" ]; then
+    cd "${dirs[$index]}"
+    log_info "✅ Ahora estás en: $(pwd)"
+  else
+    echo "❌ Número inválido."
+  fi
+}
 ## Procesar las opciones de línea de comandos
 while getopts ":b:" opt; do
     case "$opt" in
@@ -158,6 +181,9 @@ handle_non_list_command() {
      help)
      help
      ;;
+     cd)
+     cdlist
+     ;;
      border)
      border_show
      ;;
@@ -169,7 +195,7 @@ handle_non_list_command() {
      exit 0
     }
 
-non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border")
+non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border"  "cd")
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
     handle_non_list_command "$1"
     fi
