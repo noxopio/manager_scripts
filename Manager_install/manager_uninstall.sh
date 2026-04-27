@@ -52,6 +52,7 @@ SHOW_BORDER=true
 UNINSTALLED=false
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
+CDLIST_FAVORITES_FILE="$HOME/.cdlist_favorites"
 
 
 
@@ -78,6 +79,14 @@ remove_install_dir() {
         log_info "Carpeta eliminada: $INSTALL_DIR"
     else
         log_warning "La carpeta no existe: $INSTALL_DIR"
+    fi
+}
+remove_cdlist_favorites() {
+    if [ -f "$CDLIST_FAVORITES_FILE" ]; then
+        rm -f "$CDLIST_FAVORITES_FILE"
+        log_info "Archivo de rutas favoritas eliminado: $CDLIST_FAVORITES_FILE"
+    else
+        log_warning "No se encontró archivo de rutas favoritas: $CDLIST_FAVORITES_FILE"
     fi
 }
 
@@ -108,6 +117,7 @@ main() {
     log_info "Ejecutando $FILE_NAME"
 
     remove_install_dir
+    remove_cdlist_favorites 
     remove_functions
     exit 0
 }
