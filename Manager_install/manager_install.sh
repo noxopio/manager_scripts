@@ -141,6 +141,107 @@ create_alias() {
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
+#Navegacion entre carpetas
+lias cdf='cdlist -f'
+alias cda='cdlist -a'
+alias cdr='cdlist -r'
+alias cdl='cdlist'
+
+cdlist() {
+  RED="\e[31m"
+  GREEN="\e[32m"
+  YELLOW="\e[33m"
+  BLUE="\e[34m"
+  CIAN="\e[36m"
+  RESET="\e[0m"
+
+  FAVORITES_FILE="$HOME/.cdlist_favorites"
+
+  # Crear archivo si no existe
+  [ -f "$FAVORITES_FILE" ] || touch "$FAVORITES_FILE"
+
+  case "$1" in
+    -a|--add)
+      pwd >> "$FAVORITES_FILE"
+      echo -e "${GREEN}✅ Ruta agregada a favoritas:${RESET} $(pwd)"
+      return
+      ;;
+    -f|--favorites)
+      mapfile -t favs < "$FAVORITES_FILE"
+
+      if [ "${#favs[@]}" -eq 0 ]; then
+        echo -e "${RED}❌ No hay rutas favoritas.${RESET}"
+        return
+      fi
+
+      echo -e "${BLUE}⭐ Rutas favoritas:${RESET}"
+      for i in "${!favs[@]}"; do
+        printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${favs[$i]}"
+      done
+
+      echo -ne "${YELLOW}🔢 Elige una ruta: ${RESET}"
+      read num
+      index=$((num-1))
+
+      if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
+        cd "${favs[$index]}" || return
+        echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+      else
+        echo -e "${RED}❌ Número inválido.${RESET}"
+      fi
+      return
+      ;;
+    -r|--remove)
+      mapfile -t favs < "$FAVORITES_FILE"
+
+      echo -e "${BLUE}🗑️ Eliminar favorita:${RESET}"
+      for i in "${!favs[@]}"; do
+        printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${favs[$i]}"
+      done
+
+      echo -ne "${YELLOW}🔢 Selecciona una para eliminar: ${RESET}"
+      read num
+      index=$((num-1))
+
+      if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
+        unset 'favs[index]'
+        printf "%s\n" "${favs[@]}" > "$FAVORITES_FILE"
+        echo -e "${GREEN}✅ Favorita eliminada.${RESET}"
+      else
+        echo -e "${RED}❌ Número inválido.${RESET}"
+      fi
+      return
+      ;;
+  esac
+
+  # 🔹 Comportamiento original (directorios actuales)
+  echo -e "${BLUE}📁 Directorios disponibles:${RESET}"
+  dirs=($(ls -d */ 2>/dev/null))
+
+  if [ "${#dirs[@]}" -eq 0 ]; then
+    echo -e "${RED}❌ No hay directorios.${RESET}"
+    return
+  fi
+
+  for i in "${!dirs[@]}"; do
+    printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${dirs[$i]}"
+  done
+
+  echo -ne "${YELLOW}🔢 Ingresa el número del directorio: ${RESET}"
+  read num
+  index=$((num-1))
+
+  if [ "$index" -ge 0 ] && [ "$index" -lt "${#dirs[@]}" ]; then
+    cd "${dirs[$index]}"
+    echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+  else
+    echo -e "${RED}❌ Número inválido.${RESET}"
+  fi
+}
+#End de navegacion por carpetas 
+
+
+
 
 # Instalado en $INSTALL_DATE
 # <<< Manager Scripts END
