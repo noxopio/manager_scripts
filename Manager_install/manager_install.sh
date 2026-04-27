@@ -64,7 +64,6 @@ SOURCE_DIR="$(dirname "$0")"
 FORCE_REINSTALL=false
 HELP=false
 ALIAS_FILE="$HOME/.bashrc"
-CDLIST_FAVORITES_FILE="$HOME/.cdlist_favorites"
 
 
 help(){
