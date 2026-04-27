@@ -141,7 +141,32 @@ create_alias() {
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
+#Navegacion entre carpetas
+cdlist() {
+  RED="\e[31m"
+  GREEN="\e[32m"
+  YELLOW="\e[33m"
+  BLUE="\e[34m"
+  CIAN="\e[36m"
+  RESET="\e[0m"
 
+  echo -e "${BLUE}📁 Directorios disponibles:${RESET}"
+  dirs=($(ls -d */))
+  for i in "${!dirs[@]}"; do
+    printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${dirs[$i]}"
+  done
+
+  echo -ne "${YELLOW}🔢 Ingresa el número del directorio al que quieres ir: ${RESET}"
+  read num
+
+  index=$((num-1))
+  if [ "$index" -ge 0 ] && [ "$index" -lt "${#dirs[@]}" ]; then
+    cd "${dirs[$index]}"
+    echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+  else
+    echo -e "${RED}❌ Número inválido.${RESET}"
+  fi
+}
 # Instalado en $INSTALL_DATE
 # <<< Manager Scripts END
 EOL
