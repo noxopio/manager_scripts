@@ -5,23 +5,23 @@ set -e
 # Script de Instalación de Manager Scripts
 # Versión: 2.0.3
 # Fecha: [27/02/2025]
-##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
+##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes.
 # __| |_______________________________________| |__
 # __   _______________________________________   __
-#   | |                                       | |  
-#   | |                                       | |  
-#   | |  888b     d888 8888888888  .d8888b.   | |  
-#   | |  8888b   d8888 888        d88P  Y88b  | |  
-#   | |  88888b.d88888 888        Y88b.       | |  
-#   | |  888Y88888P888 8888888     "Y888b.    | |  
-#   | |  888 Y888P 888 888            "Y88b.  | |  
-#   | |  888  Y8P  888 888              "888  | |  
-#   | |  888   "   888 888        Y88b  d88P  | |  
-#   | |  888       888 888         "Y8888P"   | |  
-#   | |                                       | |  
+#   | |                                       | |
+#   | |                                       | |
+#   | |  888b     d888 8888888888  .d8888b.   | |
+#   | |  8888b   d8888 888        d88P  Y88b  | |
+#   | |  88888b.d88888 888        Y88b.       | |
+#   | |  888Y88888P888 8888888     "Y888b.    | |
+#   | |  888 Y888P 888 888            "Y88b.  | |
+#   | |  888  Y8P  888 888              "888  | |
+#   | |  888   "   888 888        Y88b  d88P  | |
+#   | |  888       888 888         "Y8888P"   | |
+#   | |                                       | |
 # __| |_______________________________________| |__
 # __   _______________________________________   __
-#   | |                                       | |  
+#   | |                                       | |
 
 
 # Descripción:
@@ -58,16 +58,16 @@ source "$(dirname "$0")/manager_logs.sh"
 SHOW_BORDER=true
 
 
-INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")  
+INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 INSTALL_DIR="$HOME/manager_scripts"
-SOURCE_DIR="$(dirname "$0")" 
+SOURCE_DIR="$(dirname "$0")"
 FORCE_REINSTALL=false
 HELP=false
 ALIAS_FILE="$HOME/.bashrc"
-
+FAVORITES_FILE="$HOME/.cdlist_favorites"
 
 help(){
- log_info "Uso: $0" "no-prefix"
+    log_info "Uso: $0" "no-prefix"
     log_info "Este script instala los scripts de gestión de repositorios en un directorio específico y configura alias en el archivo .bashrc para facilitar su uso." "no-prefix"
     exit 1
 }
@@ -110,11 +110,11 @@ create_install_directory() {
 
 copy_scripts() {
     # Copiar los scripts a la carpeta
-# cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
-# cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
-# cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
-# cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
-
+    # cp "$SOURCE_DIR/manager_repo.sh" "$INSTALL_DIR/"
+    # cp "$SOURCE_DIR/url_extractor.sh" "$INSTALL_DIR/"
+    # cp "$SOURCE_DIR/manager_uninstall.sh" "$INSTALL_DIR/"
+    # cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
+    
     cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
     log_info "Scripts copiados a $INSTALL_DIR"
 }
@@ -140,11 +140,15 @@ create_alias() {
 mfs() {
     $INSTALL_DIR/manager_repo.sh "\$@"
 }
-#Navegacion entre carpetas
-lias cdf='cdlist -f'
-alias cda='cdlist -a'
-alias cdr='cdlist -r'
-alias cdl='cdlist'
+
+#Inicio de Navegacion entre carpetas
+#Este alias es para navegar entre carpetas de manera más rápida y fácil, permitiendo agregar rutas favoritas, listar las rutas favoritas, eliminar rutas favoritas y navegar por los directorios actuales.
+#Es una funcionalidad extra no tiene relación con los scripts de gestión de repositorios, pero es una herramienta útil para la navegación por terminal.
+
+  alias cdf='cdlist -f' # Listar favoritas
+  alias cda='cdlist -a' # Agregar ruta actual a favoritas
+  alias cdr='cdlist -r' # Eliminar ruta de favoritas
+  alias cdl='cdlist' # Navegar por directorios actuales
 
 cdlist() {
   RED="\e[31m"
@@ -154,90 +158,91 @@ cdlist() {
   CIAN="\e[36m"
   RESET="\e[0m"
 
-  FAVORITES_FILE="$HOME/.cdlist_favorites"
-
+  FAVORITES_FILE="\$HOME/.cdlist_favorites"
   # Crear archivo si no existe
-  [ -f "$FAVORITES_FILE" ] || touch "$FAVORITES_FILE"
+  [ -f "\$FAVORITES_FILE" ] || touch "\$FAVORITES_FILE"
 
-  case "$1" in
+  case "\$1" in
     -a|--add)
-      pwd >> "$FAVORITES_FILE"
-      echo -e "${GREEN}✅ Ruta agregada a favoritas:${RESET} $(pwd)"
+      pwd >> "\$FAVORITES_FILE"
+      echo -e "\${GREEN}✅ Ruta agregada a favoritas:\${RESET} \$(pwd)"
       return
       ;;
     -f|--favorites)
-      mapfile -t favs < "$FAVORITES_FILE"
+      mapfile -t favs < "\$FAVORITES_FILE"
 
-      if [ "${#favs[@]}" -eq 0 ]; then
-        echo -e "${RED}❌ No hay rutas favoritas.${RESET}"
+      if [ "\${#favs[@]}" -eq 0 ]; then
+        echo -e "\${RED}❌ No hay rutas favoritas.\${RESET}"
         return
       fi
 
-      echo -e "${BLUE}⭐ Rutas favoritas:${RESET}"
-      for i in "${!favs[@]}"; do
-        printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${favs[$i]}"
+      echo -e "\${BLUE}⭐ Rutas favoritas:\${RESET}"
+      for i in "\${!favs[@]}"; do
+        printf "\${CIAN}%3d)\${RESET} \${YELLOW}%s\${RESET}\n" \$((i+1)) "\${favs[\$i]}"
       done
 
-      echo -ne "${YELLOW}🔢 Elige una ruta: ${RESET}"
+      echo -ne "\${YELLOW}🔢 Elige una ruta: \${RESET}"
       read num
-      index=$((num-1))
+      index=\$((num-1))
 
-      if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
-        cd "${favs[$index]}" || return
-        echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+      if [ "\$index" -ge 0 ] && [ "\$index" -lt "\${#favs[@]}" ]; then
+        cd "\${favs[\$index]}" || return
+        echo -e "\${GREEN}✅ Ahora estás en: \$(pwd)\${RESET}"
       else
-        echo -e "${RED}❌ Número inválido.${RESET}"
+        echo -e "\${RED}❌ Número inválido.\${RESET}"
       fi
       return
       ;;
     -r|--remove)
-      mapfile -t favs < "$FAVORITES_FILE"
+      mapfile -t favs < "\$FAVORITES_FILE"
 
-      echo -e "${BLUE}🗑️ Eliminar favorita:${RESET}"
-      for i in "${!favs[@]}"; do
-        printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${favs[$i]}"
+      echo -e "\${BLUE}🗑️ Eliminar favorita:\${RESET}"
+      for i in "\${!favs[@]}"; do
+        printf "\${CIAN}%3d)\${RESET} \${YELLOW}%s\${RESET}\n" \$((i+1)) "\${favs[\$i]}"
       done
 
-      echo -ne "${YELLOW}🔢 Selecciona una para eliminar: ${RESET}"
+      echo -ne "\${YELLOW}🔢 Selecciona una para eliminar: \${RESET}"
       read num
-      index=$((num-1))
+      index=\$((num-1))
 
-      if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
+      if [ "\$index" -ge 0 ] && [ "\$index" -lt "\${#favs[@]}" ]; then
         unset 'favs[index]'
-        printf "%s\n" "${favs[@]}" > "$FAVORITES_FILE"
-        echo -e "${GREEN}✅ Favorita eliminada.${RESET}"
+        printf "%s\n" "\${favs[@]}" > "\$FAVORITES_FILE"
+        echo -e "\${GREEN}✅ Favorita eliminada.\${RESET}"
       else
-        echo -e "${RED}❌ Número inválido.${RESET}"
+        echo -e "\${RED}❌ Número inválido.\${RESET}"
       fi
       return
       ;;
   esac
 
   # 🔹 Comportamiento original (directorios actuales)
-  echo -e "${BLUE}📁 Directorios disponibles:${RESET}"
-  dirs=($(ls -d */ 2>/dev/null))
+  echo -e "\${BLUE}📁 Directorios disponibles:\${RESET}"
+  dirs=(\$(ls -d */ 2>/dev/null))
 
-  if [ "${#dirs[@]}" -eq 0 ]; then
-    echo -e "${RED}❌ No hay directorios.${RESET}"
+  if [ "\${#dirs[@]}" -eq 0 ]; then
+    echo -e "\${RED}❌ No hay directorios.\${RESET}"
     return
   fi
 
-  for i in "${!dirs[@]}"; do
-    printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${dirs[$i]}"
+  for i in "\${!dirs[@]}"; do
+    printf "\${CIAN}%3d)\${RESET} \${YELLOW}%s\${RESET}\n" \$((i+1)) "\${dirs[\$i]}"
   done
 
-  echo -ne "${YELLOW}🔢 Ingresa el número del directorio: ${RESET}"
+  echo -ne "\${YELLOW}🔢 Ingresa el número del directorio: \${RESET}"
   read num
-  index=$((num-1))
+  index=\$((num-1))
 
-  if [ "$index" -ge 0 ] && [ "$index" -lt "${#dirs[@]}" ]; then
-    cd "${dirs[$index]}"
-    echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+  if [ "\$index" -ge 0 ] && [ "\$index" -lt "\${#dirs[@]}" ]; then
+    cd "\${dirs[\$index]}"
+    echo -e "\${GREEN}✅ Ahora estás en: \$(pwd)\${RESET}"
   else
-    echo -e "${RED}❌ Número inválido.${RESET}"
+    echo -e "\${RED}❌ Número inválido.\${RESET}"
   fi
 }
-#End de navegacion por carpetas 
+
+
+#Final  de navegacion por carpetas
 
 
 
@@ -252,7 +257,7 @@ EOL
 
 update_bashrc() {
     source "$ALIAS_FILE"
-     log_success "Archivo .bashrc actualizado"
+    log_success "Archivo .bashrc actualizado"
 }
 
 open_install_directory() {
@@ -264,11 +269,11 @@ open_install_directory() {
             log_info "Abriendo la carpeta de instalación..."
             cd "$INSTALL_DIR" && explorer .
             exit 1
-            ;;
+        ;;
         *)
             log_info "Para abrir la carpeta  más tarde, ir a  $INSTALL_DIR"
             exit 1
-            ;;
+        ;;
     esac
 }
 
@@ -281,11 +286,11 @@ main() {
     create_alias
     update_bashrc
     log_info "mfs disponible en la terminal"
-     log_info "Puedes usar el comando mfs help para obtener ayuda"
+    log_info "Puedes usar el comando mfs help para obtener ayuda"
     log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
     log_success "Proceso de instalación exitoso"
     MFS_MESSAGE
-    log_warning "$INSTALL_DATE" "no-prefix"	
+    log_warning "$INSTALL_DATE" "no-prefix"
     open_install_directory
 }
 
