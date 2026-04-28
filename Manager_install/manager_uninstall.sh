@@ -5,28 +5,28 @@ set -e
 # Script de Desinstalación de Manager Scripts
 # Versión: 2.0.2
 # Fecha: [27-02-2025]
-###Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
+###Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes.
 # __| |_______________________________________| |__
 # __   _______________________________________   __
-#   | |                                       | |  
-#   | |                                       | |  
-#   | |  888b     d888 8888888888  .d8888b.   | |  
-#   | |  8888b   d8888 888        d88P  Y88b  | |  
-#   | |  88888b.d88888 888        Y88b.       | |  
-#   | |  88BYE8888P888 4048888     "Y888b.    | |  
-#   | |  888 Y888P 888 888            "Y88b.  | |  
-#   | |  888  Y8P  888 888              "888  | |  
-#   | |  888   "   888 888        Y88b  d88P  | |  
-#   | |  888       888 888         "Y8888P"   | |  
-#   | |                                       | |  
+#   | |                                       | |
+#   | |                                       | |
+#   | |  888b     d888 8888888888  .d8888b.   | |
+#   | |  8888b   d8888 888        d88P  Y88b  | |
+#   | |  88888b.d88888 888        Y88b.       | |
+#   | |  88BYE8888P888 4048888     "Y888b.    | |
+#   | |  888 Y888P 888 888            "Y88b.  | |
+#   | |  888  Y8P  888 888              "888  | |
+#   | |  888   "   888 888        Y88b  d88P  | |
+#   | |  888       888 888         "Y8888P"   | |
+#   | |                                       | |
 # __| |_______________________________________| |__
 # __   _______________________________________   __
-#   | |                                       | |  
+#   | |                                       | |
 
 
 # Descripción:
 # Este script se encarga de desinstalar el directorio de scripts de gestión
-# y eliminar las funciones asociadas del archivo .bashrc. 
+# y eliminar las funciones asociadas del archivo .bashrc.
 # Se asegura de que no queden residuos de la instalación anterior.
 #
 # Funcionalidades:
@@ -48,7 +48,7 @@ set -e
 
 source "$(dirname "$0")/manager_logs.sh"
 FILE_NAME="$(basename "$0")"
-SHOW_BORDER=true 
+SHOW_BORDER=true
 UNINSTALLED=false
 INSTALL_DIR="$HOME/manager_scripts"
 ALIAS_FILE="$HOME/.bashrc"
@@ -63,15 +63,15 @@ show_help() {
 }
 
 confirm() {
-    log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): " 
+    log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): "
     printf "\t[s/n]: "
-     read     confirm
+    read     confirm
     confirm=$(echo "$confirm" | tr '[:upper:]' '[:lower:]')
-        if [ "$confirm" != "s" ]; then
+    if [ "$confirm" != "s" ]; then
         log_warning "Desinstalación cancelada."
         exit 0
     fi
-
+    
 }
 remove_install_dir() {
     if [ -d "$INSTALL_DIR" ]; then
@@ -82,11 +82,10 @@ remove_install_dir() {
     fi
 }
 remove_cdlist_favorites() {
+    # rm -f "$CDLIST_FAVORITES_FILE"
     if [ -f "$CDLIST_FAVORITES_FILE" ]; then
-        rm -f "$CDLIST_FAVORITES_FILE"
-        log_info "Archivo de rutas favoritas eliminado: $CDLIST_FAVORITES_FILE"
-    else
-        log_warning "No se encontró archivo de rutas favoritas: $CDLIST_FAVORITES_FILE"
+        log_info "Tus rutas favoritas se conservan en: $CDLIST_FAVORITES_FILE"
+        log_info "Si deseas eliminarlas manualmente: rm $CDLIST_FAVORITES_FILE"
     fi
 }
 
@@ -112,12 +111,12 @@ main() {
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         show_help
     fi
-
+    
     confirm
     log_info "Ejecutando $FILE_NAME"
-
+    
     remove_install_dir
-    remove_cdlist_favorites 
+    remove_cdlist_favorites
     remove_functions
     exit 0
 }
