@@ -216,7 +216,6 @@ cdlist() {
       ;;
   esac
 
-  # 🔹 Comportamiento original (directorios actuales)
   echo -e "\${BLUE}📁 Directorios disponibles:\${RESET}"
   dirs=(\$(ls -d */ 2>/dev/null))
 
