@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-# Documentación del Script
+# Documentación del Script  
 # ==========================
 # Script de Instalación de Manager Scripts
 # Versión: 2.0.3
