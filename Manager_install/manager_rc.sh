@@ -7,13 +7,12 @@
 mfs() {
     INSTALL_DIR/manager_repo.sh "$@"
 }
-
-# ── Aliases de navegación ─────────────────────────────────────────────────────
+# ── Alias de navegación ─────────────────────────────────────────────────────
 alias cdf='cdlist -f'   # Listar favoritas
 alias cda='cdlist -a'   # Agregar ruta actual a favoritas
 alias cdr='cdlist -r'   # Eliminar ruta de favoritas
 alias cdl='cdlist'      # Navegar por directorios actuales
-
+#alias runM='start bash -c "npm run dev"' #Se inicia el mf una nueva ventana
 # ── Función cdlist ────────────────────────────────────────────────────────────
 cdlist() {
   local RED="\e[31m"
