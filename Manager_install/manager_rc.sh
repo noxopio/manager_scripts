@@ -24,6 +24,24 @@ cdlist() {
   local FAVORITES_FILE="$HOME/.cdlist_favorites"
 
   [ -f "$FAVORITES_FILE" ] || touch "$FAVORITES_FILE"
+  #Navegación más rapida ;el comando soporta parametro numerico  (ej: cdlist 1 o cdlist -1)
+  if [ "${#dirs[@]}" -eq 0 ]; then
+    echo -e "${RED}❌ No hay directorios.${RESET}"
+    return
+  fi
+
+  # Permite tanto 1 como -1
+  local num="${1#-}"
+  local index=$((num-1))
+
+  if [ "$index" -ge 0 ] && [ "$index" -lt "${#dirs[@]}" ]; then
+    cd "${dirs[$index]}" || return
+    echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+  else
+    echo -e "${RED}❌ Número inválido.${RESET}"
+  fi
+  return
+fi
 
   case "$1" in
     -a|--add)
