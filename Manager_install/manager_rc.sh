@@ -49,27 +49,48 @@ fi
       echo -e "${GREEN}✅ Ruta agregada a favoritas:${RESET} $(pwd)"
       return
       ;;
-    -f|--favorites)
-      mapfile -t favs < "$FAVORITES_FILE"
-      if [ "${#favs[@]}" -eq 0 ]; then
-        echo -e "${RED}❌ No hay rutas favoritas.${RESET}"
-        return
-      fi
-      echo -e "${BLUE}⭐ Rutas favoritas:${RESET}"
-      for i in "${!favs[@]}"; do
-        printf "${CIAN}%3d)${RESET} ${YELLOW}%s${RESET}\n" $((i+1)) "${favs[$i]}"
-      done
-      echo -ne "${YELLOW}🔢 Elige una ruta: ${RESET}"
-      read num
-      local index=$((num-1))
-      if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
-        cd "${favs[$index]}" || return
-        echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
-      else
-        echo -e "${RED}❌ Número inválido.${RESET}"
-      fi
-      return
-      ;;
+   -f|--favorites)
+  mapfile -t favs < "$FAVORITES_FILE"
+
+  if [ "${#favs[@]}" -eq 0 ]; then
+    echo -e "${RED}❌ No hay rutas favoritas.${RESET}"
+    return
+  fi
+
+  # Permite: cdf 1
+  if [[ "$2" =~ ^[0-9]+$ ]]; then
+    local index=$(( $2 - 1 ))
+
+    if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
+      cd "${favs[$index]}" || return
+      echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+    else
+      echo -e "${RED}❌ Número inválido.${RESET}"
+    fi
+
+    return
+  fi
+
+  echo -e "${BLUE}⭐ Rutas favoritas:${RESET}"
+
+  for i in "${!favs[@]}"; do
+    printf "${CIAN}%3d)${RESET} ${BLUE}%s${RESET}\n" \
+      $((i+1)) "${favs[$i]}"
+  done
+
+  echo -ne "${BLUE}🔢 Elige una ruta: ${RESET}"
+  read num
+
+  local index=$((num-1))
+
+  if [ "$index" -ge 0 ] && [ "$index" -lt "${#favs[@]}" ]; then
+    cd "${favs[$index]}" || return
+    echo -e "${GREEN}✅ Ahora estás en: $(pwd)${RESET}"
+  else
+    echo -e "${RED}❌ Número inválido.${RESET}"
+  fi
+  return
+  ;;
     -r|--remove)
       mapfile -t favs < "$FAVORITES_FILE"
       echo -e "${BLUE}🗑️  Eliminar favorita:${RESET}"
