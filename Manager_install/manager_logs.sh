@@ -162,6 +162,10 @@ show_usage() {
     # Ejemplo de uso para el comando "updeps"
     log_description "Reinstala o actualiza las dependencias en cada repositorio."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[3]}:" "mfs ${COMMANDS[3]} [opcional: custom.txt]"
+
+    # Ejemplo de install/updeps con comando personalizado
+    log_description "Instala/actualiza dependencias con un comando personalizado (por defecto 'npm install')."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]} (-i):" "mfs -i \"npm i --legacy-peer-deps\" ${COMMANDS[2]} [opcional: custom.txt]"
      
 
     # Ejemplo de uso para el comando "kill"
@@ -178,9 +182,19 @@ show_usage() {
     log_description "Muestra los procesos de Node en ejecución."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "mfs ${COMMANDS[6]}"
 
+   # Comandos git
+    log_description "Git en todos los repos de la lista (status / commit / push / checkout / nueva rama)."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "status:" "mfs status [opcional: custom.txt]"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "commit:" "mfs -m \"fix: mensaje\" commit   (git add . + commit; omite repos sin cambios)"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "push:" "mfs push   (nunca --force; sin upstream usa -u)"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "checkout:" "mfs -b develop checkout"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "newbranch:" "mfs -b feature/x newbranch"
+    log_description "Repos privados: en la lista https://usuario@host/... y el token en la variable MFS_GIT_TOKEN."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "token:" "read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN"
+
    # Ejemplo de uso para el comando "ui"
     log_description "Abre el panel web local (pull/install/run/detener con logs por repo)."
-    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[9]}:" "mfs ${COMMANDS[9]} [opcional: lista.txt --port 4777 --no-open]"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[9]}:" "mfs ${COMMANDS[9]} [opcional: lista.txt --port N --no-open] (sin --port: primer puerto libre desde 4777)"
 
 # Ejemplo de uso para el comando "help"
      log_warning "Consultar el archivo README.md ubicado en $INSTALL_DIR"

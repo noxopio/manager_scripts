@@ -74,6 +74,26 @@ set -e
 # utilizando la rama 'fix/branch' en lugar de la rama predeterminada 'main'.
 #
 # Si no se usa la opción -b, el script usará la rama 'main' por defecto para todas las operaciones de git clone, git pull.
+#
+## Comandos git (sobre todos los repos de la lista, o uno solo con MFS_ONLY=<repo>):
+# ./manager_repo.sh status                      -> git status -sb de cada repo
+# ./manager_repo.sh -m "fix: mensaje" commit    -> git add . + git commit en los repos con cambios
+# ./manager_repo.sh push                        -> git push (sin --force; si no hay upstream usa -u origin HEAD)
+# ./manager_repo.sh -b develop checkout         -> cambia de rama (también en clones --depth=1)
+# ./manager_repo.sh -b feature/x newbranch      -> crea la rama y cambia a ella
+#
+## Repos privados sin escribir el token en la lista:
+# En listRep.txt la URL lleva solo el usuario: https://usuario@dev.azure.com/org/proyecto/_git/repo
+# (también vale https://usuario:@...). El token se da por variable de entorno:
+#   read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN
+# Las URLs que ya traen usuario:token siguen funcionando igual.
+#
+## Uso de un comando de instalación personalizado:
+# Con la opción -i se cambia el comando que usan 'install' y 'updeps' (por defecto 'npm install').
+# Ejemplos:
+# ./manager_repo.sh -i "npm i --legacy-peer-deps" install listRep.txt
+# ./manager_repo.sh -i "npm ci" updeps
+# ./manager_repo.sh -b develop -i "pnpm install" install   (se puede combinar con -b)
 # Al ejecutar cualquiera de los comandos, el script mostrará el progreso y los resultados de cada operación en la terminal.
  
 
@@ -91,8 +111,30 @@ set -e
 source "$(dirname "$0")/manager_logs.sh"
 
 FILE_NAME="$(basename "$0")"
-COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui")
+COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui" "status" "commit" "push" "checkout" "newbranch")
 BRANCH="main"  # Rama por defecto
+INSTALL_CMD="npm install"  # Comando de instalación por defecto (install / updeps)
+COMMIT_MSG=""  # Mensaje para 'commit' (opción -m)
+
+## Token git sin guardarlo en la lista: si MFS_GIT_TOKEN está definido, git lo pide vía GIT_ASKPASS
+## solo cuando el remoto exige credenciales. Las URLs que ya traen usuario:token siguen funcionando igual.
+if [ -n "$MFS_GIT_TOKEN" ]; then
+    askpass="$(dirname "$0")/git-askpass.sh"
+    command -v cygpath >/dev/null 2>&1 && askpass="$(cygpath -m "$askpass")"
+    export GIT_ASKPASS="$askpass"
+    # Desactiva el gestor de credenciales solo para estos comandos (no guarda el token en el almacén del sistema)
+    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.helper GIT_CONFIG_VALUE_0=
+fi
+
+## Espera a los procesos en segundo plano indicados y devuelve error si alguno falló
+## (un "wait" sin argumentos siempre devuelve 0 y ocultaba los fallos).
+JOB_FAILED=0
+wait_pids() {
+    local pid
+    for pid in "$@"; do
+        wait "$pid" || JOB_FAILED=1
+    done
+}
 
  ## Función para matar los procesos de Node en ejecución
 kill_node_processes() {
@@ -119,9 +161,11 @@ ps_process() {
 }
  
 ## Procesar las opciones de línea de comandos
-while getopts ":b:" opt; do
+while getopts ":b:i:m:" opt; do
     case "$opt" in
         b) BRANCH="$OPTARG" ;;  # Rama personalizada
+        i) INSTALL_CMD="$OPTARG" ;;  # Comando de instalación personalizado
+        m) COMMIT_MSG="$OPTARG" ;;  # Mensaje de commit
         \?) echo "Opción no válida: -$OPTARG"; exit 1 ;;
     esac
 done
@@ -215,6 +259,8 @@ while IFS= read -r line; do
 
     # Extraer URL, comando y flag opcional
     repo_url=$(echo "$line" | awk '{print $1}')
+    # "https://usuario:@host/..." (token vacío) equivale a "https://usuario@host/...": el token llega por MFS_GIT_TOKEN
+    repo_url="${repo_url/:@/@}"
 
     # Filtro opcional (usado por el panel 'mfs ui'): procesar solo el repo indicado en MFS_ONLY
     if [[ -n "$MFS_ONLY" && "$(basename "$repo_url" .git)" != "$MFS_ONLY" ]]; then
@@ -247,7 +293,27 @@ get_repo_urls() {
 }
 ## Leer repositorios desde el archivo proporcionado en una sola línea
 # mapfile -t source_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
+## Cambia a la rama indicada. Funciona también en clones superficiales de una sola rama
+## (git clone --depth=1 -b X), donde un "git checkout otra" simple falla porque no conoce origin/otra.
+checkout_branch() {
+    local branch="$1"
+    if git show-ref --verify --quiet "refs/heads/$branch"; then
+        git checkout "$branch"
+    elif git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+        log_info "Trayendo la rama remota $branch..."
+        # En un clon de una sola rama, origin solo "conoce" la rama clonada: se registra la nueva
+        # (si no, git rechaza --track con "starting point is not a branch").
+        git remote set-branches --add origin "$branch"
+        git fetch --depth=1 origin "$branch"
+        git checkout -b "$branch" --track "origin/$branch"
+    else
+        log_error "La rama '$branch' no existe en $(basename "$PWD") (ni local ni remota). Usa 'newbranch' para crearla."
+        return 1
+    fi
+}
+
 pull_repos() {
+    local pids=()
     for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         log_info "Procesando $repo_name"
@@ -257,16 +323,83 @@ pull_repos() {
         else
             (
                 cd "$repo_name" || exit
-                git checkout "$BRANCH"
+                checkout_branch "$BRANCH"
                 git pull
             ) &
         fi
+        pids+=($!)
     done
-    wait
+    wait_pids "${pids[@]}"
+}
+
+## ── Comandos git ─────────────────────────────────────────────────────────────
+## Ejecuta una función en cada repo clonado (en paralelo) y espera a todos.
+for_each_repo() {
+    local fn="$1" pids=()
+    for repo_url in "${!source_repos[@]}"; do
+        repo_name=$(basename "$repo_url" .git)
+        if [ ! -d "$repo_name" ]; then
+            log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
+            continue
+        fi
+        ( cd "$repo_name" && "$fn" "$repo_name" ) &
+        pids+=($!)
+    done
+    wait_pids "${pids[@]}"
+}
+
+git_status_repos() {
+    # En secuencia para que la salida de cada repo no se mezcle en la terminal
+    for repo_url in "${!source_repos[@]}"; do
+        repo_name=$(basename "$repo_url" .git)
+        if [ ! -d "$repo_name" ]; then
+            log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
+            continue
+        fi
+        log_info "$repo_name"
+        git -C "$repo_name" -c color.status=false status -sb || JOB_FAILED=1
+    done
+}
+
+git_commit_one() {
+    if [ -z "$(git status --porcelain)" ]; then
+        log_warning "Sin cambios en $1 (se omite)"
+        return 0
+    fi
+    log_info "Commit en $1 ($(git rev-parse --abbrev-ref HEAD)): $COMMIT_MSG"
+    git add . && git commit -q -m "$COMMIT_MSG" && git log -1 --oneline
+}
+
+git_push_one() {
+    local branch
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    if ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+        log_info "Push en $1: la rama $branch no tiene upstream, se publica con -u"
+        git push -u origin HEAD
+    elif [ "$(git rev-list --count '@{u}..HEAD')" -eq 0 ]; then
+        log_warning "Nada que subir en $1 ($branch)"
+    else
+        log_info "Push en $1 ($branch)"
+        git push   # nunca se usa --force
+    fi
+}
+
+git_checkout_one() {
+    log_info "Checkout en $1 -> $BRANCH"
+    checkout_branch "$BRANCH"
+}
+
+git_newbranch_one() {
+    if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+        log_warning "La rama $BRANCH ya existe en $1; usa 'checkout' para cambiar a ella"
+        return 0
+    fi
+    log_info "Creando la rama $BRANCH en $1"
+    git checkout -b "$BRANCH"
 }
 # manejar dependencias 
 manage_deps() {
-    local action=$1
+    local action=$1 pids=()
     for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         log_info "Procesando $repo_name"
@@ -275,20 +408,22 @@ manage_deps() {
                 cd "$repo_name" || exit
                 if [ "$action" == "install" ]; then
                     if [ ! -d "node_modules" ]; then
-                        npm install
+                        log_info "Instalando dependencias en $repo_name con: $INSTALL_CMD"
+                        eval "$INSTALL_CMD"
                     else
                         log_warning "Dependencias ya instaladas en $repo_name"
                     fi
                 else
-                    log_info "Instalando dependencias en $repo_name..."
-                    npm install
+                    log_info "Instalando dependencias en $repo_name con: $INSTALL_CMD"
+                    eval "$INSTALL_CMD"
                 fi
             ) &
+            pids+=($!)
         else
             log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
         fi
     done
-    wait
+    wait_pids "${pids[@]}"
 }
 ##Función para ejecutar los repositorios.
 run_repos() {
@@ -342,7 +477,35 @@ start_time=$(date +%s)
      manage_deps "reinstall"
      log_success "Dependencias actualizadas."
      ;;
- 
+
+    status)
+     git_status_repos
+     ;;
+
+    commit)
+     if [ -z "$COMMIT_MSG" ]; then
+         log_error "Falta el mensaje de commit. Uso: mfs -m \"mensaje\" commit [lista.txt]"
+         exit 1
+     fi
+     log_info "git add . + commit en los repos con cambios..."
+     for_each_repo git_commit_one
+     ;;
+
+    push)
+     log_info "Push de los repos (sin --force)..."
+     for_each_repo git_push_one
+     ;;
+
+    checkout)
+     log_info "Cambiando a la rama $BRANCH..."
+     for_each_repo git_checkout_one
+     ;;
+
+    newbranch)
+     log_info "Creando la rama $BRANCH..."
+     for_each_repo git_newbranch_one
+     ;;
+
 *)
     log_error "Comando inválido. Por favor, verifica la sintaxis."
     show_usage
@@ -357,5 +520,9 @@ duration=$((end_time - start_time))
 log_info "Repositorios procesados: ${#source_repos[@]}" "no-prefix"
 # Mensaje de tiempo de ejecución
 log_description  "Tiempo de ejecución:$duration segundos" "no-prefix"
+if [ "$JOB_FAILED" -ne 0 ]; then
+    log_error "Ejecución terminada con errores en uno o más repositorios (revisa la salida)."
+    exit 1
+fi
 log_success "Ejecución Terminada."
 

@@ -42,7 +42,7 @@
   .card .top { display: flex; align-items: center; gap: 8px; }
   .card .name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--muted); align-items: center; }
-  .card .actions { display: flex; gap: 4px; margin-top: 6px; }
+  .card .actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
   .badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
   .badge.warn { color: var(--warn); border-color: currentColor; }
   .status { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
@@ -82,13 +82,16 @@
       <input type="text" id="list" list="lists" style="width:240px" placeholder="listRep.txt"></label>
     <datalist id="lists"></datalist>
     <button id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">📂 Buscar…</button>
-    <label class="field">Rama (pull) <input type="text" id="branch" placeholder="main" list="branches"></label>
+    <label class="field">Rama (pull/checkout) <input type="text" id="branch" placeholder="main" list="branches"></label>
     <datalist id="branches"><option value="main"><option value="develop"><option value="master"></datalist>
+    <label class="field" title="Comando que usan Install y Updeps (equivale a mfs -i). Vacío = npm install">Install con
+      <input type="text" id="installCmd" placeholder="npm install" list="installCmds" style="width:200px"></label>
+    <datalist id="installCmds"><option value="npm install"><option value="npm i --legacy-peer-deps"><option value="npm ci"><option value="pnpm install"><option value="yarn install"></datalist>
     <span class="sep"></span>
     <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
     <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull)">Pull</button>
-    <button class="primary" data-action="install" title="npm install si no existe node_modules">Install</button>
-    <button data-action="updeps" title="npm install forzado">Updeps</button>
+    <button class="primary" data-action="install" title="Ejecuta el comando de 'Install con' en los repos sin node_modules">Install</button>
+    <button data-action="updeps" title="Ejecuta el comando de 'Install con' en todos los repos (reinstala)">Updeps</button>
     <button class="primary" data-action="run" title="Ejecuta el comando configurado de cada repo">Run</button>
     <button class="danger" id="stopAll" title="Detiene solo los procesos lanzados desde este panel">Detener todo</button>
     <span class="sep"></span>
@@ -97,6 +100,20 @@
     <button id="helpBtn" title="Equivalente a mfs help">Ayuda</button>
     <button id="refresh" title="Recargar estado">↻</button>
   </div>
+  <div class="row" style="margin-top:8px">
+    <span class="muted">Git:</span>
+    <button data-git="status" title="git status de los repos seleccionados (se ve en el log)">Ver cambios</button>
+    <button data-git="commit" title="git add . + git commit -m en los repos seleccionados con cambios">Commit…</button>
+    <button data-git="push" title="git push de los repos seleccionados (nunca --force)">Push</button>
+    <button data-git="checkout" title="Cambia los repos seleccionados a la rama del campo Rama">Checkout</button>
+    <button data-git="newbranch" title="Crea la rama del campo Rama en los repos seleccionados">Nueva rama</button>
+    <span class="sep"></span>
+    <label class="field" title="Token para repos privados. Se usa cuando git lo pide (URL tipo https://usuario@host/...). Solo se guarda en la memoria del panel, nunca en disco.">Token git
+      <input type="password" id="gitToken" placeholder="no cargado" autocomplete="off" style="width:170px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+    <button class="sm" id="tokenApply">Aplicar</button>
+    <button class="sm" id="tokenClear">Quitar</button>
+    <span class="badge" id="tokenState">sin token</span>
+  </div>
 </header>
 
 <main>
@@ -104,7 +121,7 @@
   <section class="logpane">
     <div class="head">
       <strong id="logTitle">Selecciona un repo para ver su log</strong>
-      <label class="field"><input type="checkbox" id="follow" checked> Seguir</label>
+      <label class="field" title="Desplaza el log automáticamente a la última línea. Desmárcalo para leer líneas anteriores sin que la vista se mueva."><input type="checkbox" id="follow" checked> Seguir</label>
       <button class="sm" id="clearLog">Limpiar vista</button>
     </div>
     <pre class="log" id="log"></pre>
@@ -119,7 +136,7 @@
   <div class="row" style="margin-bottom:8px">
     <span class="muted">Importar (como <code>mfs list</code>):</span>
     <input type="text" id="ghOrg" placeholder="organización o usuario GitHub" style="width:220px">
-    <input type="password" id="ghToken" placeholder="token (opcional, privados)" style="width:200px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <input type="password" id="ghToken" placeholder="token (vacío = Token git del panel)" style="width:200px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
     <button id="ghImport">Importar de GitHub</button>
     <button id="tplBtn">Plantilla de ejemplo</button>
   </div>
@@ -130,10 +147,23 @@
   </div>
 </dialog>
 
+<dialog id="commitDialog">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <strong>Commit (git add . + git commit)</strong>
+    <span class="muted">Solo se hace commit en los repos con cambios</span>
+  </div>
+  <textarea id="commitMsg" spellcheck="false" placeholder="Mensaje del commit (ej: fix: corrige validación del formulario)" style="height:90px"></textarea>
+  <pre class="log" id="commitRepos" style="max-height:30vh;min-height:60px;margin-top:8px"></pre>
+  <div class="row" style="justify-content:flex-end;margin-top:8px">
+    <button id="commitCancel">Cancelar</button>
+    <button class="primary" id="commitOk">Hacer commit</button>
+  </div>
+</dialog>
+
 <dialog id="psDialog">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
     <strong>Procesos de Node en ejecución</strong>
-    <span class="row"><button id="psRefresh">↻</button><button class="danger" id="killNode">Matar todos (excepto el panel)</button><button id="psClose">Cerrar</button></span>
+    <span class="row"><button id="psRefresh">↻</button><button class="danger" id="killNode">Matar todos (excepto paneles mfs)</button><button id="psClose">Cerrar</button></span>
   </div>
   <pre class="log" id="psList" style="max-height:50vh;min-height:120px"></pre>
 </dialog>
@@ -179,7 +209,7 @@
 const $ = (s) => document.querySelector(s);
 const state = { repos: [], selected: null, checked: new Set(), first: true };
 const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido' };
-const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run' };
+const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run', status: 'status', commit: 'commit', push: 'push', checkout: 'checkout', newbranch: 'nueva rama' };
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -245,7 +275,10 @@ function render(emptyMsg) {
     cb.checked = state.checked.has(r.name);
     const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
     const meta = el('div', { class: 'meta' },
-      r.cloned ? el('span', { class: 'badge' }, '⎇ ' + (r.branch || '?')) : el('span', { class: 'badge warn' }, 'sin clonar'),
+      r.cloned ? el('span', { class: 'badge', title: r.upstream ? 'upstream: ' + r.upstream : 'sin upstream (push lo publicará con -u)' }, '⎇ ' + (r.branch || '?')) : el('span', { class: 'badge warn' }, 'sin clonar'),
+      r.cloned && r.changes ? el('span', { class: 'badge warn', title: 'Archivos modificados o nuevos sin commit' }, `● ${r.changes} cambio${r.changes > 1 ? 's' : ''}`) : null,
+      r.cloned && r.ahead ? el('span', { class: 'badge', title: 'Commits pendientes de push' }, `↑${r.ahead}`) : null,
+      r.cloned && r.behind ? el('span', { class: 'badge', title: 'Commits en el remoto por traer (pull)' }, `↓${r.behind}`) : null,
       r.cloned ? (r.hasDeps ? el('span', { class: 'badge' }, 'node_modules ✓') : el('span', { class: 'badge warn' }, 'sin dependencias')) : null,
       r.isNew ? el('span', { class: 'badge' }, '#NEW ventana externa') : null,
       el('span', { title: r.url }, r.command),
@@ -259,6 +292,10 @@ function render(emptyMsg) {
         el('button', { class: 'sm', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
         el('button', { class: 'sm', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
         el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(running ? {} : { disabled: '' }) }, 'Detener'),
+        el('span', { class: 'sep' }),
+        el('button', { class: 'sm', title: 'git status', onclick: act('status'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Cambios'),
+        el('button', { class: 'sm', title: 'git add . + commit', onclick: (ev) => { ev.stopPropagation(); openCommit([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Commit'),
+        el('button', { class: 'sm', title: 'git push', onclick: (ev) => { ev.stopPropagation(); gitPush([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Push'),
       ),
     );
     box.append(card);
@@ -274,16 +311,92 @@ async function selectRepo(name) {
   if ($('#follow').checked) $('#log').scrollTop = $('#log').scrollHeight;
 }
 
-async function runAction(action, names) {
+async function runAction(action, names, extra = {}) {
   if (!names.length) return toast('No hay repos seleccionados');
   const branch = $('#branch').value.trim();
+  const installCmd = $('#installCmd').value.trim();
   localStorage.setItem('mfs.branch', branch);
+  localStorage.setItem('mfs.installCmd', installCmd);
   try {
-    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, list: listName() }) });
-    toast(`${action}: ${r.started.length} iniciado(s)` + (r.busy.length ? `, ${r.busy.length} ocupado(s)` : ''));
-    if (!state.selected && r.started[0]) selectRepo(r.started[0]);
+    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, installCmd, list: listName(), ...extra }) });
+    toast(`${ACTION_LABEL[action] || action}: ${r.started.length} iniciado(s)` + (r.busy.length ? `, ${r.busy.length} ocupado(s)` : ''));
+    if (r.started[0] && (!state.selected || !r.started.includes(state.selected))) selectRepo(r.started[0]);
   } catch (e) { toast(e.message); }
 }
+
+// ── Git ──
+const selectedNames = () => state.repos.map((r) => r.name).filter((n) => state.checked.has(n));
+const repoBy = (n) => state.repos.find((r) => r.name === n);
+let commitTargets = [];
+
+function openCommit(names) {
+  const repos = names.map(repoBy).filter((r) => r && r.cloned);
+  if (!repos.length) return toast('No hay repos clonados seleccionados');
+  const withChanges = repos.filter((r) => r.changes > 0);
+  const without = repos.filter((r) => !r.changes);
+  commitTargets = withChanges.map((r) => r.name);
+  $('#commitRepos').textContent =
+    (withChanges.length ? 'Se hará commit en:\n' + withChanges.map((r) => `  ${r.name}  (${r.branch})  ● ${r.changes} cambio(s)`).join('\n') : 'Ningún repo seleccionado tiene cambios.') +
+    (without.length ? '\n\nSin cambios (se omiten):\n' + without.map((r) => `  ${r.name}`).join('\n') : '');
+  $('#commitOk').disabled = !withChanges.length;
+  $('#commitMsg').value = localStorage.getItem('mfs.commitMsg') || '';
+  $('#commitDialog').showModal();
+  $('#commitMsg').focus();
+}
+$('#commitCancel').onclick = () => $('#commitDialog').close();
+$('#commitOk').onclick = () => {
+  const msg = $('#commitMsg').value.trim();
+  if (!msg) return toast('Escribe el mensaje del commit');
+  localStorage.setItem('mfs.commitMsg', msg);
+  $('#commitDialog').close();
+  runAction('commit', commitTargets, { commitMsg: msg });
+};
+
+function gitPush(names) {
+  const repos = names.map(repoBy).filter((r) => r && r.cloned);
+  const pending = repos.filter((r) => r.ahead > 0 || !r.upstream);
+  if (!pending.length) return toast('Nada que subir en los repos seleccionados');
+  const lines = pending.map((r) => `• ${r.name} (${r.branch}) ${r.upstream ? '↑' + r.ahead : 'nueva rama → push -u'}`).join('\n');
+  if (!confirm(`Se hará git push (sin --force) en:\n\n${lines}\n\n¿Continuar?`)) return;
+  runAction('push', pending.map((r) => r.name));
+}
+
+function gitBranchAction(action) {
+  const branch = $('#branch').value.trim();
+  if (!branch) return toast('Escribe la rama en el campo "Rama (pull/checkout)"');
+  const names = selectedNames();
+  if (!names.length) return toast('No hay repos seleccionados');
+  const dirty = names.map(repoBy).filter((r) => r && r.changes > 0).map((r) => r.name);
+  const msg = action === 'checkout' ? `Cambiar ${names.length} repo(s) a la rama "${branch}".` : `Crear la rama "${branch}" en ${names.length} repo(s) y cambiar a ella.`;
+  const warn = dirty.length ? `\n\nAtención: tienen cambios sin commit: ${dirty.join(', ')}` : '';
+  if (!confirm(msg + warn + '\n\n¿Continuar?')) return;
+  runAction(action, names);
+}
+
+document.querySelectorAll('header [data-git]').forEach((b) => b.addEventListener('click', () => {
+  const a = b.dataset.git;
+  if (a === 'status') runAction('status', selectedNames());
+  else if (a === 'commit') openCommit(selectedNames());
+  else if (a === 'push') gitPush(selectedNames());
+  else gitBranchAction(a);
+}));
+
+// ── Token git (solo en memoria del servidor) ──
+function showTokenState(has) {
+  $('#tokenState').textContent = has ? 'token cargado ✓' : 'sin token';
+  $('#tokenState').classList.toggle('warn', !has);
+}
+$('#tokenApply').onclick = async () => {
+  const token = $('#gitToken').value.trim();
+  if (!token) return toast('Escribe el token');
+  try { const r = await api('/api/token', { method: 'POST', body: JSON.stringify({ token }) }); $('#gitToken').value = ''; showTokenState(r.hasToken); toast('Token cargado en memoria del panel'); }
+  catch (e) { toast(e.message); }
+};
+$('#gitToken').onkeydown = (ev) => { if (ev.key === 'Enter') $('#tokenApply').onclick(); };
+$('#tokenClear').onclick = async () => {
+  try { const r = await api('/api/token', { method: 'POST', body: JSON.stringify({ token: '' }) }); showTokenState(r.hasToken); toast('Token eliminado'); }
+  catch (e) { toast(e.message); }
+};
 
 async function stop(name) {
   try { await api('/api/stop', { method: 'POST', body: JSON.stringify(name ? { repo: name } : { all: true }) }); }
@@ -322,7 +435,12 @@ async function loadPs() {
   try {
     const { processes } = await api('/api/ps');
     $('#psList').textContent = processes.length
-      ? processes.map((p) => `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${p.self ? '← este panel' : (p.command || '')}`).join('\n')
+      ? processes.map((p) => {
+          const tag = p.self ? '← este panel'
+            : p.panel ? `← panel mfs :${p.panel.port} (${p.panel.workDir})`
+            : (p.command || '');
+          return `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${tag}`;
+        }).join('\n')
       : 'No hay procesos de Node en ejecución.';
   } catch (e) { $('#psList').textContent = e.message; }
 }
@@ -330,7 +448,7 @@ $('#psBtn').onclick = () => { $('#psDialog').showModal(); loadPs(); };
 $('#psRefresh').onclick = loadPs;
 $('#psClose').onclick = () => $('#psDialog').close();
 $('#killNode').onclick = async () => {
-  if (!confirm('Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto el panel. ¿Continuar?')) return;
+  if (!confirm('Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto los paneles mfs abiertos. ¿Continuar?')) return;
   try { const r = await api('/api/kill-node', { method: 'POST' }); toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800); }
   catch (e) { toast(e.message); }
 };
@@ -467,8 +585,10 @@ $('#editorSave').onclick = async () => {
 
 (async function init() {
   $('#branch').value = localStorage.getItem('mfs.branch') || '';
+  $('#installCmd').value = localStorage.getItem('mfs.installCmd') || '';
   try {
     const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
+    showTokenState(info.hasToken);
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
     $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');
   } catch { $('#list').value = 'listRep.txt'; }
