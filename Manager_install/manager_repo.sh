@@ -91,7 +91,7 @@ set -e
 source "$(dirname "$0")/manager_logs.sh"
 
 FILE_NAME="$(basename "$0")"
-COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help")
+COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui")
 BRANCH="main"  # Rama por defecto
 
  ## Función para matar los procesos de Node en ejecución
@@ -162,6 +162,19 @@ handle_non_list_command() {
      border)
      border_show
      ;;
+     ui)
+     # Uso: mfs ui [lista.txt] [--port N] [--no-open]
+     log_info "Iniciando panel web de mfs..."
+     # Pasar al panel la ruta del bash actual (en Git Bash se convierte a ruta Windows para Node)
+     if [ -z "$MFS_BASH" ]; then
+         if command -v cygpath >/dev/null 2>&1; then
+             export MFS_BASH="$(cygpath -w "$BASH")"
+         else
+             export MFS_BASH="$BASH"
+         fi
+     fi
+     node "$(dirname "$0")/ui/server.js" "${@:2}"
+     ;;
      *)
      log_error "Comando '$cmd' no reconocido para manejo sin archivo."
      exit 1
@@ -170,9 +183,9 @@ handle_non_list_command() {
      exit 0
     }
 
-non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border" )
+non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border" "ui" )
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
-    handle_non_list_command "$1"
+    handle_non_list_command "$@"
     fi
 # # si el primer argumento es 'kill' llamar a la función kill_node_processes
 # if [ "$1" == "kill" ]; then
@@ -194,6 +207,7 @@ declare -A external_repos      # Almacenar URL → flag de ventana externa
 
 # Leer el archivo y procesar las líneas
 while IFS= read -r line; do
+    line="${line%$'\r'}"   # Soportar archivos con saltos de línea Windows (CRLF)
     # Ignorar líneas vacías o que contengan "#EXCLUDE"
     if [[ -z "$line" || "$line" == *"#EXCLUDE"* ]]; then
         continue
@@ -201,6 +215,12 @@ while IFS= read -r line; do
 
     # Extraer URL, comando y flag opcional
     repo_url=$(echo "$line" | awk '{print $1}')
+
+    # Filtro opcional (usado por el panel 'mfs ui'): procesar solo el repo indicado en MFS_ONLY
+    if [[ -n "$MFS_ONLY" && "$(basename "$repo_url" .git)" != "$MFS_ONLY" ]]; then
+        continue
+    fi
+
     repo_command=$(echo "$line" | awk '{$1=""; $NF=""; print $0}' | xargs)  # Extrae el comando sin el flag
     repo_flag=$(echo "$line" | awk '{print $NF}')  # Extrae la última palabra (posible flag)
 
@@ -229,7 +249,7 @@ get_repo_urls() {
 # mapfile -t source_repos < <(grep -v '^#' "$file_name_list" | grep -v '^$' | grep -v '#EXCLUDE')
 pull_repos() {
     for repo_url in "${!source_repos[@]}"; do
-        repo_name=$(basename "$repo_url")
+        repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         log_info "Procesando $repo_name"
         if [ ! -d "$repo_name" ]; then
             # Clon parcial de los repositorios,usar git pull fetch --unshallow para obtener el historial completo.
@@ -248,7 +268,7 @@ pull_repos() {
 manage_deps() {
     local action=$1
     for repo_url in "${!source_repos[@]}"; do
-        repo_name=$(basename "$repo_url")
+        repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         log_info "Procesando $repo_name"
         if [ -d "$repo_name" ]; then
             (
@@ -273,7 +293,7 @@ manage_deps() {
 ##Función para ejecutar los repositorios.
 run_repos() {
     for repo_url in "${!source_repos[@]}"; do
-        repo_name=$(basename "$repo_url")
+        repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         run_command="${source_repos[$repo_url]}"
         is_external="${external_repos[$repo_url]}"
 

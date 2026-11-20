@@ -177,7 +177,11 @@ show_usage() {
    # Ejemplo de uso para el comando "ps"
     log_description "Muestra los procesos de Node en ejecución."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[6]}:" "mfs ${COMMANDS[6]}"
-   
+
+   # Ejemplo de uso para el comando "ui"
+    log_description "Abre el panel web local (pull/install/run/detener con logs por repo)."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[9]}:" "mfs ${COMMANDS[9]} [opcional: lista.txt --port 4777 --no-open]"
+
 # Ejemplo de uso para el comando "help"
      log_warning "Consultar el archivo README.md ubicado en $INSTALL_DIR"
 }

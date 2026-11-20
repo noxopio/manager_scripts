@@ -98,6 +98,7 @@ https://github.com/usuario/repo4.git npm run dev #NEW
 | `mfs ps`                 | Lista los procesos en ejecución.                |
 | `mfs kill`               | Detiene todos los procesos de Node.js activos.  |
 | `mfs uninstall`          | Desinstala la herramienta y elimina configuraciones.|
+| `mfs ui`                 | Abre el panel web local para gestionar los repos.|
 
 >[!WARNING]
 > El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.
@@ -137,6 +138,33 @@ mfs run
 ```bash
 mfs updeps listRep.txt
 ```
+
+### Panel Web Local (`mfs ui`)
+```bash
+cd /ruta/donde/estan/los/repos   # el mismo directorio donde está listRep.txt
+mfs ui                           # abre http://127.0.0.1:4777
+mfs ui ../listas/otra.txt        # abrir con otra lista (igual que "mfs run otra.txt")
+mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
+```
+- El campo **Lista** acepta cualquier `.txt`: relativo (`../listas/otra.txt`), `C:\ruta\lista.txt` o `/c/ruta/lista.txt`. Recuerda las últimas usadas.
+- **📂 Buscar…** abre un explorador para navegar carpetas y unidades (`C:`, `D:`…), buscar `.txt` por nombre en subcarpetas (ignora `node_modules` y `.git`), usar el archivo como lista, editarlo o crear uno nuevo.
+- Cada repo corre como un proceso independiente, con su propio log en el panel y su botón **Detener**. Los repos marcados con `#NEW` siguen abriendo su propia ventana, como en `mfs run`.
+- **Procesos Node** equivale a `mfs ps` / `mfs kill`. "Matar todos" respeta el propio panel.
+- **Editar lista** permite importar repos de una organización o usuario de GitHub, o insertar la plantilla de ejemplo (equivale a `mfs list`).
+- **Ayuda** muestra este README (equivale a `mfs help`).
+- `mfs border` y `mfs uninstall_manager` siguen disponibles solo en la terminal.
+- Una tarjeta por repo con su estado, rama actual, dependencias y puerto detectado.
+- Botones globales y por repo para **Pull / Install / Updeps / Run / Detener**, y un log en vivo por repo.
+- Editor integrado de `listRep.txt` (sustituye a `mfs list`).
+- No cambia el rendimiento: el panel lanza el mismo `manager_repo.sh` en paralelo, un proceso por repo (con la variable `MFS_ONLY=<repo>`).
+- Requiere solo `node` (sin `npm install`). Escucha únicamente en `127.0.0.1`.
+
+>[!WARNING]
+> "Detener todo" en el panel detiene solo los procesos lanzados desde el panel. **No** uses `mfs kill` con el panel abierto: mata *todos* los procesos de Node, incluido el panel.
+
+>[!TIP]
+> Si Node no encuentra bash (por ejemplo, porque el `bash` del PATH es el de WSL), define la ruta:
+> `export MFS_BASH="C:\Program Files\Git\bin\bash.exe"`
 
 ### Listar Procesos en Ejecución
 ```bash

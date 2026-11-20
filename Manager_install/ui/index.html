@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mfs · Panel de Repos</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2430; --muted: #687385; --border: #dde1e7;
+    --accent: #2f5bd3; --accent-text: #fff; --ok: #1f8a4c; --err: #c23b3b; --run: #2f5bd3; --warn: #a66a00;
+    --log-bg: #11161f; --log-text: #d6dde8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --panel: #1a1f27; --text: #e4e8ee; --muted: #93a0b2; --border: #2b323d;
+      --accent: #5b82f0; --ok: #46b97a; --err: #e46a6a; --run: #6d93f5; --warn: #e0a640;
+      --log-bg: #0b0e13; --log-text: #cfd7e3;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 16px; margin: 0 12px 0 0; }
+  .muted { color: var(--muted); font-size: 12px; }
+  label.field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  input[type=text], select { font: inherit; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+  input[type=text] { width: 180px; }
+  button { font: inherit; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.danger { color: var(--err); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.sm { padding: 2px 8px; font-size: 12px; }
+  .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+  main { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1.2fr); gap: 12px; padding: 12px 16px; flex: 1; min-height: 0; }
+  @media (max-width: 900px) { body { height: auto; } main { grid-template-columns: 1fr; } }
+  .list { overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card .top { display: flex; align-items: center; gap: 8px; }
+  .card .name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--muted); align-items: center; }
+  .card .actions { display: flex; gap: 4px; margin-top: 6px; }
+  .badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.warn { color: var(--warn); border-color: currentColor; }
+  .status { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .status.running { color: var(--run); } .status.running .dot { background: var(--run); animation: pulse 1.2s infinite; }
+  .status.ok { color: var(--ok); } .status.ok .dot { background: var(--ok); }
+  .status.error { color: var(--err); } .status.error .dot { background: var(--err); }
+  .status.stopped .dot { background: var(--muted); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  a { color: var(--accent); }
+  .logpane { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; min-height: 300px; overflow: hidden; }
+  .logpane .head { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .logpane .head strong { flex: 1; }
+  pre.log { margin: 0; flex: 1; overflow: auto; padding: 10px; background: var(--log-bg); color: var(--log-text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+  .empty { padding: 24px; text-align: center; color: var(--muted); }
+  dialog { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); width: min(900px, 95vw); padding: 14px; }
+  dialog textarea { width: 100%; height: 55vh; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+  .fslist { border: 1px solid var(--border); border-radius: 6px; height: 45vh; overflow: auto; background: var(--bg); }
+  .fsitem { padding: 5px 10px; cursor: pointer; display: flex; gap: 8px; align-items: center; user-select: none; }
+  .fsitem:hover { background: var(--panel); }
+  .fsitem.sel { background: var(--accent); color: var(--accent-text); }
+  .fsitem .sub { color: var(--muted); font-size: 11px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+  .fsitem.sel .sub { color: inherit; opacity: .8; }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: .95; }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>mfs · microfrontends</h1>
+    <span class="muted" id="workdir"></span>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label class="field" title="Cualquier .txt: relativo (../listas/otra.txt), C:\ruta\lista.txt o /c/ruta/lista.txt">Lista
+      <input type="text" id="list" list="lists" style="width:240px" placeholder="listRep.txt"></label>
+    <datalist id="lists"></datalist>
+    <button id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">📂 Buscar…</button>
+    <label class="field">Rama (pull) <input type="text" id="branch" placeholder="main" list="branches"></label>
+    <datalist id="branches"><option value="main"><option value="develop"><option value="master"></datalist>
+    <span class="sep"></span>
+    <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
+    <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull)">Pull</button>
+    <button class="primary" data-action="install" title="npm install si no existe node_modules">Install</button>
+    <button data-action="updeps" title="npm install forzado">Updeps</button>
+    <button class="primary" data-action="run" title="Ejecuta el comando configurado de cada repo">Run</button>
+    <button class="danger" id="stopAll" title="Detiene solo los procesos lanzados desde este panel">Detener todo</button>
+    <span class="sep"></span>
+    <button id="edit">Editar lista</button>
+    <button id="psBtn" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
+    <button id="helpBtn" title="Equivalente a mfs help">Ayuda</button>
+    <button id="refresh" title="Recargar estado">↻</button>
+  </div>
+</header>
+
+<main>
+  <section class="list" id="repos"></section>
+  <section class="logpane">
+    <div class="head">
+      <strong id="logTitle">Selecciona un repo para ver su log</strong>
+      <label class="field"><input type="checkbox" id="follow" checked> Seguir</label>
+      <button class="sm" id="clearLog">Limpiar vista</button>
+    </div>
+    <pre class="log" id="log"></pre>
+  </section>
+</main>
+
+<dialog id="editor">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <strong id="editorTitle">listRep.txt</strong>
+    <span class="muted">Una URL por línea · <code>#EXCLUDE</code> excluye · <code>#NEW</code> abre ventana externa · comando opcional tras la URL</span>
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <span class="muted">Importar (como <code>mfs list</code>):</span>
+    <input type="text" id="ghOrg" placeholder="organización o usuario GitHub" style="width:220px">
+    <input type="password" id="ghToken" placeholder="token (opcional, privados)" style="width:200px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <button id="ghImport">Importar de GitHub</button>
+    <button id="tplBtn">Plantilla de ejemplo</button>
+  </div>
+  <textarea id="editorText" spellcheck="false"></textarea>
+  <div class="row" style="justify-content:flex-end;margin-top:8px">
+    <button id="editorCancel">Cancelar</button>
+    <button class="primary" id="editorSave">Guardar</button>
+  </div>
+</dialog>
+
+<dialog id="psDialog">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <strong>Procesos de Node en ejecución</strong>
+    <span class="row"><button id="psRefresh">↻</button><button class="danger" id="killNode">Matar todos (excepto el panel)</button><button id="psClose">Cerrar</button></span>
+  </div>
+  <pre class="log" id="psList" style="max-height:50vh;min-height:120px"></pre>
+</dialog>
+
+<dialog id="fsDialog">
+  <div class="row" style="margin-bottom:8px">
+    <strong style="margin-right:auto">Buscar lista .txt</strong>
+    <span class="chips" id="fsDrives"></span>
+    <button class="sm" id="fsHome">Carpeta de trabajo</button>
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <button id="fsUp" title="Carpeta padre">↑</button>
+    <input type="text" id="fsPath" style="flex:1;width:auto" spellcheck="false">
+    <button id="fsGo">Ir</button>
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <input type="text" id="fsQuery" placeholder="nombre del archivo (ej: listRep)" style="flex:1;width:auto">
+    <button id="fsSearch">Buscar en subcarpetas</button>
+  </div>
+  <div class="row" style="margin-bottom:8px" id="fsRecentRow">
+    <span class="muted">Recientes:</span><span class="chips" id="fsRecent"></span>
+  </div>
+  <div class="fslist" id="fsList"></div>
+  <div class="row" style="margin-top:8px">
+    <span class="muted" id="fsSelected" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Ningún archivo seleccionado</span>
+    <button id="fsNew">Nuevo .txt aquí</button>
+    <button id="fsCancel">Cancelar</button>
+    <button id="fsUse" disabled>Usar como lista</button>
+    <button class="primary" id="fsUseEdit" disabled>Usar y editar</button>
+  </div>
+</dialog>
+
+<dialog id="helpDialog">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <strong>Ayuda · README</strong><button id="helpClose">Cerrar</button>
+  </div>
+  <pre class="log" id="helpText" style="max-height:65vh"></pre>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const state = { repos: [], selected: null, checked: new Set(), first: true };
+const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido' };
+const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run' };
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'X-MFS': '1', ...(opts.headers || {}) } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+const listName = () => $('#list').value || 'listRep.txt';
+
+async function loadLists() {
+  const { files } = await api('/api/lists');
+  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]');
+  const dl = $('#lists'); dl.innerHTML = '';
+  for (const f of [...new Set([...files, ...recent])]) { const o = document.createElement('option'); o.value = f; dl.appendChild(o); }
+}
+function rememberList(name) {
+  localStorage.setItem('mfs.list', name);
+  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]').filter((x) => x !== name);
+  localStorage.setItem('mfs.recentLists', JSON.stringify([name, ...recent].slice(0, 10)));
+}
+
+async function loadRepos() {
+  try {
+    const data = await api('/api/repos?list=' + encodeURIComponent(listName()));
+    state.repos = data.repos;
+    if (state.first || $('#selectAll').checked) state.checked = new Set(data.repos.map((r) => r.name));
+    state.first = false;
+    render(data.missing ? `No existe ${data.file}. Usa "Editar lista" para crearlo.` : null);
+  } catch (e) { toast(e.message); }
+}
+
+let refreshTimer;
+const scheduleRefresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(loadRepos, 600); };
+
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of children) if (c != null) e.append(c);
+  return e;
+}
+
+function statusNode(r) {
+  const label = STATUS_LABEL[r.status] + (r.action && r.status !== 'idle' ? ` · ${ACTION_LABEL[r.action]}` : '');
+  return el('span', { class: 'status ' + r.status }, el('span', { class: 'dot' }), label);
+}
+
+function render(emptyMsg) {
+  const box = $('#repos'); box.innerHTML = '';
+  if (!state.repos.length) { box.append(el('div', { class: 'empty' }, emptyMsg || 'La lista no tiene repos activos.')); return; }
+  for (const r of state.repos) {
+    const running = r.status === 'running';
+    const cb = el('input', { type: 'checkbox', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
+      ev.target.checked ? state.checked.add(r.name) : state.checked.delete(r.name);
+      $('#selectAll').checked = state.checked.size === state.repos.length;
+    } });
+    cb.checked = state.checked.has(r.name);
+    const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
+    const meta = el('div', { class: 'meta' },
+      r.cloned ? el('span', { class: 'badge' }, '⎇ ' + (r.branch || '?')) : el('span', { class: 'badge warn' }, 'sin clonar'),
+      r.cloned ? (r.hasDeps ? el('span', { class: 'badge' }, 'node_modules ✓') : el('span', { class: 'badge warn' }, 'sin dependencias')) : null,
+      r.isNew ? el('span', { class: 'badge' }, '#NEW ventana externa') : null,
+      el('span', { title: r.url }, r.command),
+      r.port ? el('a', { href: 'http://localhost:' + r.port, target: '_blank', onclick: (ev) => ev.stopPropagation() }, 'localhost:' + r.port) : null,
+    );
+    const card = el('div', { class: 'card' + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
+      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), statusNode(r)),
+      meta,
+      el('div', { class: 'actions' },
+        el('button', { class: 'sm', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
+        el('button', { class: 'sm', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
+        el('button', { class: 'sm', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
+        el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(running ? {} : { disabled: '' }) }, 'Detener'),
+      ),
+    );
+    box.append(card);
+  }
+}
+
+async function selectRepo(name) {
+  state.selected = name;
+  $('#logTitle').textContent = name;
+  render();
+  const { lines } = await api('/api/log?repo=' + encodeURIComponent(name));
+  $('#log').textContent = lines.join('\n') + (lines.length ? '\n' : '');
+  if ($('#follow').checked) $('#log').scrollTop = $('#log').scrollHeight;
+}
+
+async function runAction(action, names) {
+  if (!names.length) return toast('No hay repos seleccionados');
+  const branch = $('#branch').value.trim();
+  localStorage.setItem('mfs.branch', branch);
+  try {
+    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, list: listName() }) });
+    toast(`${action}: ${r.started.length} iniciado(s)` + (r.busy.length ? `, ${r.busy.length} ocupado(s)` : ''));
+    if (!state.selected && r.started[0]) selectRepo(r.started[0]);
+  } catch (e) { toast(e.message); }
+}
+
+async function stop(name) {
+  try { await api('/api/stop', { method: 'POST', body: JSON.stringify(name ? { repo: name } : { all: true }) }); }
+  catch (e) { toast(e.message); }
+}
+
+function connectStream() {
+  const es = new EventSource('/api/stream');
+  es.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    const r = state.repos.find((x) => x.name === msg.repo);
+    if (msg.type === 'log') {
+      if (msg.repo === state.selected) {
+        const log = $('#log'); log.append(msg.line + '\n');
+        if ($('#follow').checked) log.scrollTop = log.scrollHeight;
+      }
+    } else if (msg.type === 'status' && r) {
+      r.status = msg.status; r.action = msg.action; r.port = msg.port;
+      render();
+      if (msg.status !== 'running') scheduleRefresh();
+    }
+  };
+}
+
+// ── Eventos ──
+document.querySelectorAll('header [data-action]').forEach((b) =>
+  b.addEventListener('click', () => runAction(b.dataset.action, state.repos.map((r) => r.name).filter((n) => state.checked.has(n))))
+);
+$('#stopAll').onclick = () => stop(null);
+$('#refresh').onclick = loadRepos;
+$('#selectAll').onchange = (ev) => { state.checked = ev.target.checked ? new Set(state.repos.map((r) => r.name)) : new Set(); render(); };
+$('#list').onchange = () => { rememberList(listName()); loadLists(); state.first = true; loadRepos(); };
+
+// Equivalente a "mfs ps" / "mfs kill"
+async function loadPs() {
+  try {
+    const { processes } = await api('/api/ps');
+    $('#psList').textContent = processes.length
+      ? processes.map((p) => `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${p.self ? '← este panel' : (p.command || '')}`).join('\n')
+      : 'No hay procesos de Node en ejecución.';
+  } catch (e) { $('#psList').textContent = e.message; }
+}
+$('#psBtn').onclick = () => { $('#psDialog').showModal(); loadPs(); };
+$('#psRefresh').onclick = loadPs;
+$('#psClose').onclick = () => $('#psDialog').close();
+$('#killNode').onclick = async () => {
+  if (!confirm('Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto el panel. ¿Continuar?')) return;
+  try { const r = await api('/api/kill-node', { method: 'POST' }); toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800); }
+  catch (e) { toast(e.message); }
+};
+
+// Equivalente a "mfs help"
+$('#helpBtn').onclick = async () => {
+  $('#helpDialog').showModal();
+  try { $('#helpText').textContent = (await api('/api/readme')).content; } catch (e) { $('#helpText').textContent = e.message; }
+};
+$('#helpClose').onclick = () => $('#helpDialog').close();
+
+// Equivalente a "mfs list": importar de GitHub o plantilla
+$('#ghImport').onclick = async () => {
+  const org = $('#ghOrg').value.trim();
+  if (!org) return toast('Escribe la organización o usuario de GitHub');
+  if ($('#editorText').value.trim() && !confirm('Esto reemplaza el contenido del editor (no se guarda hasta pulsar Guardar). ¿Continuar?')) return;
+  $('#ghImport').disabled = true; $('#ghImport').textContent = 'Importando...';
+  try {
+    const { urls } = await api('/api/github', { method: 'POST', body: JSON.stringify({ org, token: $('#ghToken').value }) });
+    $('#editorText').value = urls.join('\n') + '\n';
+    toast(`${urls.length} repos importados. Revisa y pulsa Guardar.`);
+  } catch (e) { toast(e.message); }
+  finally { $('#ghImport').disabled = false; $('#ghImport').textContent = 'Importar de GitHub'; }
+};
+$('#tplBtn').onclick = () => {
+  if ($('#editorText').value.trim() && !confirm('Esto reemplaza el contenido del editor. ¿Continuar?')) return;
+  $('#editorText').value = [
+    '# EXCLUDE ## Archivo de ejemplo para listar repositorios.',
+    '# EXCLUDE # Cada línea debe contener la URL de un repositorio.',
+    "# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE'.",
+    "# EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.",
+    '# EXCLUDE # Se puede indicar el comando a ejecutar al final de la URL.',
+    'https://github.com/usuario/repo1.git #NEW',
+    'https://github.com/usuario/repo2.git',
+    'https://github.com/usuario/repo3.git #EXCLUDE',
+    'https://github.com/usuario/repo4.git npm run dev #NEW',
+    'https://github.com/usuario/repo5.git npm run dev',
+    '',
+  ].join('\n');
+};
+$('#clearLog').onclick = () => { $('#log').textContent = ''; };
+// ── Explorador / buscador de listas .txt ──
+const fs_ = { dir: null, parent: null, sep: '\\', selected: null, workDir: null };
+function fsSelect(file) {
+  fs_.selected = file;
+  $('#fsSelected').textContent = file || 'Ningún archivo seleccionado';
+  $('#fsUse').disabled = $('#fsUseEdit').disabled = !file;
+  document.querySelectorAll('#fsList .fsitem').forEach((n) => n.classList.toggle('sel', n.dataset.file === file));
+}
+function fsItem(icon, label, sub, { file, onopen } = {}) {
+  const n = el('div', { class: 'fsitem' }, icon + ' ' + label, sub ? el('span', { class: 'sub', title: sub }, sub) : null);
+  if (file) {
+    n.dataset.file = file;
+    n.onclick = () => fsSelect(file);
+    n.ondblclick = () => fsUse(file, false);
+  } else if (onopen) n.onclick = onopen;
+  return n;
+}
+async function fsOpen(dir) {
+  try {
+    const r = await api('/api/fs/list' + (dir ? '?dir=' + encodeURIComponent(dir) : ''));
+    Object.assign(fs_, { dir: r.dir, parent: r.parent, sep: r.sep });
+    $('#fsPath').value = r.dir; $('#fsUp').disabled = !r.parent;
+    const box = $('#fsDrives'); box.innerHTML = '';
+    for (const d of r.drives) box.append(el('button', { class: 'sm', onclick: () => fsOpen(d) }, d.replace(/\\$/, '')));
+    const list = $('#fsList'); list.innerHTML = '';
+    const join = (name) => r.dir.replace(/[\\/]$/, '') + r.sep + name;
+    if (!r.entries.length) list.append(el('div', { class: 'empty' }, 'Sin carpetas ni archivos .txt aquí.'));
+    for (const e of r.entries) {
+      list.append(e.type === 'dir' ? fsItem('📁', e.name, null, { onopen: () => fsOpen(join(e.name)) }) : fsItem('📄', e.name, null, { file: join(e.name) }));
+    }
+    fsSelect(null);
+  } catch (e) { toast(e.message); }
+}
+async function fsSearch() {
+  const q = $('#fsQuery').value.trim();
+  if (!q) return toast('Escribe parte del nombre del archivo');
+  const list = $('#fsList'); list.innerHTML = ''; list.append(el('div', { class: 'empty' }, 'Buscando...'));
+  try {
+    const r = await api(`/api/fs/search?dir=${encodeURIComponent(fs_.dir || '')}&q=${encodeURIComponent(q)}`);
+    list.innerHTML = '';
+    if (!r.results.length) list.append(el('div', { class: 'empty' }, `No se encontraron .txt con "${q}" bajo ${r.root}`));
+    for (const f of r.results) list.append(fsItem('📄', f.split(/[\\/]/).pop(), f, { file: f }));
+    if (r.truncated) list.append(el('div', { class: 'empty' }, 'Resultados truncados: afina el nombre o busca desde una carpeta más concreta.'));
+    fsSelect(null);
+  } catch (e) { list.innerHTML = ''; toast(e.message); }
+}
+async function fsUse(file, edit) {
+  $('#list').value = file;
+  rememberList(file); loadLists(); state.first = true;
+  $('#fsDialog').close();
+  await loadRepos();
+  if (edit) $('#edit').onclick();
+}
+$('#browseBtn').onclick = () => {
+  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]');
+  const box = $('#fsRecent'); box.innerHTML = '';
+  for (const f of recent) box.append(el('button', { class: 'sm', title: f, onclick: () => fsUse(f, false) }, f.split(/[\\/]/).pop()));
+  $('#fsRecentRow').style.display = recent.length ? '' : 'none';
+  $('#fsQuery').value = '';
+  $('#fsDialog').showModal();
+  fsOpen(fs_.dir);
+};
+$('#fsUp').onclick = () => fs_.parent && fsOpen(fs_.parent);
+$('#fsGo').onclick = () => fsOpen($('#fsPath').value);
+$('#fsPath').onkeydown = (ev) => { if (ev.key === 'Enter') fsOpen($('#fsPath').value); };
+$('#fsHome').onclick = () => fsOpen(null);
+$('#fsSearch').onclick = fsSearch;
+$('#fsQuery').onkeydown = (ev) => { if (ev.key === 'Enter') fsSearch(); };
+$('#fsCancel').onclick = () => $('#fsDialog').close();
+$('#fsUse').onclick = () => fs_.selected && fsUse(fs_.selected, false);
+$('#fsUseEdit').onclick = () => fs_.selected && fsUse(fs_.selected, true);
+$('#fsNew').onclick = () => {
+  let name = (prompt(`Nombre del nuevo archivo en:\n${fs_.dir}`, 'listRep.txt') || '').trim();
+  if (!name) return;
+  if (/[\\/:*?"<>|]/.test(name)) return toast('Nombre no válido');
+  if (!name.toLowerCase().endsWith('.txt')) name += '.txt';
+  fsUse(fs_.dir.replace(/[\\/]$/, '') + fs_.sep + name, true);
+};
+
+$('#edit').onclick = async () => {
+  try {
+    const { file, content } = await api('/api/list?list=' + encodeURIComponent(listName()));
+    $('#editorTitle').textContent = file; $('#editorText').value = content; $('#editor').showModal();
+  } catch (e) { toast(e.message); }
+};
+$('#editorCancel').onclick = () => $('#editor').close();
+$('#editorSave').onclick = async () => {
+  try {
+    await api('/api/list', { method: 'PUT', body: JSON.stringify({ list: listName(), content: $('#editorText').value }) });
+    $('#editor').close(); toast('Lista guardada'); state.first = true; loadRepos();
+  } catch (e) { toast(e.message); }
+};
+
+(async function init() {
+  $('#branch').value = localStorage.getItem('mfs.branch') || '';
+  try {
+    const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
+    // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
+    $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');
+  } catch { $('#list').value = 'listRep.txt'; }
+  await loadLists();
+  await loadRepos();
+  connectStream();
+})();
+</script>
+</body>
+</html>

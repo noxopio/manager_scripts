@@ -136,6 +136,10 @@ create_alias() {
         log_info "Creando alias para manager en $ALIAS_FILE"
         # Reemplazar el placeholder INSTALL_DIR en manager_rc.sh con la ruta real
         sed -i "s|INSTALL_DIR/manager_repo.sh|$INSTALL_DIR/manager_repo.sh|g" "$INSTALL_DIR/manager_rc.sh"
+        # Si .bashrc no termina en salto de línea, añadir uno para no pegar el bloque a la última línea
+        if [ -s "$ALIAS_FILE" ] && [ -n "$(tail -c1 "$ALIAS_FILE")" ]; then
+            echo "" >> "$ALIAS_FILE"
+        fi
         cat << EOL >> "$ALIAS_FILE"
 # >>> Manager Scripts START
 # Instalado en $INSTALL_DATE
