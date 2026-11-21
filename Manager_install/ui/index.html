@@ -67,6 +67,9 @@
   .fsitem .sub { color: var(--muted); font-size: 11px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
   .fsitem.sel .sub { color: inherit; opacity: .8; }
   .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  #askDialog { width: min(560px, 95vw); }
+  #askMsg { margin: 8px 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px; line-height: 1.5; max-height: 50vh; overflow: auto; }
+  button.danger-solid { background: var(--err); color: #fff; border-color: var(--err); }
   .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: .95; }
 </style>
@@ -203,6 +206,16 @@
   <pre class="log" id="helpText" style="max-height:65vh"></pre>
 </dialog>
 
+<dialog id="askDialog">
+  <strong id="askTitle"></strong>
+  <pre id="askMsg"></pre>
+  <input type="text" id="askInput" style="width:100%;margin-top:10px" spellcheck="false">
+  <div class="row" style="justify-content:flex-end;margin-top:12px">
+    <button id="askCancel">Cancelar</button>
+    <button class="primary" id="askOk">Aceptar</button>
+  </div>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -210,6 +223,34 @@ const $ = (s) => document.querySelector(s);
 const state = { repos: [], selected: null, checked: new Set(), first: true };
 const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido' };
 const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run', status: 'status', commit: 'commit', push: 'push', checkout: 'checkout', newbranch: 'nueva rama' };
+
+// Diálogo propio en lugar de confirm()/prompt() nativos.
+// Confirmación: resuelve true/false. Con input: resuelve el texto, o null si se cancela.
+function ask({ title, message = '', okText = 'Aceptar', danger = false, input = false, value = '' }) {
+  return new Promise((resolve) => {
+    const d = $('#askDialog'), ok = $('#askOk'), inp = $('#askInput');
+    $('#askTitle').textContent = title;
+    $('#askMsg').textContent = message;
+    $('#askMsg').style.display = message ? '' : 'none';
+    inp.style.display = input ? '' : 'none';
+    inp.value = value;
+    ok.textContent = okText;
+    ok.className = danger ? 'danger-solid' : 'primary';
+    let done = false;
+    const finish = (accepted) => {
+      if (done) return;
+      done = true;
+      d.close();
+      resolve(input ? (accepted ? inp.value.trim() : null) : accepted);
+    };
+    ok.onclick = () => finish(true);
+    $('#askCancel').onclick = () => finish(false);
+    d.oncancel = (ev) => { ev.preventDefault(); finish(false); }; // Esc
+    inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } };
+    d.showModal();
+    if (input) { inp.focus(); inp.select(); } else ok.focus();
+  });
+}
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -352,16 +393,16 @@ $('#commitOk').onclick = () => {
   runAction('commit', commitTargets, { commitMsg: msg });
 };
 
-function gitPush(names) {
+async function gitPush(names) {
   const repos = names.map(repoBy).filter((r) => r && r.cloned);
   const pending = repos.filter((r) => r.ahead > 0 || !r.upstream);
   if (!pending.length) return toast('Nada que subir en los repos seleccionados');
   const lines = pending.map((r) => `• ${r.name} (${r.branch}) ${r.upstream ? '↑' + r.ahead : 'nueva rama → push -u'}`).join('\n');
-  if (!confirm(`Se hará git push (sin --force) en:\n\n${lines}\n\n¿Continuar?`)) return;
-  runAction('push', pending.map((r) => r.name));
+  const ok = await ask({ title: 'Push (sin --force)', message: `Se hará git push en:\n\n${lines}`, okText: 'Hacer push' });
+  if (ok) runAction('push', pending.map((r) => r.name));
 }
 
-function gitBranchAction(action) {
+async function gitBranchAction(action) {
   const branch = $('#branch').value.trim();
   if (!branch) return toast('Escribe la rama en el campo "Rama (pull/checkout)"');
   const names = selectedNames();
@@ -369,8 +410,12 @@ function gitBranchAction(action) {
   const dirty = names.map(repoBy).filter((r) => r && r.changes > 0).map((r) => r.name);
   const msg = action === 'checkout' ? `Cambiar ${names.length} repo(s) a la rama "${branch}".` : `Crear la rama "${branch}" en ${names.length} repo(s) y cambiar a ella.`;
   const warn = dirty.length ? `\n\nAtención: tienen cambios sin commit: ${dirty.join(', ')}` : '';
-  if (!confirm(msg + warn + '\n\n¿Continuar?')) return;
-  runAction(action, names);
+  const ok = await ask({
+    title: action === 'checkout' ? 'Checkout' : 'Nueva rama',
+    message: msg + warn,
+    okText: action === 'checkout' ? 'Cambiar de rama' : 'Crear rama',
+  });
+  if (ok) runAction(action, names);
 }
 
 document.querySelectorAll('header [data-git]').forEach((b) => b.addEventListener('click', () => {
@@ -448,7 +493,13 @@ $('#psBtn').onclick = () => { $('#psDialog').showModal(); loadPs(); };
 $('#psRefresh').onclick = loadPs;
 $('#psClose').onclick = () => $('#psDialog').close();
 $('#killNode').onclick = async () => {
-  if (!confirm('Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto los paneles mfs abiertos. ¿Continuar?')) return;
+  const ok = await ask({
+    title: 'Matar procesos Node',
+    message: 'Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto los paneles mfs abiertos.',
+    okText: 'Matar todos',
+    danger: true,
+  });
+  if (!ok) return;
   try { const r = await api('/api/kill-node', { method: 'POST' }); toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800); }
   catch (e) { toast(e.message); }
 };
@@ -464,7 +515,11 @@ $('#helpClose').onclick = () => $('#helpDialog').close();
 $('#ghImport').onclick = async () => {
   const org = $('#ghOrg').value.trim();
   if (!org) return toast('Escribe la organización o usuario de GitHub');
-  if ($('#editorText').value.trim() && !confirm('Esto reemplaza el contenido del editor (no se guarda hasta pulsar Guardar). ¿Continuar?')) return;
+  if ($('#editorText').value.trim() && !(await ask({
+    title: 'Reemplazar contenido del editor',
+    message: 'La lista importada de GitHub reemplazará el contenido actual del editor.\nNo se guarda en disco hasta pulsar Guardar.',
+    okText: 'Importar',
+  }))) return;
   $('#ghImport').disabled = true; $('#ghImport').textContent = 'Importando...';
   try {
     const { urls } = await api('/api/github', { method: 'POST', body: JSON.stringify({ org, token: $('#ghToken').value }) });
@@ -473,8 +528,12 @@ $('#ghImport').onclick = async () => {
   } catch (e) { toast(e.message); }
   finally { $('#ghImport').disabled = false; $('#ghImport').textContent = 'Importar de GitHub'; }
 };
-$('#tplBtn').onclick = () => {
-  if ($('#editorText').value.trim() && !confirm('Esto reemplaza el contenido del editor. ¿Continuar?')) return;
+$('#tplBtn').onclick = async () => {
+  if ($('#editorText').value.trim() && !(await ask({
+    title: 'Reemplazar contenido del editor',
+    message: 'La plantilla de ejemplo reemplazará el contenido actual del editor.\nNo se guarda en disco hasta pulsar Guardar.',
+    okText: 'Usar plantilla',
+  }))) return;
   $('#editorText').value = [
     '# EXCLUDE ## Archivo de ejemplo para listar repositorios.',
     '# EXCLUDE # Cada línea debe contener la URL de un repositorio.',
@@ -561,8 +620,8 @@ $('#fsQuery').onkeydown = (ev) => { if (ev.key === 'Enter') fsSearch(); };
 $('#fsCancel').onclick = () => $('#fsDialog').close();
 $('#fsUse').onclick = () => fs_.selected && fsUse(fs_.selected, false);
 $('#fsUseEdit').onclick = () => fs_.selected && fsUse(fs_.selected, true);
-$('#fsNew').onclick = () => {
-  let name = (prompt(`Nombre del nuevo archivo en:\n${fs_.dir}`, 'listRep.txt') || '').trim();
+$('#fsNew').onclick = async () => {
+  let name = (await ask({ title: 'Nuevo archivo .txt', message: `Se creará en:\n${fs_.dir}`, okText: 'Crear', input: true, value: 'listRep.txt' })) || '';
   if (!name) return;
   if (/[\\/:*?"<>|]/.test(name)) return toast('Nombre no válido');
   if (!name.toLowerCase().endsWith('.txt')) name += '.txt';
