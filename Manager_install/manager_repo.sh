@@ -252,8 +252,8 @@ declare -A external_repos      # Almacenar URL → flag de ventana externa
 # Leer el archivo y procesar las líneas
 while IFS= read -r line; do
     line="${line%$'\r'}"   # Soportar archivos con saltos de línea Windows (CRLF)
-    # Ignorar líneas vacías o que contengan "#EXCLUDE"
-    if [[ -z "$line" || "$line" == *"#EXCLUDE"* ]]; then
+    # Ignorar líneas vacías, comentarios (empiezan con "#", aunque tengan espacios delante) o que contengan "#EXCLUDE"
+    if [[ -z "$line" || "$line" == *"#EXCLUDE"* || "$line" =~ ^[[:space:]]*# ]]; then
         continue
     fi
 

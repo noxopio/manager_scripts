@@ -2,17 +2,20 @@
 
 **Versión 6.0.1** - Paquete de instalación para uso global.
 
-Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
+Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente, tanto desde la terminal como desde un **panel web local** (`mfs ui`).
 
 ---
 
 ## Características Principales
 
 - Gestión centralizada de múltiples repositorios mediante un archivo de configuración (`listRep.txt`).
-- Instalación y actualización de dependencias en paralelo.
+- Clonado, instalación y actualización de dependencias en paralelo.
+- Comando de instalación personalizable (`npm ci`, `npm i --legacy-peer-deps`, `pnpm install`…).
 - Ejecución y monitoreo de microfrontends.
+- Operaciones git en todos los repos: status, commit, push, checkout y nueva rama.
+- Soporte para repos privados sin escribir el token en la lista.
+- Panel web local con logs independientes por repo, edición y búsqueda de listas, y varios paneles en paralelo.
 - Comandos para detener procesos y liberar recursos del sistema.
-- Configuración simplificada y personalizable.
 
 ---
 
@@ -29,6 +32,7 @@ Este script ha sido diseñado para optimizar la gestión de múltiples repositor
 1. **Dependencias necesarias**:
    - `npm`
    - `git`
+   - `node` (solo para el panel `mfs ui`; no requiere `npm install`)
 
 2. **Permisos de ejecución**:
    Es necesario asegurarse de que los scripts tengan permisos de ejecución:
@@ -51,6 +55,11 @@ El script `manager_install.sh` automatiza la instalación de la herramienta `mfs
 
 2. Una vez completada la instalación, el alias `mfs` estará disponible para ejecutar los comandos de la herramienta.
 
+3. Para actualizar una instalación existente:
+   ```bash
+   ./manager_install.sh --force
+   ```
+
 >[!NOTE]
 > En caso de que el script no tenga permisos de ejecución, estos pueden otorgarse con el siguiente comando:
 > ```bash
@@ -66,18 +75,21 @@ El archivo `listRep.txt` actúa como el núcleo de configuración de la herramie
 ### Formato del Archivo
 
 - Cada línea debe incluir una URL de repositorio.
-- Las líneas que comienzan con `#` serán tratadas como comentarios.
+- Las líneas que comienzan con `#` se tratan como comentarios y se ignoran.
 - Etiquetas disponibles:
-  - `#NEW`: Abre el repositorio en una nueva ventana de terminal.
+  - `#NEW`: Abre el repositorio en una nueva ventana de terminal al ejecutar `run`.
   - `#EXCLUDE`: Excluye el repositorio de las operaciones.
-- Es posible agregar comandos específicos al final de la URL.
+- Es posible agregar el comando a ejecutar con `run` al final de la URL (por defecto `npm run start`).
+- Se admiten archivos con saltos de línea de Windows (CRLF) y URLs terminadas en `.git`.
 
 **Ejemplo**:
 ```text
+# Comentario: esta línea se ignora
 https://github.com/usuario/repo1.git #NEW
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE
 https://github.com/usuario/repo4.git npm run dev #NEW
+https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo5
 ```
 
 >[!NOTE]
@@ -87,20 +99,38 @@ https://github.com/usuario/repo4.git npm run dev #NEW
 
 ## Comandos Disponibles
 
-| Comando                  | Descripción                                      |
-|--------------------------|--------------------------------------------------|
-| `mfs help`               | Muestra ejemplos de uso y documentación básica. |
-| `mfs list`               | Crea o edita el archivo `listRep.txt`.          |
-| `mfs pull listRep.txt`   | Clona o actualiza los repositorios especificados.|
-| `mfs run`                | Ejecuta los microfrontends configurados.        |
-| `mfs install listRep.txt`| Instala las dependencias de los repositorios.   |
-| `mfs updeps listRep.txt` | Actualiza las dependencias de los repositorios. |
-| `mfs ps`                 | Lista los procesos en ejecución.                |
-| `mfs kill`               | Detiene todos los procesos de Node.js activos.  |
-| `mfs uninstall`          | Desinstala la herramienta y elimina configuraciones.|
+| Comando                       | Descripción                                                        |
+|-------------------------------|--------------------------------------------------------------------|
+| `mfs help`                    | Muestra ejemplos de uso y documentación básica.                    |
+| `mfs list`                    | Crea o edita el archivo `listRep.txt`.                             |
+| `mfs pull [lista.txt]`        | Clona o actualiza los repositorios especificados.                  |
+| `mfs run [lista.txt]`         | Ejecuta los microfrontends configurados.                           |
+| `mfs install [lista.txt]`     | Instala las dependencias de los repositorios (omite los que ya tienen `node_modules`). |
+| `mfs updeps [lista.txt]`      | Reinstala las dependencias de los repositorios.                    |
+| `mfs status [lista.txt]`      | `git status` de cada repo.                                         |
+| `mfs -m "msg" commit`         | `git add .` + `git commit` en los repos con cambios.               |
+| `mfs push [lista.txt]`        | `git push` de cada repo (nunca `--force`).                         |
+| `mfs -b rama checkout`        | Cambia todos los repos a esa rama.                                 |
+| `mfs -b rama newbranch`       | Crea la rama en todos los repos y cambia a ella.                   |
+| `mfs ui [lista.txt]`          | Abre el panel web local.                                           |
+| `mfs ps`                      | Lista los procesos de Node en ejecución.                           |
+| `mfs kill`                    | Detiene todos los procesos de Node.js activos.                     |
+| `mfs border`                  | Activa o desactiva los bordes de los mensajes.                     |
+| `mfs uninstall_manager`       | Desinstala la herramienta y elimina configuraciones.               |
+
+**Opciones** (van antes del comando y se pueden combinar):
+
+| Opción        | Uso                                                                 |
+|---------------|---------------------------------------------------------------------|
+| `-b <rama>`   | Rama para `pull`, `checkout` y `newbranch` (por defecto `main`).    |
+| `-i "<cmd>"`  | Comando de instalación para `install` y `updeps` (por defecto `npm install`). |
+| `-m "<msg>"`  | Mensaje para `commit` (obligatorio).                                |
 
 >[!WARNING]
 > El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.
+
+>[!NOTE]
+> Si algún repositorio falla durante `pull`, `install`, `updeps` o los comandos git, la ejecución termina con código de error 1 y un mensaje indicando que se revise la salida.
 
 ---
 
@@ -122,21 +152,56 @@ mfs pull listRep.txt
 mfs -b fix/branch pull listRep.txt
 ```
 - Si no se especifica una rama, se utilizará `main` como valor predeterminado.
+- También cambia de rama en repos ya clonados con historial parcial (`--depth=1`).
 
 ### Instalar Dependencias
 ```bash
 mfs install listRep.txt
 ```
 
+### Usar un Comando de Instalación Personalizado
+```bash
+mfs -i "npm i --legacy-peer-deps" install listRep.txt
+mfs -i "npm ci" updeps
+mfs -b develop -i "pnpm install" install
+```
+
 ### Ejecutar Microfrontends
 ```bash
 mfs run
+mfs run ../listas/otra.txt
 ```
 
 ### Actualizar Dependencias
 ```bash
 mfs updeps listRep.txt
 ```
+
+### Comandos Git
+```bash
+mfs status                          # git status -sb de cada repo
+mfs -m "fix: corrige login" commit  # git add . + commit (omite repos sin cambios)
+mfs push                            # git push; si la rama no tiene upstream usa "push -u origin HEAD"
+mfs -b develop checkout             # cambia de rama (funciona aunque el clon sea --depth=1)
+mfs -b feature/nueva newbranch      # crea la rama y cambia a ella
+```
+- Nunca se usa `--force`.
+- `git add .` incluye todos los archivos nuevos o modificados (por ejemplo un `package-lock.json` generado por `npm install`). Revisa con `mfs status` antes de hacer commit.
+
+### Repos Privados sin Guardar el Token en la Lista
+En `listRep.txt` pon solo el usuario en la URL, y da el token por variable de entorno:
+```text
+https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo
+```
+```bash
+read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN   # pide el token sin mostrarlo
+mfs pull
+```
+- Git lo pide a través de `git-askpass.sh` solo cuando el remoto exige credenciales. El token **no se escribe** en la lista ni en `.git/config`.
+- También se acepta la forma `https://usuario:@host/...`.
+- Las URLs que **ya traen** `usuario:token@` siguen funcionando igual. Se pueden mezclar ambas formas.
+- La variable dura mientras la terminal esté abierta.
+- Para limpiar un clon antiguo que tiene el token guardado en su `origin`: `git remote set-url origin https://usuario@dev.azure.com/...`.
 
 ### Listar Procesos en Ejecución
 ```bash
@@ -147,10 +212,55 @@ mfs ps
 ```bash
 mfs kill
 ```
+>[!WARNING]
+> `mfs kill` detiene **todos** los procesos de Node del equipo, incluidos los paneles `mfs ui` abiertos.
+
 >[!TIP]
 > Utilice el comando `mfs help` para acceder a ejemplos de uso y documentación básica.
->
->
+
+---
+
+## Panel Web Local (`mfs ui`)
+
+Interfaz gráfica para gestionar los repos sin memorizar comandos. No cambia el rendimiento: el panel lanza el mismo `manager_repo.sh` en paralelo, un proceso por repo. Solo requiere `node` y escucha únicamente en `127.0.0.1`.
+
+```bash
+cd /ruta/donde/estan/los/repos   # el mismo directorio donde está listRep.txt
+mfs ui                           # abre http://127.0.0.1:4777 (o el siguiente puerto libre)
+mfs ui ../listas/otra.txt        # abrir con otra lista
+mfs ui --port 5000 --no-open     # puerto fijo, sin abrir el navegador
+```
+
+### Funciones del Panel
+- **Tarjeta por repo**:
+  - Muestra el estado, la rama, si tiene dependencias, el puerto detectado al ejecutar, y el estado git: `● N cambios`, `↑N` (commits por subir) y `↓N` (commits por traer).
+  - Botones por repo: Pull, Install, Run, Detener, Cambios, Commit y Push.
+- **Acciones globales** sobre los repos seleccionados: Pull (con rama), Install, Updeps, Run y Detener todo.
+- **Log independiente por repo**, en vivo. La casilla **Seguir** desplaza el log hasta la última línea; desmárcala para leer líneas anteriores sin que la vista se mueva.
+- **Install con**: comando de instalación personalizado (equivale a `-i`), con sugerencias.
+- **Git**:
+  - Botones: Ver cambios, Commit… (diálogo con el mensaje y la lista de repos con cambios), Push, Checkout y Nueva rama.
+  - Commit omite los repos sin cambios. Push, Checkout y Nueva rama piden confirmación con la lista de repos y su rama.
+- **Lista**:
+  - El campo acepta cualquier `.txt` (relativo, `C:\...` o `/c/...`) y recuerda las últimas usadas.
+  - **📂 Buscar…** abre un explorador para navegar carpetas y unidades, buscar `.txt` por nombre en subcarpetas, usar o editar una lista, o crear una nueva.
+- **Editar lista**: editor integrado, importación de repos desde una organización o usuario de GitHub, y plantilla de ejemplo (equivale a `mfs list`).
+- **Token git**: token para repos privados, guardado solo en la memoria del panel mientras está abierto (nunca en disco).
+- **Procesos Node**: equivale a `mfs ps` / `mfs kill`. Indica cuáles son paneles mfs, y "Matar todos" no los cierra.
+- **Ayuda**: muestra el README.
+- Todas las confirmaciones usan diálogos propios del panel: Enter acepta y Esc cancela.
+
+### Varios Paneles a la Vez
+```bash
+cd /proyectos/arl  && mfs ui          # http://127.0.0.1:4777
+cd /proyectos/otro && mfs ui          # 4777 ocupado -> usa 4778 automáticamente
+```
+- Cada panel tiene su carpeta, sus logs y su "Detener todo", que solo afecta a lo que lanzó ese panel.
+- Los paneles abiertos se registran en `~/.mfs_ui/panels/`, para que "Matar todos" desde un panel no cierre los demás.
+
+>[!TIP]
+> Si Node no encuentra bash (por ejemplo, porque el `bash` del PATH es el de WSL), define la ruta:
+> `export MFS_BASH="C:\Program Files\Git\bin\bash.exe"`
 
 ---
 ---
@@ -161,8 +271,12 @@ mfs kill
 - Para especificar un archivo diferente, proporcione la ruta completa como segundo argumento.
 
 - Asi `mfs run  ../repos/archivo.txt`  
- 
 
+- **Procesar un solo repo de la lista** (lo usa internamente el panel):
+  ```bash
+  MFS_ONLY=txnportal-app-home mfs pull listRep.txt
+  ```
+ 
 - **Activar o desactivar bordes en los mensajes de salida**:
   ```bash
   mfs border
@@ -190,7 +304,7 @@ mfs kill
 >[!CAUTION]
 > Este comando eliminará todas las configuraciones asociadas a la herramienta `mfs`. Se recomienda respaldar cualquier archivo importante antes de proceder.
 > ```bash
-> mfs uninstall
+> mfs uninstall_manager
 > ```
 
 >[!NOTE]Clonar e instalar 
