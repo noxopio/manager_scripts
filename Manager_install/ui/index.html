@@ -51,6 +51,10 @@
   .status.ok { color: var(--ok); } .status.ok .dot { background: var(--ok); }
   .status.error { color: var(--err); } .status.error .dot { background: var(--err); }
   .status.stopped .dot { background: var(--muted); }
+  .status.stopping { color: var(--warn); } .status.stopping .dot { background: var(--warn); animation: pulse .6s infinite; }
+  .status.compiling { color: var(--warn); } .status.compiling .dot { background: var(--warn); animation: pulse 1.2s infinite; }
+  .status.ready { color: var(--ok); } .status.ready .dot { background: var(--ok); }
+  .status.failed { color: var(--err); } .status.failed .dot { background: var(--err); }
   @keyframes pulse { 50% { opacity: .3; } }
   a { color: var(--accent); }
   .logpane { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; min-height: 300px; overflow: hidden; }
@@ -221,7 +225,9 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const state = { repos: [], selected: null, checked: new Set(), first: true };
-const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido' };
+const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido', stopping: 'deteniendo…' };
+// Estado de compilación de un Run (el puerto se anuncia antes de que termine de compilar)
+const COMPILE_LABEL = { compiling: 'compilando…', ready: 'listo', failed: 'error de compilación' };
 const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run', status: 'status', commit: 'commit', push: 'push', checkout: 'checkout', newbranch: 'nueva rama' };
 
 // Diálogo propio en lugar de confirm()/prompt() nativos.
@@ -300,15 +306,27 @@ function el(tag, props = {}, ...children) {
 }
 
 function statusNode(r) {
+  if (r.status === 'running' && r.action === 'run' && r.compile) {
+    return el('span', { class: 'status ' + r.compile }, el('span', { class: 'dot' }), `${COMPILE_LABEL[r.compile]} · run`);
+  }
   const label = STATUS_LABEL[r.status] + (r.action && r.status !== 'idle' ? ` · ${ACTION_LABEL[r.action]}` : '');
   return el('span', { class: 'status ' + r.status }, el('span', { class: 'dot' }), label);
+}
+
+// Enlace al puerto solo cuando ya compiló; mientras tanto, un aviso sin enlace.
+function portNode(r) {
+  if (!r.port || r.status !== 'running') return null;
+  if (r.compile === 'compiling') {
+    return el('span', { class: 'badge warn', title: 'webpack anunció el puerto pero aún está compilando; espera a que diga "listo"' }, `compilando… :${r.port}`);
+  }
+  return el('a', { href: 'http://localhost:' + r.port, target: '_blank', onclick: (ev) => ev.stopPropagation() }, 'localhost:' + r.port);
 }
 
 function render(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
   if (!state.repos.length) { box.append(el('div', { class: 'empty' }, emptyMsg || 'La lista no tiene repos activos.')); return; }
   for (const r of state.repos) {
-    const running = r.status === 'running';
+    const running = r.status === 'running' || r.status === 'stopping'; // ocupado: sin acciones nuevas
     const cb = el('input', { type: 'checkbox', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
       ev.target.checked ? state.checked.add(r.name) : state.checked.delete(r.name);
       $('#selectAll').checked = state.checked.size === state.repos.length;
@@ -323,7 +341,7 @@ function render(emptyMsg) {
       r.cloned ? (r.hasDeps ? el('span', { class: 'badge' }, 'node_modules ✓') : el('span', { class: 'badge warn' }, 'sin dependencias')) : null,
       r.isNew ? el('span', { class: 'badge' }, '#NEW ventana externa') : null,
       el('span', { title: r.url }, r.command),
-      r.port ? el('a', { href: 'http://localhost:' + r.port, target: '_blank', onclick: (ev) => ev.stopPropagation() }, 'localhost:' + r.port) : null,
+      portNode(r),
     );
     const card = el('div', { class: 'card' + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
       el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), statusNode(r)),
@@ -332,7 +350,7 @@ function render(emptyMsg) {
         el('button', { class: 'sm', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
         el('button', { class: 'sm', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
         el('button', { class: 'sm', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
-        el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(running ? {} : { disabled: '' }) }, 'Detener'),
+        el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(r.status === 'running' ? {} : { disabled: '' }) }, 'Detener'),
         el('span', { class: 'sep' }),
         el('button', { class: 'sm', title: 'git status', onclick: act('status'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Cambios'),
         el('button', { class: 'sm', title: 'git add . + commit', onclick: (ev) => { ev.stopPropagation(); openCommit([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Commit'),
@@ -459,9 +477,9 @@ function connectStream() {
         if ($('#follow').checked) log.scrollTop = log.scrollHeight;
       }
     } else if (msg.type === 'status' && r) {
-      r.status = msg.status; r.action = msg.action; r.port = msg.port;
+      r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile;
       render();
-      if (msg.status !== 'running') scheduleRefresh();
+      if (msg.status !== 'running' && msg.status !== 'stopping') scheduleRefresh();
     }
   };
 }

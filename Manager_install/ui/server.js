@@ -34,6 +34,17 @@ const HOST = '127.0.0.1';
 const IS_WIN = process.platform === 'win32';
 const WORK_DIR = process.cwd();
 const BASH = process.env.MFS_BASH || 'bash';
+// Los scripts usan utilidades de Git Bash (dirname, ps, sed…). Si el panel se lanzó fuera de Git Bash,
+// el PATH no las incluye: se añade la carpeta de bash.exe al PATH de los procesos hijos.
+const CHILD_PATH = path.isAbsolute(BASH)
+  ? [path.dirname(BASH), process.env.PATH || process.env.Path || ''].join(path.delimiter)
+  : (process.env.PATH || process.env.Path || '');
+function childEnv(extra = {}) {
+  const env = { ...process.env, ...extra };
+  delete env.Path; // en Windows puede venir como "Path"; se unifica en PATH
+  env.PATH = CHILD_PATH;
+  return env;
+}
 const toPosix = (p) => p.replace(/\\/g, '/');
 const SCRIPT = toPosix(path.join(__dirname, '..', 'manager_repo.sh'));
 const ACTIONS = new Set(['pull', 'install', 'updeps', 'run', 'status', 'commit', 'push', 'checkout', 'newbranch']);
@@ -213,12 +224,24 @@ async function describeRepo(r) {
     status: job ? job.status : 'idle',
     action: job ? job.action : null,
     port: job ? job.port : null,
+    compile: job ? job.compile : null,
   };
 }
 
 function broadcast(event) {
   const data = `data: ${JSON.stringify(event)}\n\n`;
   for (const res of sseClients) res.write(data);
+}
+
+// Run: el puerto se anuncia ANTES de terminar de compilar, así que se sigue la compilación aparte.
+// compile: 'compiling' (aún no listo) | 'ready' (compilado, se puede abrir) | 'failed' (compiló con errores)
+const COMPILE_OK_RE = /compiled successfully|compiled with \d+ warnings?|Compiled successfully|Application bundle generation complete|ready in \d|webpack [\d.]+ compiled(?! with \d+ errors?)/i;
+const COMPILE_FAIL_RE = /compiled with \d+ errors?|Failed to compile|webpack [\d.]+ compiled with \d+ errors?/i;
+const PORT_RE = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d{2,5})/;
+
+function statusEvent(name) {
+  const job = jobs.get(name);
+  return { type: 'status', repo: name, status: job.status, action: job.action, port: job.port, compile: job.compile };
 }
 
 function pushLog(name, text) {
@@ -228,12 +251,15 @@ function pushLog(name, text) {
     if (!piece.trim()) continue;
     job.log.push(piece);
     if (job.log.length > MAX_LOG_LINES) job.log.shift();
-    if (job.action === 'run' && !job.port) {
-      const m = piece.match(/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{2,5})/);
-      if (m) {
-        job.port = parseInt(m[1], 10);
-        broadcast({ type: 'status', repo: name, status: job.status, action: job.action, port: job.port });
+    if (job.action === 'run') {
+      let changed = false;
+      if (!job.port) {
+        const m = piece.match(PORT_RE);
+        if (m) { job.port = parseInt(m[1], 10); changed = true; }
       }
+      const compile = COMPILE_FAIL_RE.test(piece) ? 'failed' : COMPILE_OK_RE.test(piece) ? 'ready' : null;
+      if (compile && compile !== job.compile) { job.compile = compile; changed = true; }
+      if (changed && job.status === 'running') broadcast(statusEvent(name));
     }
     broadcast({ type: 'log', repo: name, line: piece });
   }
@@ -242,12 +268,29 @@ function pushLog(name, text) {
 function setStatus(name, status) {
   const job = jobs.get(name);
   job.status = status;
-  broadcast({ type: 'status', repo: name, status, action: job.action, port: job.port });
+  broadcast(statusEvent(name));
+}
+
+// Resuelve cuando ya nadie escucha en el puerto (o tras el tiempo máximo).
+function waitPortFree(port, timeoutMs = 20000) {
+  const net = require('net');
+  const deadline = Date.now() + timeoutMs;
+  return new Promise((resolve) => {
+    const probe = () => {
+      const sock = net.connect({ host: '127.0.0.1', port });
+      sock.setTimeout(1000);
+      const again = (free) => { sock.destroy(); if (free || Date.now() > deadline) resolve(free); else setTimeout(probe, 500); };
+      sock.once('connect', () => again(false));
+      sock.once('timeout', () => again(false));
+      sock.once('error', () => again(true)); // ECONNREFUSED: puerto libre
+    };
+    probe();
+  });
 }
 
 function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
   const existing = jobs.get(repo.name);
-  if (existing && existing.status === 'running') return false;
+  if (existing && (existing.status === 'running' || existing.status === 'stopping')) return false;
 
   const scriptArgs = [SCRIPT];
   const opts = [];
@@ -256,7 +299,7 @@ function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
   if (action === 'commit') opts.push('-m', commitMsg);
   scriptArgs.push(...opts, action, toPosix(list));
 
-  const env = { ...process.env, MFS_ONLY: repo.name, GIT_TERMINAL_PROMPT: '0' };
+  const env = childEnv({ MFS_ONLY: repo.name, GIT_TERMINAL_PROMPT: '0' });
   if (gitToken) env.MFS_GIT_TOKEN = gitToken;
   const child = spawn(BASH, scriptArgs, {
     cwd: WORK_DIR,
@@ -264,7 +307,11 @@ function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
     detached: !IS_WIN, // en Unix: grupo de procesos propio para poder matar el árbol
     windowsHide: true,
   });
-  jobs.set(repo.name, { child, action, status: 'running', log: [], port: null, stopping: false });
+  jobs.set(repo.name, {
+    child, action, status: 'running', log: [], port: null, stopping: false,
+    compile: action === 'run' && !repo.isNew ? 'compiling' : null,
+    closed: false, killDone: false,
+  });
   setStatus(repo.name, 'running');
   const shown = opts.map((o, i) => (i % 2 ? `"${o}"` : o)).join(' ');
   pushLog(repo.name, `$ mfs ${shown ? shown + ' ' : ''}${action}  (${repo.name})`);
@@ -279,8 +326,10 @@ function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
   child.on('close', (code) => {
     const job = jobs.get(repo.name);
     if (!job || job.child !== child) return;
+    job.closed = true;
     pushLog(repo.name, `── proceso terminado (código ${code}) ──`);
-    setStatus(repo.name, job.stopping ? 'stopped' : code === 0 ? 'ok' : 'error');
+    if (job.stopping) finishStop(repo.name); // "detenido" solo cuando además el puerto quede libre
+    else setStatus(repo.name, code === 0 ? 'ok' : 'error');
   });
   return true;
 }
@@ -290,7 +339,7 @@ function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
 // MSYS sí conserva el grupo de procesos: buscamos el PGID del bash lanzado (por su WINPID),
 // recogemos los WINPID de todo ese grupo y matamos cada árbol nativo con taskkill /T.
 function killWindowsTree(pid, done) {
-  execFile(BASH, ['-c', 'ps'], { timeout: 10000, windowsHide: true }, (err, out) => {
+  execFile(BASH, ['-c', 'ps'], { timeout: 10000, windowsHide: true, env: childEnv() }, (err, out) => {
     const winpids = new Set([String(pid)]);
     if (!err) {
       const rows = out.split(/\r?\n/).slice(1).map((l) => l.trim().split(/\s+/)).filter((c) => c.length >= 4);
@@ -303,17 +352,35 @@ function killWindowsTree(pid, done) {
   });
 }
 
+// Marca "detenido" cuando el bash terminó, el kill acabó y (si había puerto) el puerto ya está libre.
+async function finishStop(name) {
+  const job = jobs.get(name);
+  if (!job || !job.stopping || !job.closed || !job.killDone || job.status === 'stopped') return;
+  if (job.port && !job.portChecked) {
+    job.portChecked = true;
+    const free = await waitPortFree(job.port);
+    if (!free) pushLog(name, `── aviso: el puerto ${job.port} sigue ocupado; revisa "Procesos Node" ──`);
+  }
+  if (jobs.get(name) === job && job.status !== 'stopped') {
+    pushLog(name, '── detenido ──');
+    setStatus(name, 'stopped');
+  }
+}
+
 function stopJob(name) {
   const job = jobs.get(name);
   if (!job || job.status !== 'running') return false;
   job.stopping = true;
   const pid = job.child.pid;
+  setStatus(name, 'stopping');
+  pushLog(name, '── deteniendo... ──');
+  const onKilled = () => { job.killDone = true; finishStop(name); };
   if (IS_WIN) {
-    killWindowsTree(pid);
+    killWindowsTree(pid, onKilled);
   } else {
     try { process.kill(-pid, 'SIGTERM'); } catch { try { job.child.kill('SIGTERM'); } catch {} }
+    onKilled();
   }
-  pushLog(name, '── deteniendo... ──');
   return true;
 }
 
