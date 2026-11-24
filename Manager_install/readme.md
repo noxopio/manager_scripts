@@ -146,6 +146,15 @@ mfs -b feature/nueva newbranch      # crea la rama y cambia a ella
 - `mfs -b otra pull` ahora también cambia correctamente de rama en repos ya clonados con `--depth=1`.
 - Si algún repo falla, el comando termina con error (código 1) e indica que revises la salida.
 
+### Error "Another git process seems to be running in this repository"
+Git crea `.git/index.lock` mientras trabaja y lo borra al terminar. Si un git se corta a mitad (cerrar la terminal o el panel, Detener o `mfs kill` durante un pull o commit), el archivo queda y git rechaza commit, pull y checkout en ese repo.
+```bash
+mfs unlock          # lista los repos bloqueados y, tras confirmar, quita los bloqueos
+```
+- `mfs pull`, `commit`, `push`, `checkout` y `newbranch` avisan y **omiten** los repos bloqueados en lugar de fallar con el error de git.
+- En el panel, la tarjeta muestra `🔒 bloqueado` y el botón **Desbloquear**.
+- Para evitarlo: no cerrar la terminal o el panel ni usar `mfs kill` en mitad de un pull o commit.
+
 ### Repos Privados sin Guardar el Token en la Lista
 En `listRep.txt` pon solo el usuario en la URL, y da el token por variable de entorno:
 ```text

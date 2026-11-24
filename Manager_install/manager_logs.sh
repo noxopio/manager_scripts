@@ -189,6 +189,7 @@ show_usage() {
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "push:" "mfs push   (nunca --force; sin upstream usa -u)"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "checkout:" "mfs -b develop checkout"
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "newbranch:" "mfs -b feature/x newbranch"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "unlock:" "mfs unlock   (quita .git/index.lock abandonados, pide confirmación)"
     log_description "Repos privados: en la lista https://usuario@host/... y el token en la variable MFS_GIT_TOKEN."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "token:" "read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN"
 

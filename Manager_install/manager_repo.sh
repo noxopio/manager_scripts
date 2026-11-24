@@ -111,7 +111,9 @@ set -e
 source "$(dirname "$0")/manager_logs.sh"
 
 FILE_NAME="$(basename "$0")"
-COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui" "status" "commit" "push" "checkout" "newbranch")
+COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui" "status" "commit" "push" "checkout" "newbranch" "unlock")
+# Las lecturas de git (status) no toman el index.lock "opcional": si se cortan no dejan bloqueos.
+export GIT_OPTIONAL_LOCKS=0
 BRANCH="main"  # Rama por defecto
 INSTALL_CMD="npm install"  # Comando de instalación por defecto (install / updeps)
 COMMIT_MSG=""  # Mensaje para 'commit' (opción -m)
@@ -312,6 +314,55 @@ checkout_branch() {
     fi
 }
 
+## ── Bloqueos de git abandonados (.git/index.lock) ────────────────────────────
+## Git crea index.lock mientras escribe y lo borra al terminar. Si un git se corta a mitad
+## (cerrar la terminal o el panel, Detener, mfs kill…) el archivo queda y git rechaza commit/pull/checkout
+## con "Another git process seems to be running in this repository".
+repo_locked() { [ -f "$1/.git/index.lock" ]; }
+
+warn_locked() {
+    log_warning "$1 está bloqueado (.git/index.lock) y se omite. Si no hay ningún git trabajando ahí, quítalo con: mfs unlock"
+    JOB_FAILED=1
+}
+
+git_is_running() {
+    if command -v tasklist >/dev/null 2>&1; then
+        tasklist //FI "IMAGENAME eq git.exe" //NH 2>/dev/null | grep -qi "git.exe"
+    else
+        pgrep -x git >/dev/null 2>&1
+    fi
+}
+
+unlock_repos() {
+    local locked=() name age
+    for repo_url in "${!source_repos[@]}"; do
+        name=$(basename "$repo_url" .git)
+        repo_locked "$name" && locked+=("$name")
+    done
+    if [ ${#locked[@]} -eq 0 ]; then
+        log_success "Ningún repositorio está bloqueado."
+        return 0
+    fi
+    for name in "${locked[@]}"; do
+        age=$(( $(date +%s) - $(date -r "$name/.git/index.lock" +%s) ))
+        log_warning "Bloqueado: $name (index.lock de hace $((age / 60)) min)"
+    done
+    if git_is_running; then
+        log_warning "Hay un proceso git en ejecución. Si trabaja en alguno de estos repos (p. ej. un commit abierto en VS Code), termínalo antes."
+    fi
+    log_info "¿Quitar los bloqueos de estos ${#locked[@]} repos?"
+    printf "\t[s/n]: "
+    read -r answer
+    case "$answer" in
+        [sS])
+            for name in "${locked[@]}"; do
+                rm -f "$name/.git/index.lock" && log_success "Bloqueo quitado en $name"
+            done
+            ;;
+        *) log_info "No se quitó ningún bloqueo." ;;
+    esac
+}
+
 pull_repos() {
     local pids=()
     for repo_url in "${!source_repos[@]}"; do
@@ -320,6 +371,9 @@ pull_repos() {
         if [ ! -d "$repo_name" ]; then
             # Clon parcial de los repositorios,usar git pull fetch --unshallow para obtener el historial completo.
             git clone -q -b "$BRANCH" "$repo_url" --depth=1 &
+        elif repo_locked "$repo_name"; then
+            warn_locked "$repo_name"
+            continue
         else
             (
                 cd "$repo_name" || exit
@@ -342,6 +396,10 @@ for_each_repo() {
             log_error "El repositorio $repo_name no existe. Clona primero usando 'pull'"
             continue
         fi
+        if repo_locked "$repo_name"; then
+            warn_locked "$repo_name"
+            continue
+        fi
         ( cd "$repo_name" && "$fn" "$repo_name" ) &
         pids+=($!)
     done
@@ -357,6 +415,7 @@ git_status_repos() {
             continue
         fi
         log_info "$repo_name"
+        repo_locked "$repo_name" && log_warning "$repo_name está bloqueado (.git/index.lock): commit/pull/checkout fallarán. Usa: mfs unlock"
         git -C "$repo_name" -c color.status=false status -sb || JOB_FAILED=1
     done
 }
@@ -504,6 +563,11 @@ start_time=$(date +%s)
     newbranch)
      log_info "Creando la rama $BRANCH..."
      for_each_repo git_newbranch_one
+     ;;
+
+    unlock)
+     log_info "Buscando bloqueos de git (.git/index.lock)..."
+     unlock_repos
      ;;
 
 *)

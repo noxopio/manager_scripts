@@ -335,6 +335,8 @@ function render(emptyMsg) {
     const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
     const meta = el('div', { class: 'meta' },
       r.cloned ? el('span', { class: 'badge', title: r.upstream ? 'upstream: ' + r.upstream : 'sin upstream (push lo publicará con -u)' }, '⎇ ' + (r.branch || '?')) : el('span', { class: 'badge warn' }, 'sin clonar'),
+      r.locked ? el('span', { class: 'badge warn', title: 'Existe .git/index.lock: git cree que otra operación está en curso y rechaza commit/pull/checkout. Suele quedar al cortar un git a mitad (cerrar el panel, Detener o mfs kill durante un pull o commit).' }, `🔒 bloqueado${r.lockAge >= 60 ? ` (${Math.round(r.lockAge / 60)} min)` : ''}`) : null,
+      r.locked ? el('button', { class: 'sm', title: 'Quitar el bloqueo .git/index.lock', onclick: (ev) => { ev.stopPropagation(); unlockRepo(r); }, ...(running ? { disabled: '' } : {}) }, 'Desbloquear') : null,
       r.cloned && r.changes ? el('span', { class: 'badge warn', title: 'Archivos modificados o nuevos sin commit' }, `● ${r.changes} cambio${r.changes > 1 ? 's' : ''}`) : null,
       r.cloned && r.ahead ? el('span', { class: 'badge', title: 'Commits pendientes de push' }, `↑${r.ahead}`) : null,
       r.cloned && r.behind ? el('span', { class: 'badge', title: 'Commits en el remoto por traer (pull)' }, `↓${r.behind}`) : null,
@@ -410,6 +412,22 @@ $('#commitOk').onclick = () => {
   $('#commitDialog').close();
   runAction('commit', commitTargets, { commitMsg: msg });
 };
+
+async function unlockRepo(r) {
+  const ok = await ask({
+    title: 'Quitar bloqueo de git',
+    message: `${r.name} tiene un archivo .git/index.lock${r.lockAge != null ? ` (de hace ${r.lockAge >= 60 ? Math.round(r.lockAge / 60) + ' min' : r.lockAge + ' s'})` : ''}.\n\n` +
+      'Git lo crea mientras trabaja y lo borra al terminar. Si quedó abandonado (un git cortado a mitad), git rechaza commit, pull y checkout en este repo.\n\n' +
+      'Quítalo solo si no hay ningún git trabajando en este repo (por ejemplo, un commit abierto en VS Code).',
+    okText: 'Quitar bloqueo',
+  });
+  if (!ok) return;
+  try {
+    const res = await api('/api/unlock', { method: 'POST', body: JSON.stringify({ repo: r.name, list: listName() }) });
+    toast(res.unlocked ? `Bloqueo quitado en ${r.name}` : res.message);
+    loadRepos();
+  } catch (e) { toast(e.message); }
+}
 
 async function gitPush(names) {
   const repos = names.map(repoBy).filter((r) => r && r.cloned);

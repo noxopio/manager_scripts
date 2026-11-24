@@ -112,6 +112,7 @@ https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo5
 | `mfs push [lista.txt]`        | `git push` de cada repo (nunca `--force`).                         |
 | `mfs -b rama checkout`        | Cambia todos los repos a esa rama.                                 |
 | `mfs -b rama newbranch`       | Crea la rama en todos los repos y cambia a ella.                   |
+| `mfs unlock [lista.txt]`      | Quita bloqueos de git abandonados (`.git/index.lock`), con confirmación. |
 | `mfs ui [lista.txt]`          | Abre el panel web local.                                           |
 | `mfs ps`                      | Lista los procesos de Node en ejecución.                           |
 | `mfs kill`                    | Detiene todos los procesos de Node.js activos.                     |
@@ -187,6 +188,15 @@ mfs -b feature/nueva newbranch      # crea la rama y cambia a ella
 ```
 - Nunca se usa `--force`.
 - `git add .` incluye todos los archivos nuevos o modificados (por ejemplo un `package-lock.json` generado por `npm install`). Revisa con `mfs status` antes de hacer commit.
+
+### Error "Another git process seems to be running in this repository"
+Git crea `.git/index.lock` mientras trabaja y lo borra al terminar. Si un git se corta a mitad (cerrar la terminal o el panel, Detener o `mfs kill` durante un pull o commit), el archivo queda y git rechaza commit, pull y checkout en ese repo.
+```bash
+mfs unlock          # lista los repos bloqueados y, tras confirmar, quita los bloqueos
+```
+- `mfs pull`, `commit`, `push`, `checkout` y `newbranch` avisan y **omiten** los repos bloqueados en lugar de fallar con el error de git.
+- En el panel, la tarjeta muestra `🔒 bloqueado` y el botón **Desbloquear**.
+- Para evitarlo: no cerrar la terminal o el panel ni usar `mfs kill` en mitad de un pull o commit.
 
 ### Repos Privados sin Guardar el Token en la Lista
 En `listRep.txt` pon solo el usuario en la URL, y da el token por variable de entorno:

@@ -43,6 +43,9 @@ function childEnv(extra = {}) {
   const env = { ...process.env, ...extra };
   delete env.Path; // en Windows puede venir como "Path"; se unifica en PATH
   env.PATH = CHILD_PATH;
+  // Las lecturas de git (status…) no toman index.lock "opcional": si se cortan, no dejan bloqueos.
+  // No afecta a los bloqueos obligatorios de commit/pull/checkout.
+  env.GIT_OPTIONAL_LOCKS = '0';
   return env;
 }
 const toPosix = (p) => p.replace(/\\/g, '/');
@@ -188,10 +191,29 @@ function readRepos(list) {
   return { file, repos: parseList(fs.readFileSync(file, 'utf8')), missing: false };
 }
 
-// Una sola llamada a git por repo: rama, upstream, ahead/behind y número de archivos cambiados.
-function gitInfo(dir) {
+// Limita cuántos git status corren a la vez (con 20+ repos, lanzarlos todos juntos satura el equipo).
+const GIT_CONCURRENCY = 6;
+let gitActive = 0;
+const gitQueue = [];
+function withGitSlot(fn) {
   return new Promise((resolve) => {
-    execFile('git', ['-C', dir, 'status', '--porcelain', '-b'], { timeout: 5000, windowsHide: true }, (err, out) => {
+    const run = () => {
+      gitActive++;
+      fn().then(resolve, () => resolve(undefined)).finally(() => {
+        gitActive--;
+        if (gitQueue.length) gitQueue.shift()();
+      });
+    };
+    if (gitActive < GIT_CONCURRENCY) run(); else gitQueue.push(run);
+  });
+}
+
+// Una sola llamada a git por repo: rama, upstream, ahead/behind y número de archivos cambiados.
+// --no-optional-locks: lee el estado SIN tomar .git/index.lock (como hace VS Code), así no choca con
+// otros git ni deja un lock abandonado si se corta.
+function gitInfo(dir) {
+  return withGitSlot(() => new Promise((resolve) => {
+    execFile('git', ['--no-optional-locks', '-C', dir, 'status', '--porcelain', '-b'], { timeout: 15000, windowsHide: true, env: childEnv() }, (err, out) => {
       if (err) return resolve({ branch: null, upstream: null, ahead: 0, behind: 0, changes: 0 });
       const lines = out.split(/\r?\n/).filter(Boolean);
       const head = (lines[0] || '').replace(/^## /, '');
@@ -209,6 +231,22 @@ function gitInfo(dir) {
       }
       resolve(info);
     });
+  }));
+}
+
+// Bloqueo de git abandonado (.git/index.lock): devuelve su antigüedad en segundos, o null si no hay.
+function lockAge(dir) {
+  try { return Math.round((Date.now() - fs.statSync(path.join(dir, '.git', 'index.lock')).mtimeMs) / 1000); }
+  catch { return null; }
+}
+
+function gitRunning() {
+  return new Promise((resolve) => {
+    if (!IS_WIN) {
+      return execFile('ps', ['-A', '-o', 'comm='], (err, out) => resolve(!err && /(^|\/)git$/m.test(out)));
+    }
+    execFile('tasklist', ['/FI', 'IMAGENAME eq git.exe', '/FO', 'CSV', '/NH'], { windowsHide: true }, (err, out) =>
+      resolve(!err && /"git\.exe"/i.test(out)));
   });
 }
 
@@ -216,11 +254,14 @@ async function describeRepo(r) {
   const dir = fs.existsSync(path.join(WORK_DIR, r.name)) ? path.join(WORK_DIR, r.name) : null;
   const job = jobs.get(r.name);
   const git = dir ? await gitInfo(dir) : {};
+  const lock = dir ? lockAge(dir) : null;
   return {
     ...r,
     cloned: !!dir,
     hasDeps: !!dir && fs.existsSync(path.join(dir, 'node_modules')),
     ...git,
+    locked: lock !== null,
+    lockAge: lock,
     status: job ? job.status : 'idle',
     action: job ? job.action : null,
     port: job ? job.port : null,
@@ -594,6 +635,26 @@ const server = http.createServer(async (req, res) => {
         (startJob(r, action, file, { branch, installCmd, commitMsg }) ? started : busy).push(r.name);
       }
       return send(res, 200, { started, busy });
+    }
+
+    if (req.method === 'POST' && p === '/api/unlock') {
+      const body = await readBody(req);
+      const name = String(body.repo || '');
+      const { repos } = readRepos(body.list);
+      if (!repos.some((r) => r.name === name)) return send(res, 400, { error: 'Repo no encontrado en la lista' });
+      const dir = path.join(WORK_DIR, name);
+      const age = lockAge(dir);
+      if (age === null) return send(res, 200, { unlocked: false, message: 'No había bloqueo' });
+      const job = jobs.get(name);
+      if (job && (job.status === 'running' || job.status === 'stopping')) {
+        return send(res, 409, { error: `Hay una acción en curso en ${name}; espera a que termine o deténla` });
+      }
+      // Regla conservadora: solo si no hay ningún git en ejecución, o si el bloqueo es viejo (> 2 min).
+      if (age < 120 && (await gitRunning())) {
+        return send(res, 409, { error: 'Hay un git en ejecución y el bloqueo es reciente; espera unos segundos y vuelve a intentarlo' });
+      }
+      fs.unlinkSync(path.join(dir, '.git', 'index.lock'));
+      return send(res, 200, { unlocked: true });
     }
 
     if (req.method === 'POST' && p === '/api/stop') {
