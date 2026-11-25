@@ -212,6 +212,7 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - **Procesos Node** equivale a `mfs ps` / `mfs kill`. Indica qué procesos son paneles mfs, y "Matar todos" respeta todos los paneles mfs abiertos (no solo el propio).
 - **Editar lista** permite importar repos de una organización o usuario de GitHub, o insertar la plantilla de ejemplo (equivale a `mfs list`).
 - **Ayuda** muestra este README (equivale a `mfs help`).
+- **Base64** permite codificar texto UTF-8, decodificarlo o formatearlo como JSON desde una ventana del panel; no requiere `jq`.
 - `mfs border` y `mfs uninstall_manager` siguen disponibles solo en la terminal.
 - Una tarjeta por repo con su estado, rama actual, dependencias y puerto detectado.
 - Botones globales y por repo para **Pull / Install / Updeps / Run / Detener**, y un log en vivo por repo.

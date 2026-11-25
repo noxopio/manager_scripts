@@ -89,6 +89,12 @@
   .chips { display: flex; gap: 4px; flex-wrap: wrap; }
   #askDialog { width: min(560px, 95vw); }
   #newBranchDialog { width: min(660px, 95vw); }
+  #codecDialog { width: min(760px, 95vw); }
+  .codec-dialog textarea { width: 100%; height: 18vh; min-height: 110px; max-height: 32vh; margin-top: 4px; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; resize: vertical; }
+  .codec-field { display: block; margin-top: 10px; color: var(--muted); font-size: 13px; }
+  .codec-actions { margin-top: 10px; }
+  .codec-status { min-height: 1.5em; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+  .codec-status.error { color: var(--err); }
   .branch-field { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; color: var(--muted); font-size: 13px; }
   .branch-field[hidden], .branch-warning[hidden] { display: none; }
   .branch-preview { margin: 12px 0 0; padding: 10px; max-height: 32vh; overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
@@ -137,6 +143,7 @@
     <span class="sep"></span>
     <button id="edit">Editar lista</button>
     <button id="psBtn" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
+    <button id="codecBtn" title="Codificar o decodificar texto en Base64">Base64</button>
     <button id="helpBtn" title="Equivalente a mfs help">Ayuda</button>
     <button class="icon-btn" id="refresh" title="Recargar estado" aria-label="Recargar estado"></button>
   </div>
@@ -271,6 +278,32 @@
     <strong>Ayuda · README</strong><button id="helpClose">Cerrar</button>
   </div>
   <pre class="log" id="helpText" style="max-height:65vh"></pre>
+</dialog>
+
+<dialog id="codecDialog" class="codec-dialog">
+  <div class="row" style="justify-content:space-between;margin-bottom:6px">
+    <strong>Herramienta Base64</strong>
+    <span class="muted">Convierte texto UTF‑8</span>
+  </div>
+  <p class="muted" style="margin:0">Base64 codifica datos; no los cifra ni protege.</p>
+  <label class="codec-field" for="codecInput">Entrada
+    <textarea id="codecInput" spellcheck="false" placeholder="Pega texto o una cadena Base64"></textarea>
+  </label>
+  <div class="row codec-actions">
+    <button class="primary" data-codec-action="encode">Codificar</button>
+    <button data-codec-action="decode">Decodificar</button>
+    <button data-codec-action="decodeJson">Decodificar JSON</button>
+  </div>
+  <label class="codec-field" for="codecOutput">Resultado
+    <textarea id="codecOutput" readonly spellcheck="false" placeholder="El resultado aparecerá aquí"></textarea>
+  </label>
+  <p class="codec-status" id="codecStatus" role="status" aria-live="polite"></p>
+  <div class="row" style="justify-content:flex-end;margin-top:8px">
+    <button id="codecClear">Limpiar</button>
+    <button id="codecSwap" disabled>Pasar resultado a entrada</button>
+    <button id="codecCopy" disabled>Copiar resultado</button>
+    <button id="codecClose">Cerrar</button>
+  </div>
 </dialog>
 
 <dialog id="askDialog">
@@ -723,6 +756,106 @@ $('#helpBtn').onclick = async () => {
   try { $('#helpText').textContent = (await api('/api/readme')).content; } catch (e) { $('#helpText').textContent = e.message; }
 };
 $('#helpClose').onclick = () => $('#helpDialog').close();
+
+// Codificador Base64 UTF-8, sin ejecutar comandos de shell ni enviar los datos al servidor.
+let codecOutputAvailable = false;
+function encodeBase64Utf8(value) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+function decodeBase64Utf8(value) {
+  const compact = value.replace(/\s/g, '');
+  if (!compact) return '';
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) throw new Error('La entrada no tiene el formato Base64 estándar.');
+  const firstPadding = compact.indexOf('=');
+  const dataLength = firstPadding < 0 ? compact.length : firstPadding;
+  const padding = compact.length - dataLength;
+  if (dataLength % 4 === 1 || (padding && (compact.length % 4 !== 0 || (padding === 1 && dataLength % 4 !== 3) || (padding === 2 && dataLength % 4 !== 2)))) {
+    throw new Error('La longitud o el relleno de la cadena Base64 no son válidos.');
+  }
+  const padded = compact + '='.repeat((4 - compact.length % 4) % 4);
+  let binary;
+  try { binary = atob(padded); }
+  catch { throw new Error('No se pudo decodificar la cadena Base64.'); }
+  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+  catch { throw new Error('El contenido decodificado no es texto UTF-8 válido.'); }
+}
+function codecStatus(message, error = false) {
+  const status = $('#codecStatus');
+  status.textContent = message;
+  status.classList.toggle('error', error);
+}
+function transformCodec(mode) {
+  try {
+    const input = $('#codecInput').value;
+    let result;
+    if (mode === 'encode') {
+      result = encodeBase64Utf8(input);
+      codecStatus('Texto codificado en Base64.');
+    } else {
+      const decoded = decodeBase64Utf8(input);
+      if (mode === 'decodeJson') {
+        try { result = JSON.stringify(JSON.parse(decoded), null, 2); }
+        catch (e) { throw new Error(`El contenido decodificado no es JSON válido: ${e.message}`); }
+        codecStatus('JSON decodificado y formateado.');
+      } else {
+        result = decoded;
+        codecStatus('Texto decodificado.');
+      }
+    }
+    $('#codecOutput').value = result;
+    codecOutputAvailable = true;
+    $('#codecCopy').disabled = $('#codecSwap').disabled = false;
+  } catch (e) {
+    $('#codecOutput').value = '';
+    codecOutputAvailable = false;
+    $('#codecCopy').disabled = $('#codecSwap').disabled = true;
+    codecStatus(e.message, true);
+  }
+}
+document.querySelectorAll('[data-codec-action]').forEach((button) => {
+  button.addEventListener('click', () => transformCodec(button.dataset.codecAction));
+});
+$('#codecBtn').onclick = () => { $('#codecDialog').showModal(); $('#codecInput').focus(); };
+$('#codecClose').onclick = () => $('#codecDialog').close();
+$('#codecInput').oninput = () => {
+  $('#codecOutput').value = '';
+  codecOutputAvailable = false;
+  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
+  codecStatus('');
+};
+$('#codecClear').onclick = () => {
+  $('#codecInput').value = $('#codecOutput').value = '';
+  codecOutputAvailable = false;
+  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
+  codecStatus('');
+  $('#codecInput').focus();
+};
+$('#codecSwap').onclick = () => {
+  if (!codecOutputAvailable) return;
+  $('#codecInput').value = $('#codecOutput').value;
+  $('#codecOutput').value = '';
+  codecOutputAvailable = false;
+  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
+  codecStatus('Resultado pasado a la entrada.');
+  $('#codecInput').focus();
+};
+$('#codecCopy').onclick = async () => {
+  if (!codecOutputAvailable) return;
+  try {
+    await navigator.clipboard.writeText($('#codecOutput').value);
+    codecStatus('Resultado copiado.');
+  } catch {
+    const output = $('#codecOutput'); output.focus(); output.select();
+    const copied = document.execCommand('copy');
+    codecStatus(copied ? 'Resultado copiado.' : 'No se pudo copiar; selecciona y copia el resultado manualmente.', !copied);
+  }
+};
 
 // Equivalente a "mfs list": importar de GitHub o plantilla
 $('#ghImport').onclick = async () => {

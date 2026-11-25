@@ -264,6 +264,7 @@ mfs ui --port 5000 --no-open     # puerto fijo, sin abrir el navegador
 - **Token git**: token para repos privados, guardado solo en la memoria del panel mientras está abierto (nunca en disco).
 - **Procesos Node**: equivale a `mfs ps` / `mfs kill`. Indica cuáles son paneles mfs, y "Matar todos" no los cierra.
 - **Ayuda**: muestra el README.
+- **Base64**: codifica texto UTF-8, lo decodifica o lo formatea como JSON; la conversión ocurre en el navegador.
 - Todas las confirmaciones usan diálogos propios del panel: Enter acepta y Esc cancela.
 
 ### Varios Paneles a la Vez
