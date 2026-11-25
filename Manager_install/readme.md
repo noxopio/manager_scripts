@@ -103,7 +103,8 @@ https://github.com/usuario/repo4.git npm run dev #NEW
 | `mfs -m "msg" commit`    | `git add .` + `git commit` en los repos con cambios.|
 | `mfs push`               | `git push` de cada repo (sin `--force`).         |
 | `mfs -b rama checkout`   | Cambia todos los repos a esa rama.               |
-| `mfs -b rama newbranch`  | Crea la rama en todos los repos.                 |
+| `mfs -b rama newbranch`  | Crea la rama en todos los repos desde su rama actual. |
+| `mfs -b rama -B base newbranch` | Crea la rama desde una rama base específica. |
 
 >[!WARNING]
 > El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.
@@ -140,8 +141,10 @@ mfs status                          # git status -sb de cada repo
 mfs -m "fix: corrige login" commit  # git add . + commit (omite repos sin cambios)
 mfs push                            # git push; si la rama no tiene upstream usa "push -u origin HEAD"
 mfs -b develop checkout             # cambia de rama (funciona aunque el clon sea --depth=1)
-mfs -b feature/nueva newbranch      # crea la rama y cambia a ella
+mfs -b feature/nueva newbranch      # crea desde la rama actual y cambia a ella
+mfs -b feature/nueva -B develop newbranch # crea desde develop y cambia a ella
 ```
+- `newbranch` requiere un nombre explícito con `-b`; no crea `main` por defecto.
 - Nunca se usa `--force`.
 - `mfs -b otra pull` ahora también cambia correctamente de rama en repos ya clonados con `--depth=1`.
 - Si algún repo falla, el comando termina con error (código 1) e indica que revises la salida.
@@ -197,7 +200,7 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - El campo **Lista** acepta cualquier `.txt`: relativo (`../listas/otra.txt`), `C:\ruta\lista.txt` o `/c/ruta/lista.txt`. Recuerda las últimas usadas.
 - **📂 Buscar…** abre un explorador para navegar carpetas y unidades (`C:`, `D:`…), buscar `.txt` por nombre en subcarpetas (ignora `node_modules` y `.git`), usar el archivo como lista, editarlo o crear uno nuevo.
 - Cada repo corre como un proceso independiente, con su propio log en el panel y su botón **Detener**. Los repos marcados con `#NEW` siguen abriendo su propia ventana, como en `mfs run`.
-- **Git**: los botones *Ver cambios*, *Commit…*, *Push*, *Checkout* y *Nueva rama* actúan sobre los repos seleccionados, y cada tarjeta tiene además *Cambios*, *Commit* y *Push*.
+- **Git**: los botones *Ver cambios*, *Commit…*, *Push*, *Checkout* y *Nueva rama* actúan sobre los repos seleccionados, y cada tarjeta tiene además *Cambios*, *Commit* y *Push*. *Nueva rama* pide el nombre y permite elegir una base común; por defecto parte de la rama actual de cada repo.
   - Las tarjetas muestran `● N cambios`, `↑N` (commits por subir) y `↓N` (commits por traer).
   - Commit solo actúa sobre los repos con cambios. Push y checkout piden confirmación con la lista de repos y su rama.
 - **Token git**: campo de la cabecera para repos privados (URL `https://usuario@host/...`). Se guarda solo en la memoria del panel mientras está abierto, nunca en disco. También lo usa "Importar de GitHub" si su campo de token está vacío. Si un push necesita credenciales y no hay token ni gestor de credenciales, falla con un mensaje en lugar de quedarse esperando.

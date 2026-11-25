@@ -81,6 +81,7 @@ set -e
 # ./manager_repo.sh push                        -> git push (sin --force; si no hay upstream usa -u origin HEAD)
 # ./manager_repo.sh -b develop checkout         -> cambia de rama (también en clones --depth=1)
 # ./manager_repo.sh -b feature/x newbranch      -> crea la rama y cambia a ella
+# ./manager_repo.sh -b feature/x -B develop newbranch -> crea desde una rama base específica
 #
 ## Repos privados sin escribir el token en la lista:
 # En listRep.txt la URL lleva solo el usuario: https://usuario@dev.azure.com/org/proyecto/_git/repo
@@ -116,6 +117,8 @@ COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager"
 # Las lecturas de git (status) no toman el index.lock "opcional": si se cortan no dejan bloqueos.
 export GIT_OPTIONAL_LOCKS=0
 BRANCH="main"  # Rama por defecto
+BRANCH_SET=0
+BASE_BRANCH=""  # Rama base opcional solo para newbranch; vacío = HEAD actual
 INSTALL_CMD="npm install"  # Comando de instalación por defecto (install / updeps)
 RUN_CMD=""  # Sobrescritura opcional del comando run (vacío = usar el comando de la lista)
 COMMIT_MSG=""  # Mensaje para 'commit' (opción -m)
@@ -165,9 +168,10 @@ ps_process() {
 }
  
 ## Procesar las opciones de línea de comandos
-while getopts ":b:i:r:m:" opt; do
+while getopts ":b:B:i:r:m:" opt; do
     case "$opt" in
-        b) BRANCH="$OPTARG" ;;  # Rama personalizada
+        b) BRANCH="$OPTARG"; BRANCH_SET=1 ;;  # Rama objetivo personalizada
+        B) BASE_BRANCH="$OPTARG" ;;  # Rama base de newbranch
         i) INSTALL_CMD="$OPTARG" ;;  # Comando de instalación personalizado
         r) RUN_CMD="$OPTARG" ;;  # Comando run personalizado
         m) COMMIT_MSG="$OPTARG" ;;  # Mensaje de commit
@@ -183,6 +187,10 @@ if [ $# -lt 1 ]; then
         log_warning "Por defecto el script buscara el .txt  llamado 'listRep.txt' en el directorio actual."
         log_description "Uso: ./$(basename "$0") [${COMMANDS[*]}] [archivo_lista]" "no-prefix"
         # show_usage
+    exit 1
+fi
+if [ "$1" = "newbranch" ] && [ "$BRANCH_SET" -ne 1 ]; then
+    log_error "Indica el nombre de la rama nueva: mfs -b feature/nombre newbranch [lista.txt]"
     exit 1
 fi
 handle_non_list_command() {
@@ -456,8 +464,21 @@ git_newbranch_one() {
         log_warning "La rama $BRANCH ya existe en $1; usa 'checkout' para cambiar a ella"
         return 0
     fi
-    log_info "Creando la rama $BRANCH en $1"
-    git checkout -b "$BRANCH"
+    if [ -z "$BASE_BRANCH" ]; then
+        log_info "Creando la rama $BRANCH en $1 desde la rama actual"
+        git checkout -b "$BRANCH"
+    elif git show-ref --verify --quiet "refs/heads/$BASE_BRANCH"; then
+        log_info "Creando la rama $BRANCH en $1 desde $BASE_BRANCH local"
+        git checkout -b "$BRANCH" "$BASE_BRANCH"
+    elif git ls-remote --exit-code --heads origin "$BASE_BRANCH" >/dev/null 2>&1; then
+        log_info "Trayendo la rama base remota $BASE_BRANCH en $1..."
+        git remote set-branches --add origin "$BASE_BRANCH" &&
+          git fetch --depth=1 origin "$BASE_BRANCH" &&
+          git checkout -b "$BRANCH" "origin/$BASE_BRANCH"
+    else
+        log_error "La rama base '$BASE_BRANCH' no existe en $1 (ni local ni remota)"
+        return 1
+    fi
 }
 # manejar dependencias 
 manage_deps() {

@@ -123,7 +123,8 @@ https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo5
 
 | Opción        | Uso                                                                 |
 |---------------|---------------------------------------------------------------------|
-| `-b <rama>`   | Rama para `pull`, `checkout` y `newbranch` (por defecto `main`).    |
+| `-b <rama>`   | Rama para `pull` y `checkout` (por defecto `main`); nombre nuevo para `newbranch` (obligatorio). |
+| `-B <rama>`   | Rama base opcional para `newbranch`; si se omite, usa la rama actual del repo. |
 | `-i "<cmd>"`  | Comando de instalación para `install` y `updeps` (por defecto `npm install`). |
 | `-m "<msg>"`  | Mensaje para `commit` (obligatorio).                                |
 
@@ -184,8 +185,10 @@ mfs status                          # git status -sb de cada repo
 mfs -m "fix: corrige login" commit  # git add . + commit (omite repos sin cambios)
 mfs push                            # git push; si la rama no tiene upstream usa "push -u origin HEAD"
 mfs -b develop checkout             # cambia de rama (funciona aunque el clon sea --depth=1)
-mfs -b feature/nueva newbranch      # crea la rama y cambia a ella
+mfs -b feature/nueva newbranch      # crea desde la rama actual y cambia a ella
+mfs -b feature/nueva -B develop newbranch # crea desde develop y cambia a ella
 ```
+- `newbranch` requiere un nombre explícito con `-b`; no crea `main` por defecto.
 - Nunca se usa `--force`.
 - `git add .` incluye todos los archivos nuevos o modificados (por ejemplo un `package-lock.json` generado por `npm install`). Revisa con `mfs status` antes de hacer commit.
 
@@ -252,7 +255,7 @@ mfs ui --port 5000 --no-open     # puerto fijo, sin abrir el navegador
 - Indicador discreto de actividad a la derecha del estado del token mientras hay comandos activos; respeta la preferencia del sistema para reducir movimiento.
 - Consola vacía con marca de agua MFS, estados vacíos ilustrados e indicadores de estado sutiles en las tarjetas.
 - **Git**:
-  - Botones: Ver cambios, Commit… (diálogo con el mensaje y la lista de repos con cambios), Push, Checkout y Nueva rama.
+  - Botones: Ver cambios, Commit… (diálogo con el mensaje y la lista de repos con cambios), Push, Checkout y Nueva rama. Nueva rama pide el nombre y permite elegir una base común; por defecto parte de la rama actual de cada repo.
   - Commit omite los repos sin cambios. Push, Checkout y Nueva rama piden confirmación con la lista de repos y su rama.
 - **Lista**:
   - El campo acepta cualquier `.txt` (relativo, `C:\...` o `/c/...`) y recuerda las últimas usadas.

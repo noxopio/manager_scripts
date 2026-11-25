@@ -57,6 +57,12 @@ const BRANCH_RE = /^[\w./-]{1,200}$/;
 const INSTALL_CMD_RE = /^[^;&|<>`$\r\n]{1,200}$/;
 const MAX_LOG_LINES = 2000;
 
+function isValidGitBranchName(name) {
+  return new Promise((resolve) => {
+    execFile('git', ['check-ref-format', '--branch', name], { windowsHide: true }, (err) => resolve(!err));
+  });
+}
+
 // ── Registro de paneles abiertos (para que "Matar todos" no mate otros paneles) ──
 const PANELS_DIR = path.join(os.homedir(), '.mfs_ui', 'panels');
 const PANEL_FILE = path.join(PANELS_DIR, `${process.pid}.json`);
@@ -329,13 +335,14 @@ function waitPortFree(port, timeoutMs = 20000) {
   });
 }
 
-function startJob(repo, action, list, { branch, installCmd, runCmd, commitMsg } = {}) {
+function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, commitMsg } = {}) {
   const existing = jobs.get(repo.name);
   if (existing && (existing.status === 'running' || existing.status === 'stopping')) return false;
 
   const scriptArgs = [SCRIPT];
   const opts = [];
   if (BRANCH_ACTIONS.has(action) && branch) opts.push('-b', branch);
+  if (action === 'newbranch' && baseBranch) opts.push('-B', baseBranch);
   if ((action === 'install' || action === 'updeps') && installCmd) opts.push('-i', installCmd);
   if (action === 'run' && runCmd) opts.push('-r', runCmd);
   if (action === 'commit') opts.push('-m', commitMsg);
@@ -615,10 +622,15 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const action = String(body.action || '');
       const branch = String(body.branch || '').trim();
+      const baseBranch = String(body.baseBranch || '').trim();
       const runCmd = String(body.runCmd || '').trim();
       if (!ACTIONS.has(action)) return send(res, 400, { error: 'Acción no válida' });
       if (branch && !BRANCH_RE.test(branch)) return send(res, 400, { error: 'Nombre de rama no válido' });
-      if ((action === 'checkout' || action === 'newbranch') && !branch) return send(res, 400, { error: 'Indica la rama en el campo "Rama"' });
+      if (action === 'checkout' && !branch) return send(res, 400, { error: 'Indica la rama en el campo "Rama (Pull/Checkout)"' });
+      if (action === 'newbranch' && !branch) return send(res, 400, { error: 'Indica el nombre de la rama nueva' });
+      if (action === 'newbranch' && baseBranch && !BRANCH_RE.test(baseBranch)) return send(res, 400, { error: 'Nombre de rama base no válido' });
+      if (action === 'newbranch' && !(await isValidGitBranchName(branch))) return send(res, 400, { error: 'El nombre de la rama nueva no es válido para Git' });
+      if (action === 'newbranch' && baseBranch && !(await isValidGitBranchName(baseBranch))) return send(res, 400, { error: 'El nombre de la rama base no es válido para Git' });
       if (action === 'run' && (runCmd.length > 500 || /[\r\n\0]/.test(runCmd))) {
         return send(res, 400, { error: 'El comando de Run no es válido (máx. 500 caracteres, sin saltos de línea ni NUL)' });
       }
@@ -637,7 +649,7 @@ const server = http.createServer(async (req, res) => {
       const busy = [];
       for (const r of repos) {
         if (!wanted.has(r.name)) continue;
-        (startJob(r, action, file, { branch, installCmd, runCmd, commitMsg }) ? started : busy).push(r.name);
+        (startJob(r, action, file, { branch, baseBranch, installCmd, runCmd, commitMsg }) ? started : busy).push(r.name);
       }
       return send(res, 200, { started, busy });
     }
