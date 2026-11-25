@@ -202,6 +202,9 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
   - Commit solo actúa sobre los repos con cambios. Push y checkout piden confirmación con la lista de repos y su rama.
 - **Token git**: campo de la cabecera para repos privados (URL `https://usuario@host/...`). Se guarda solo en la memoria del panel mientras está abierto, nunca en disco. También lo usa "Importar de GitHub" si su campo de token está vacío. Si un push necesita credenciales y no hay token ni gestor de credenciales, falla con un mensaje en lugar de quedarse esperando.
 - **Install con**: comando que usan Install y Updeps (equivale a `mfs -i`). Si se deja vacío, se usa `npm install`. Trae sugerencias como `npm i --legacy-peer-deps` o `npm ci`.
+- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`.
+- Un indicador discreto a la derecha del estado del token muestra cuántas operaciones siguen activas y respeta la preferencia del sistema para reducir movimiento.
+- La consola vacía muestra una marca de agua MFS; los estados vacíos tienen iconos y las tarjetas usan acentos sutiles según su estado.
 - **Seguir** (en el panel de logs): desplaza el log automáticamente hasta la última línea. Desmárcalo para leer líneas anteriores sin que la salida nueva mueva la vista.
 - **Procesos Node** equivale a `mfs ps` / `mfs kill`. Indica qué procesos son paneles mfs, y "Matar todos" respeta todos los paneles mfs abiertos (no solo el propio).
 - **Editar lista** permite importar repos de una organización o usuario de GitHub, o insertar la plantilla de ejemplo (equivale a `mfs list`).

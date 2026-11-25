@@ -29,6 +29,8 @@
   input[type=text] { width: 180px; }
   button { font: inherit; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); cursor: pointer; }
   button:hover { border-color: var(--accent); }
+  .icon-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .icon { width: 16px; height: 16px; flex: 0 0 16px; display: inline-block; vertical-align: middle; }
   button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
   button.danger { color: var(--err); }
   button:disabled { opacity: .5; cursor: default; }
@@ -37,13 +39,20 @@
   main { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1.2fr); gap: 12px; padding: 12px 16px; flex: 1; min-height: 0; }
   @media (max-width: 900px) { body { height: auto; } main { grid-template-columns: 1fr; } }
   .list { overflow: auto; display: flex; flex-direction: column; gap: 6px; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-left-width: 3px; border-left-color: var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+  .card.status-running { border-left-color: var(--run); }
+  .card.status-stopping { border-left-color: var(--warn); }
+  .card.status-ok { border-left-color: var(--ok); }
+  .card.status-error { border-left-color: var(--err); }
+  .card.status-stopped { border-left-color: var(--muted); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .card .top { display: flex; align-items: center; gap: 8px; }
   .card .name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--muted); align-items: center; }
   .card .actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
   .badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.branch-badge, .badge.lock-badge { display: inline-flex; align-items: center; gap: 4px; }
+  .badge .icon { width: 12px; height: 12px; flex-basis: 12px; }
   .badge.warn { color: var(--warn); border-color: currentColor; }
   .status { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
@@ -60,14 +69,21 @@
   .logpane { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; min-height: 300px; overflow: hidden; }
   .logpane .head { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
   .logpane .head strong { flex: 1; }
-  pre.log { margin: 0; flex: 1; overflow: auto; padding: 10px; background: var(--log-bg); color: var(--log-text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+  pre.log { position: relative; margin: 0; flex: 1; overflow: auto; padding: 10px; background: var(--log-bg); color: var(--log-text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+  #log:empty::after { content: "mfs\A>_"; position: absolute; right: 22px; bottom: 18px; color: var(--log-text); opacity: .055; text-align: right; white-space: pre; font: 700 58px/.9 ui-monospace, Consolas, monospace; pointer-events: none; user-select: none; }
   .empty { padding: 24px; text-align: center; color: var(--muted); }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 130px; }
+  .empty-state > .icon { width: 28px; height: 28px; flex-basis: 28px; opacity: .8; }
+  .empty-state strong { color: var(--text); font-size: 13px; font-weight: 600; }
+  .empty-detail { max-width: 420px; font-size: 12px; }
   dialog { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); width: min(900px, 95vw); padding: 14px; }
   dialog textarea { width: 100%; height: 55vh; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
   .fslist { border: 1px solid var(--border); border-radius: 6px; height: 45vh; overflow: auto; background: var(--bg); }
   .fsitem { padding: 5px 10px; cursor: pointer; display: flex; gap: 8px; align-items: center; user-select: none; }
+  .fsitem > .icon { color: var(--muted); }
   .fsitem:hover { background: var(--panel); }
   .fsitem.sel { background: var(--accent); color: var(--accent-text); }
+  .fsitem.sel > .icon { color: inherit; }
   .fsitem .sub { color: var(--muted); font-size: 11px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
   .fsitem.sel .sub { color: inherit; opacity: .8; }
   .chips { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -76,6 +92,16 @@
   button.danger-solid { background: var(--err); color: #fff; border-color: var(--err); }
   .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: .95; }
+  .matrix-status { margin-left: auto; display: flex; align-items: center; gap: 7px; max-width: min(300px, 100%); padding: 2px 4px; color: var(--muted); font-size: 12px; }
+  .matrix-status[hidden] { display: none; }
+  .matrix-rain { height: 25px; overflow: hidden; display: flex; gap: 3px; color: var(--log-text); font: 9px/9px ui-monospace, Consolas, monospace; }
+  .matrix-column { display: block; animation: matrix-fall 1.15s ease-in-out infinite alternate; }
+  .matrix-column:nth-child(2) { animation-delay: .25s; }
+  .matrix-column:nth-child(3) { animation-delay: .5s; }
+  @keyframes matrix-fall { from { transform: translateY(-4px); opacity: .45; } to { transform: translateY(4px); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column { animation: none; }
+  }
 </style>
 </head>
 <body>
@@ -88,12 +114,14 @@
     <label class="field" title="Cualquier .txt: relativo (../listas/otra.txt), C:\ruta\lista.txt o /c/ruta/lista.txt">Lista
       <input type="text" id="list" list="lists" style="width:240px" placeholder="listRep.txt"></label>
     <datalist id="lists"></datalist>
-    <button id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">📂 Buscar…</button>
+    <button class="icon-btn" id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">Buscar…</button>
     <label class="field">Rama (pull/checkout) <input type="text" id="branch" placeholder="main" list="branches"></label>
     <datalist id="branches"><option value="main"><option value="develop"><option value="master"></datalist>
     <label class="field" title="Comando que usan Install y Updeps (equivale a mfs -i). Vacío = npm install">Install con
       <input type="text" id="installCmd" placeholder="npm install" list="installCmds" style="width:200px"></label>
     <datalist id="installCmds"><option value="npm install"><option value="npm i --legacy-peer-deps"><option value="npm ci"><option value="pnpm install"><option value="yarn install"></datalist>
+    <label class="field" title="Comando para Run en los repos seleccionados. Vacío = comando definido en el .txt o npm run start. Se guarda en este navegador por lista, no modifica el .txt, y se ejecuta dentro de cada repo.">Run con
+      <input type="text" id="runCmd" placeholder="comando del .txt" maxlength="500" style="width:210px" autocomplete="off"></label>
     <span class="sep"></span>
     <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
     <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull)">Pull</button>
@@ -105,7 +133,7 @@
     <button id="edit">Editar lista</button>
     <button id="psBtn" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
     <button id="helpBtn" title="Equivalente a mfs help">Ayuda</button>
-    <button id="refresh" title="Recargar estado">↻</button>
+    <button class="icon-btn" id="refresh" title="Recargar estado" aria-label="Recargar estado"></button>
   </div>
   <div class="row" style="margin-top:8px">
     <span class="muted">Git:</span>
@@ -120,6 +148,10 @@
     <button class="sm" id="tokenApply">Aplicar</button>
     <button class="sm" id="tokenClear">Quitar</button>
     <span class="badge" id="tokenState">sin token</span>
+    <div class="matrix-status" id="matrixStatus" role="status" aria-live="polite" hidden>
+      <span class="matrix-rain" aria-hidden="true"><span class="matrix-column">1<br>0<br>1<br>0</span><span class="matrix-column">0<br>1<br>0<br>1</span><span class="matrix-column">1<br>1<br>0<br>1</span></span>
+      <span id="matrixText"></span>
+    </div>
   </div>
 </header>
 
@@ -270,6 +302,12 @@ async function api(path, opts = {}) {
   return data;
 }
 const listName = () => $('#list').value || 'listRep.txt';
+const runCmdKey = () => 'mfs.runCmd.' + listName();
+function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; }
+function saveRunCmd() {
+  const value = $('#runCmd').value.trim();
+  if (value) localStorage.setItem(runCmdKey(), value); else localStorage.removeItem(runCmdKey());
+}
 
 async function loadLists() {
   const { files } = await api('/api/lists');
@@ -305,6 +343,42 @@ function el(tag, props = {}, ...children) {
   return e;
 }
 
+const ICONS = {
+  folder: { paths: ['M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2h8A1.5 1.5 0 0 1 20.5 9v8A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17z'] },
+  refresh: { paths: ['M20 7v5h-5', 'M19 12a7 7 0 0 0-12.1-4.9L5 9', 'M4 17v-5h5', 'M5 12a7 7 0 0 0 12.1 4.9L19 15'] },
+  branch: { paths: ['M7 4v10a4 4 0 0 0 4 4h2a4 4 0 0 0 4-4V9', 'M7 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M17 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M13 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'] },
+  lock: { paths: ['M5 10h14v10H5z', 'M8 10V7a4 4 0 1 1 8 0v3'], circles: [[12, 15, 1]] },
+  repo: { paths: ['M5 4.5h14A1.5 1.5 0 0 1 20.5 6v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5z', 'M8 4.5v15', 'M11 8h6', 'M11 12h6'] },
+  search: { paths: ['M10.8 18.3a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z', 'm16.2 16.2 4.3 4.3'] },
+  file: { paths: ['M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z', 'M14 3.5V8h4', 'M9 12h6', 'M9 15.5h6'] },
+};
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'icon');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.7');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const shape = ICONS[name];
+  for (const d of (shape?.paths || [])) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', d); svg.append(p);
+  }
+  for (const [cx, cy, r] of (shape?.circles || [])) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r); svg.append(c);
+  }
+  return svg;
+}
+function emptyState(iconName, title, detail = '') {
+  return el('div', { class: 'empty empty-state' }, icon(iconName), el('strong', {}, title), detail ? el('span', { class: 'empty-detail' }, detail) : null);
+}
+$('#browseBtn').prepend(icon('folder'));
+$('#refresh').append(icon('refresh'));
+
 function statusNode(r) {
   if (r.status === 'running' && r.action === 'run' && r.compile) {
     return el('span', { class: 'status ' + r.compile }, el('span', { class: 'dot' }), `${COMPILE_LABEL[r.compile]} · run`);
@@ -324,7 +398,11 @@ function portNode(r) {
 
 function render(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
-  if (!state.repos.length) { box.append(el('div', { class: 'empty' }, emptyMsg || 'La lista no tiene repos activos.')); return; }
+  updateActivityIndicator();
+  if (!state.repos.length) {
+    box.append(emptyState('repo', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
+    return;
+  }
   for (const r of state.repos) {
     const running = r.status === 'running' || r.status === 'stopping'; // ocupado: sin acciones nuevas
     const cb = el('input', { type: 'checkbox', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
@@ -334,8 +412,8 @@ function render(emptyMsg) {
     cb.checked = state.checked.has(r.name);
     const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
     const meta = el('div', { class: 'meta' },
-      r.cloned ? el('span', { class: 'badge', title: r.upstream ? 'upstream: ' + r.upstream : 'sin upstream (push lo publicará con -u)' }, '⎇ ' + (r.branch || '?')) : el('span', { class: 'badge warn' }, 'sin clonar'),
-      r.locked ? el('span', { class: 'badge warn', title: 'Existe .git/index.lock: git cree que otra operación está en curso y rechaza commit/pull/checkout. Suele quedar al cortar un git a mitad (cerrar el panel, Detener o mfs kill durante un pull o commit).' }, `🔒 bloqueado${r.lockAge >= 60 ? ` (${Math.round(r.lockAge / 60)} min)` : ''}`) : null,
+      r.cloned ? el('span', { class: 'badge branch-badge', title: r.upstream ? 'upstream: ' + r.upstream : 'sin upstream (push lo publicará con -u)' }, icon('branch'), r.branch || '?') : el('span', { class: 'badge warn' }, 'sin clonar'),
+      r.locked ? el('span', { class: 'badge warn lock-badge', title: 'Existe .git/index.lock: git cree que otra operación está en curso y rechaza commit/pull/checkout. Suele quedar al cortar un git a mitad (cerrar el panel, Detener o mfs kill durante un pull o commit).' }, icon('lock'), `bloqueado${r.lockAge >= 60 ? ` (${Math.round(r.lockAge / 60)} min)` : ''}`) : null,
       r.locked ? el('button', { class: 'sm', title: 'Quitar el bloqueo .git/index.lock', onclick: (ev) => { ev.stopPropagation(); unlockRepo(r); }, ...(running ? { disabled: '' } : {}) }, 'Desbloquear') : null,
       r.cloned && r.changes ? el('span', { class: 'badge warn', title: 'Archivos modificados o nuevos sin commit' }, `● ${r.changes} cambio${r.changes > 1 ? 's' : ''}`) : null,
       r.cloned && r.ahead ? el('span', { class: 'badge', title: 'Commits pendientes de push' }, `↑${r.ahead}`) : null,
@@ -345,7 +423,7 @@ function render(emptyMsg) {
       el('span', { title: r.url }, r.command),
       portNode(r),
     );
-    const card = el('div', { class: 'card' + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
+    const card = el('div', { class: `card status-${r.status}` + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
       el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), statusNode(r)),
       meta,
       el('div', { class: 'actions' },
@@ -363,6 +441,13 @@ function render(emptyMsg) {
   }
 }
 
+function updateActivityIndicator() {
+  const count = state.repos.filter((r) => r.status === 'running' || r.status === 'stopping').length;
+  const indicator = $('#matrixStatus');
+  indicator.hidden = count === 0;
+  if (count) $('#matrixText').textContent = count === 1 ? '1 comando en ejecución' : `${count} comandos en ejecución`;
+}
+
 async function selectRepo(name) {
   state.selected = name;
   $('#logTitle').textContent = name;
@@ -376,10 +461,12 @@ async function runAction(action, names, extra = {}) {
   if (!names.length) return toast('No hay repos seleccionados');
   const branch = $('#branch').value.trim();
   const installCmd = $('#installCmd').value.trim();
+  const runCmd = action === 'run' ? $('#runCmd').value.trim() : '';
   localStorage.setItem('mfs.branch', branch);
   localStorage.setItem('mfs.installCmd', installCmd);
+  if (action === 'run') saveRunCmd();
   try {
-    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, installCmd, list: listName(), ...extra }) });
+    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, installCmd, runCmd, list: listName(), ...extra }) });
     toast(`${ACTION_LABEL[action] || action}: ${r.started.length} iniciado(s)` + (r.busy.length ? `, ${r.busy.length} ocupado(s)` : ''));
     if (r.started[0] && (!state.selected || !r.started.includes(state.selected))) selectRepo(r.started[0]);
   } catch (e) { toast(e.message); }
@@ -510,6 +597,8 @@ $('#stopAll').onclick = () => stop(null);
 $('#refresh').onclick = loadRepos;
 $('#selectAll').onchange = (ev) => { state.checked = ev.target.checked ? new Set(state.repos.map((r) => r.name)) : new Set(); render(); };
 $('#list').onchange = () => { rememberList(listName()); loadLists(); state.first = true; loadRepos(); };
+$('#list').addEventListener('change', loadRunCmd);
+$('#runCmd').addEventListener('change', saveRunCmd);
 
 // Equivalente a "mfs ps" / "mfs kill"
 async function loadPs() {
@@ -593,8 +682,8 @@ function fsSelect(file) {
   $('#fsUse').disabled = $('#fsUseEdit').disabled = !file;
   document.querySelectorAll('#fsList .fsitem').forEach((n) => n.classList.toggle('sel', n.dataset.file === file));
 }
-function fsItem(icon, label, sub, { file, onopen } = {}) {
-  const n = el('div', { class: 'fsitem' }, icon + ' ' + label, sub ? el('span', { class: 'sub', title: sub }, sub) : null);
+function fsItem(iconName, label, sub, { file, onopen } = {}) {
+  const n = el('div', { class: 'fsitem' }, icon(iconName), el('span', { class: 'fs-label' }, label), sub ? el('span', { class: 'sub', title: sub }, sub) : null);
   if (file) {
     n.dataset.file = file;
     n.onclick = () => fsSelect(file);
@@ -611,9 +700,9 @@ async function fsOpen(dir) {
     for (const d of r.drives) box.append(el('button', { class: 'sm', onclick: () => fsOpen(d) }, d.replace(/\\$/, '')));
     const list = $('#fsList'); list.innerHTML = '';
     const join = (name) => r.dir.replace(/[\\/]$/, '') + r.sep + name;
-    if (!r.entries.length) list.append(el('div', { class: 'empty' }, 'Sin carpetas ni archivos .txt aquí.'));
+    if (!r.entries.length) list.append(emptyState('folder', 'Carpeta vacía', 'No hay subcarpetas ni archivos .txt aquí.'));
     for (const e of r.entries) {
-      list.append(e.type === 'dir' ? fsItem('📁', e.name, null, { onopen: () => fsOpen(join(e.name)) }) : fsItem('📄', e.name, null, { file: join(e.name) }));
+      list.append(e.type === 'dir' ? fsItem('folder', e.name, null, { onopen: () => fsOpen(join(e.name)) }) : fsItem('file', e.name, null, { file: join(e.name) }));
     }
     fsSelect(null);
   } catch (e) { toast(e.message); }
@@ -625,14 +714,15 @@ async function fsSearch() {
   try {
     const r = await api(`/api/fs/search?dir=${encodeURIComponent(fs_.dir || '')}&q=${encodeURIComponent(q)}`);
     list.innerHTML = '';
-    if (!r.results.length) list.append(el('div', { class: 'empty' }, `No se encontraron .txt con "${q}" bajo ${r.root}`));
-    for (const f of r.results) list.append(fsItem('📄', f.split(/[\\/]/).pop(), f, { file: f }));
+    if (!r.results.length) list.append(emptyState('search', 'No se encontraron archivos', `No hay .txt con "${q}" bajo ${r.root}`));
+    for (const f of r.results) list.append(fsItem('file', f.split(/[\\/]/).pop(), f, { file: f }));
     if (r.truncated) list.append(el('div', { class: 'empty' }, 'Resultados truncados: afina el nombre o busca desde una carpeta más concreta.'));
     fsSelect(null);
   } catch (e) { list.innerHTML = ''; toast(e.message); }
 }
 async function fsUse(file, edit) {
   $('#list').value = file;
+  loadRunCmd();
   rememberList(file); loadLists(); state.first = true;
   $('#fsDialog').close();
   await loadRepos();
@@ -687,6 +777,7 @@ $('#editorSave').onclick = async () => {
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
     $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');
   } catch { $('#list').value = 'listRep.txt'; }
+  loadRunCmd();
   await loadLists();
   await loadRepos();
   connectStream();

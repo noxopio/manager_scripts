@@ -329,7 +329,7 @@ function waitPortFree(port, timeoutMs = 20000) {
   });
 }
 
-function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
+function startJob(repo, action, list, { branch, installCmd, runCmd, commitMsg } = {}) {
   const existing = jobs.get(repo.name);
   if (existing && (existing.status === 'running' || existing.status === 'stopping')) return false;
 
@@ -337,6 +337,7 @@ function startJob(repo, action, list, { branch, installCmd, commitMsg } = {}) {
   const opts = [];
   if (BRANCH_ACTIONS.has(action) && branch) opts.push('-b', branch);
   if ((action === 'install' || action === 'updeps') && installCmd) opts.push('-i', installCmd);
+  if (action === 'run' && runCmd) opts.push('-r', runCmd);
   if (action === 'commit') opts.push('-m', commitMsg);
   scriptArgs.push(...opts, action, toPosix(list));
 
@@ -614,9 +615,13 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const action = String(body.action || '');
       const branch = String(body.branch || '').trim();
+      const runCmd = String(body.runCmd || '').trim();
       if (!ACTIONS.has(action)) return send(res, 400, { error: 'Acción no válida' });
       if (branch && !BRANCH_RE.test(branch)) return send(res, 400, { error: 'Nombre de rama no válido' });
       if ((action === 'checkout' || action === 'newbranch') && !branch) return send(res, 400, { error: 'Indica la rama en el campo "Rama"' });
+      if (action === 'run' && (runCmd.length > 500 || /[\r\n\0]/.test(runCmd))) {
+        return send(res, 400, { error: 'El comando de Run no es válido (máx. 500 caracteres, sin saltos de línea ni NUL)' });
+      }
       const commitMsg = String(body.commitMsg || '').trim();
       if (action === 'commit' && (!commitMsg || commitMsg.length > 2000)) {
         return send(res, 400, { error: 'El mensaje de commit es obligatorio (máx. 2000 caracteres)' });
@@ -632,7 +637,7 @@ const server = http.createServer(async (req, res) => {
       const busy = [];
       for (const r of repos) {
         if (!wanted.has(r.name)) continue;
-        (startJob(r, action, file, { branch, installCmd, commitMsg }) ? started : busy).push(r.name);
+        (startJob(r, action, file, { branch, installCmd, runCmd, commitMsg }) ? started : busy).push(r.name);
       }
       return send(res, 200, { started, busy });
     }

@@ -90,6 +90,7 @@ set -e
 #
 ## Uso de un comando de instalación personalizado:
 # Con la opción -i se cambia el comando que usan 'install' y 'updeps' (por defecto 'npm install').
+# Con -r se sobrescribe el comando de 'run'; si se omite, se usa el comando de cada línea del .txt.
 # Ejemplos:
 # ./manager_repo.sh -i "npm i --legacy-peer-deps" install listRep.txt
 # ./manager_repo.sh -i "npm ci" updeps
@@ -116,6 +117,7 @@ COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager"
 export GIT_OPTIONAL_LOCKS=0
 BRANCH="main"  # Rama por defecto
 INSTALL_CMD="npm install"  # Comando de instalación por defecto (install / updeps)
+RUN_CMD=""  # Sobrescritura opcional del comando run (vacío = usar el comando de la lista)
 COMMIT_MSG=""  # Mensaje para 'commit' (opción -m)
 
 ## Token git sin guardarlo en la lista: si MFS_GIT_TOKEN está definido, git lo pide vía GIT_ASKPASS
@@ -163,10 +165,11 @@ ps_process() {
 }
  
 ## Procesar las opciones de línea de comandos
-while getopts ":b:i:m:" opt; do
+while getopts ":b:i:r:m:" opt; do
     case "$opt" in
         b) BRANCH="$OPTARG" ;;  # Rama personalizada
         i) INSTALL_CMD="$OPTARG" ;;  # Comando de instalación personalizado
+        r) RUN_CMD="$OPTARG" ;;  # Comando run personalizado
         m) COMMIT_MSG="$OPTARG" ;;  # Mensaje de commit
         \?) echo "Opción no válida: -$OPTARG"; exit 1 ;;
     esac
@@ -489,6 +492,7 @@ run_repos() {
     for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         run_command="${source_repos[$repo_url]}"
+        [[ -n "$RUN_CMD" ]] && run_command="$RUN_CMD"
         is_external="${external_repos[$repo_url]}"
 
         log_info "Procesando $repo_name"

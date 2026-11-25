@@ -248,6 +248,9 @@ mfs ui --port 5000 --no-open     # puerto fijo, sin abrir el navegador
 - **Acciones globales** sobre los repos seleccionados: Pull (con rama), Install, Updeps, Run y Detener todo.
 - **Log independiente por repo**, en vivo. La casilla **Seguir** desplaza el log hasta la última línea; desmárcala para leer líneas anteriores sin que la vista se mueva.
 - **Install con**: comando de instalación personalizado (equivale a `-i`), con sugerencias.
+- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`.
+- Indicador discreto de actividad a la derecha del estado del token mientras hay comandos activos; respeta la preferencia del sistema para reducir movimiento.
+- Consola vacía con marca de agua MFS, estados vacíos ilustrados e indicadores de estado sutiles en las tarjetas.
 - **Git**:
   - Botones: Ver cambios, Commit… (diálogo con el mensaje y la lista de repos con cambios), Push, Checkout y Nueva rama.
   - Commit omite los repos sin cambios. Push, Checkout y Nueva rama piden confirmación con la lista de repos y su rama.
