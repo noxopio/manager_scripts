@@ -2,12 +2,10 @@
 
 Paquete de instalación para uso global. La versión instalada se ve con `mfs version` (archivo [`VERSION`](VERSION)).
 
->[!WARNING]
-> **Estás en la rama de pruebas `feature/ui`.** Incluye el panel web `mfs ui`, que está en fase de pruebas.
-> La versión estable (solo terminal) está en la rama `main`. Para volver a ella:
-> ```bash
-> git checkout main && cd Manager_install && ./manager_install.sh --force
-> ```
+>[!NOTE]
+> El panel web (`mfs ui`) es **opcional**: solo se usa si ejecutas `mfs ui` y es lo único que necesita Node.
+> Todo lo demás funciona solo con la terminal. Si prefieres la versión anterior, solo terminal y sin panel:
+> `git clone -b v8.0.2 https://github.com/noxopio/manager_scripts.git`
 
 Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
 
