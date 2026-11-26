@@ -4,7 +4,7 @@
 # Documentación del Script
 # ==========================
 # Script para Extraer URLs de Repositorios de GitHub
-# Versión: 2.0
+# Versión: ver el archivo VERSION (mfs version)
 
 # Fecha: [27/02/2025]
 ##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 

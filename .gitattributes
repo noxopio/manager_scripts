@@ -1,0 +1,7 @@
+# Los scripts deben tener saltos de línea LF para funcionar en Linux/WSL/macOS
+# (con CRLF falla el shebang: "cannot execute: required file not found"). Git Bash acepta LF sin problema.
+*.sh    text eol=lf
+*.js    text eol=lf
+*.html  text eol=lf
+*.md    text eol=lf
+VERSION text eol=lf

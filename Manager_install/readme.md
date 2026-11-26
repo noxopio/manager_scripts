@@ -1,6 +1,14 @@
 # Manager Repo 
 
-**Versión 6.0.1** - Paquete de instalación para uso global.
+Paquete de instalación para uso global. La versión instalada se ve con `mfs version` (archivo [`VERSION`](VERSION)).
+
+>[!NOTE]
+> **Interfaz gráfica (`mfs ui`) en fase de pruebas.** Está en la rama `feature/ui`. Esta rama (`main`) es la versión estable, solo terminal.
+> Para probarla:
+> ```bash
+> git clone -b feature/ui https://github.com/noxopio/manager_scripts.git
+> cd manager_scripts/Manager_install && ./manager_install.sh      # --force si ya tienes mfs instalado
+> ```
 
 Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
 
@@ -23,7 +31,7 @@ Este script ha sido diseñado para optimizar la gestión de múltiples repositor
 > 
 > Ejemplo:
 > ```bash
-> sh manager_install.sh
+> ./manager_install.sh      # o: bash manager_install.sh (no "sh": en Ubuntu/Debian es dash)
 > ```
 
 1. **Dependencias necesarias**:
@@ -56,6 +64,22 @@ El script `manager_install.sh` automatiza la instalación de la herramienta `mfs
 > ```bash
 > chmod +x manager_install.sh
 > ```
+
+---
+
+## Linux y WSL
+
+La instalación es la misma que en Git Bash, con estos detalles:
+
+- **Ejecuta el instalador con bash**: `./manager_install.sh` o `bash manager_install.sh`. No uses `sh manager_install.sh`: en Ubuntu/Debian `sh` es `dash` y los scripts fallan.
+- **WSL es otro sistema**: tiene su propio home (`/home/<usuario>`) y su propio `~/.bashrc`. Lo instalado desde Git Bash en Windows no existe dentro de WSL, así que instala mfs también dentro de WSL. Clona en el home de Linux (`~`), no en `/mnt/c/...`.
+- **`cannot execute: required file not found`** (o `$'\r': command not found`): los scripts tienen saltos de línea de Windows (CRLF). El repo fuerza LF con `.gitattributes`, pero si copiaste los archivos desde Windows conviértelos e instala de nuevo:
+  ```bash
+  sudo apt install -y dos2unix
+  dos2unix *.sh VERSION readme.md && ./manager_install.sh --force
+  ```
+- **zsh**: el instalador solo escribe en `~/.bashrc`. Añade al final de `~/.zshrc`: `source ~/manager_scripts/manager_rc.sh`
+- **Repos `#NEW`**: se abren en el primer emulador de terminal disponible; sin entorno gráfico corren en segundo plano con la salida en `<repo>/mfs-run.log`.
 
 ---
 
@@ -98,6 +122,8 @@ https://github.com/usuario/repo4.git npm run dev #NEW
 | `mfs ps`                 | Lista los procesos en ejecución.                |
 | `mfs kill`               | Detiene todos los procesos de Node.js activos.  |
 | `mfs uninstall`          | Desinstala la herramienta y elimina configuraciones.|
+| `mfs version`            | Muestra la versión instalada (archivo `VERSION`). |
+| `mfs update`             | `git pull --ff-only` del repo de origen y reinstala sin preguntas. |
 
 >[!WARNING]
 > El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.

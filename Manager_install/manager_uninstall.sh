@@ -3,7 +3,7 @@ set -e
 # Documentación del Script
 # ==========================
 # Script de Desinstalación de Manager Scripts
-# Versión: 2.0.2
+# Versión: ver el archivo VERSION (mfs version)
 # Fecha: [27-02-2025]
 ###Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes.
 # __| |_______________________________________| |__
@@ -63,6 +63,8 @@ show_help() {
 }
 
 confirm() {
+    # "mfs update" reinstala sin preguntar
+    [ "$MFS_UPDATE" = 1 ] && return 0
     log_warning "¿Estás seguro de que deseas desinstalar Manager Scripts? (s/n): "
     printf "\t[s/n]: "
     read     confirm
@@ -94,7 +96,7 @@ remove_functions() {
         # Eliminar el bloque completo
         sed -i "/# >>> Manager Scripts START/,/# <<< Manager Scripts END/d" "$ALIAS_FILE"
         log_info "Funciones de Manager Scripts eliminado del archivo: $ALIAS_FILE"
-        source ~/.bashrc
+        log_info "Abre una terminal nueva para que 'mfs' deje de estar disponible."
         log_success "Desinstalación completada."
         message_uninstall
         log_warning "$(date +"%Y-%m-%d %H:%M:%S")" "no-prefix"
