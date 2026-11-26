@@ -1,5 +1,5 @@
 #!/bin/bash
-# Versión 5.0.1 - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
+# Versión: ver el archivo VERSION (mfs version) - Ejecución de procesos en paralelo y gestión de procesos de Node en ejecución
 set -e
 ## Notas de uso:
 ##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes. 
@@ -113,7 +113,7 @@ set -e
 source "$(dirname "$0")/manager_logs.sh"
 
 FILE_NAME="$(basename "$0")"
-COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui" "status" "commit" "push" "checkout" "newbranch" "unlock")
+COMMANDS=("pull" "run" "install" "updeps" "kill" "list" "ps" "uninstall_manager" "help" "ui" "status" "commit" "push" "checkout" "newbranch" "unlock" "version" "update")
 # Las lecturas de git (status) no toman el index.lock "opcional": si se cortan no dejan bloqueos.
 export GIT_OPTIONAL_LOCKS=0
 BRANCH="main"  # Rama por defecto
@@ -219,8 +219,38 @@ handle_non_list_command() {
      border)
      border_show
      ;;
+     version)
+     echo "mfs $(cat "$(dirname "$0")/VERSION" 2>/dev/null || echo "desconocida")"
+     ;;
+
+     update)
+     # Actualiza desde el repo de origen (guardado por el instalador en .source) y reinstala
+     src="$(cat "$(dirname "$0")/.source" 2>/dev/null)"
+     if [ -z "$src" ] || [ ! -f "$src/manager_install.sh" ]; then
+         log_error "No se encuentra el repo de origen de la instalación. Reinstala con: ./manager_install.sh --force"
+         exit 1
+     fi
+     log_info "Actualizando desde $src ..."
+     git -C "$src" pull --ff-only || { log_error "git pull falló en $src (¿cambios locales?)"; exit 1; }
+     # exec: este script se borra durante la reinstalación, así que se reemplaza el proceso
+     MFS_UPDATE=1 exec bash "$src/manager_install.sh" --force
+     ;;
+
      ui)
      # Uso: mfs ui [lista.txt] [--port N] [--no-open]
+     if ! command -v node >/dev/null 2>&1; then
+         log_error "No se encuentra Node.js. Instala Node 18 o superior: https://nodejs.org"
+         exit 1
+     fi
+     node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)"
+     if [ -z "$node_major" ] || [ "$node_major" -lt 18 ]; then
+         log_error "El panel necesita Node 18 o superior (tienes $(node --version 2>/dev/null))."
+         exit 1
+     fi
+     if ! command -v git >/dev/null 2>&1; then
+         log_error "No se encuentra git. Instala Git (en Windows, Git for Windows incluye Git Bash)."
+         exit 1
+     fi
      log_info "Iniciando panel web de mfs..."
      # Pasar al panel la ruta del bash actual (en Git Bash se convierte a ruta Windows para Node)
      if [ -z "$MFS_BASH" ]; then
@@ -240,7 +270,7 @@ handle_non_list_command() {
      exit 0
     }
 
-non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border" "ui" )
+non_list_commands=("list" "kill" "ps" "uninstall_manager" "help" "border" "ui" "version" "update")
     if [[ " ${non_list_commands[*]} " == *" $1 "* ]]; then
     handle_non_list_command "$@"
     fi
@@ -508,6 +538,43 @@ manage_deps() {
     done
     wait_pids "${pids[@]}"
 }
+## Abre el comando de un repo (#NEW) en una ventana de terminal nueva, según el sistema.
+## Uso: open_external_terminal <carpeta> <comando>
+open_external_terminal() {
+    local dir="$1" cmd="$2" inner esc
+    printf -v inner 'cd %q && %s' "$dir" "$cmd"
+    case "$OSTYPE" in
+        msys*|cygwin*)  # Windows (Git Bash)
+            start bash -c "$inner" &
+            return
+            ;;
+        darwin*)        # macOS: Terminal.app (necesita la ruta absoluta)
+            printf -v inner 'cd %q && %s' "$PWD/$dir" "$cmd"
+            esc="${inner//\\/\\\\}"; esc="${esc//\"/\\\"}"
+            osascript -e "tell application \"Terminal\" to do script \"$esc\"" >/dev/null &
+            return
+            ;;
+    esac
+    # Linux: primer emulador de terminal disponible (solo si hay entorno gráfico)
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        if [ -n "$TERMINAL" ] && command -v "$TERMINAL" >/dev/null 2>&1; then
+            "$TERMINAL" -e bash -c "$inner" & return
+        fi
+        if command -v x-terminal-emulator >/dev/null 2>&1; then x-terminal-emulator -e bash -c "$inner" & return; fi
+        if command -v gnome-terminal >/dev/null 2>&1; then gnome-terminal -- bash -c "$inner" & return; fi
+        if command -v konsole >/dev/null 2>&1; then konsole -e bash -c "$inner" & return; fi
+        if command -v xfce4-terminal >/dev/null 2>&1; then xfce4-terminal -x bash -c "$inner" & return; fi
+        if command -v xterm >/dev/null 2>&1; then xterm -e bash -c "$inner" & return; fi
+    fi
+    if [ -n "$TMUX" ]; then
+        tmux new-window -n "$dir" "$inner"
+        return
+    fi
+    # Sin entorno gráfico ni tmux: en segundo plano con el log en un archivo
+    log_warning "No hay terminal gráfica: $dir se ejecuta en segundo plano. Log: $dir/mfs-run.log"
+    nohup bash -c "$inner" > "$dir/mfs-run.log" 2>&1 &
+}
+
 ##Función para ejecutar los repositorios.
 run_repos() {
     for repo_url in "${!source_repos[@]}"; do
@@ -525,7 +592,7 @@ run_repos() {
 
         if [[ "$is_external" == "true" ]]; then
             log_info "Abriendo en ventana externa..."
-            start bash -c "cd $repo_name; $run_command" &  # Para Windows
+            open_external_terminal "$repo_name" "$run_command"
         else
             (
                 cd "$repo_name" || exit

@@ -103,6 +103,12 @@
   button.danger-solid { background: var(--err); color: #fff; border-color: var(--err); }
   .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.show { opacity: .95; }
+  .batch-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 10px; border: 1px solid var(--border); border-left: 3px solid var(--ok); border-radius: 6px; font-size: 13px; }
+  .batch-bar.has-errors { border-left-color: var(--err); }
+  .batch-bar[hidden] { display: none; }
+  .batch-bar .err { color: var(--err); } .batch-bar .ok { color: var(--ok); }
+  .ps-row { display: flex; align-items: center; gap: 8px; white-space: pre; }
+  .ps-row input:disabled + span { color: var(--muted); }
   .matrix-status { margin-left: auto; display: flex; align-items: center; gap: 7px; max-width: min(300px, 100%); padding: 2px 4px; color: var(--muted); font-size: 12px; }
   .matrix-status[hidden] { display: none; }
   .matrix-rain { height: 25px; overflow: hidden; display: flex; gap: 3px; color: var(--log-text); font: 9px/9px ui-monospace, Consolas, monospace; }
@@ -119,6 +125,7 @@
 <header>
   <div class="row">
     <h1>mfs · Repos</h1>
+    <span class="badge" id="version" title="Versión de mfs (mfs version)"></span>
     <span class="muted" id="workdir"></span>
   </div>
   <div class="row" style="margin-top:8px">
@@ -164,6 +171,11 @@
       <span class="matrix-rain" aria-hidden="true"><span class="matrix-column">1<br>0<br>1<br>0</span><span class="matrix-column">0<br>1<br>0<br>1</span><span class="matrix-column">1<br>1<br>0<br>1</span></span>
       <span id="matrixText"></span>
     </div>
+  </div>
+  <div class="batch-bar" id="batchBar" role="status" aria-live="polite" hidden>
+    <span id="batchText"></span>
+    <button class="sm" id="batchRetry" hidden>Reintentar fallidos</button>
+    <button class="sm" id="batchClose" title="Ocultar">✕</button>
   </div>
 </header>
 
@@ -240,9 +252,10 @@
 <dialog id="psDialog">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
     <strong>Procesos de Node en ejecución</strong>
-    <span class="row"><button id="psRefresh">↻</button><button class="danger" id="killNode">Matar todos (excepto paneles mfs)</button><button id="psClose">Cerrar</button></span>
+    <span class="row"><button id="psRefresh">↻</button><button id="psSelectAll" title="Marca todos excepto los paneles mfs">Marcar todos</button><button class="danger" id="killNode">Matar seleccionados</button><button id="psClose">Cerrar</button></span>
   </div>
-  <pre class="log" id="psList" style="max-height:50vh;min-height:120px"></pre>
+  <p class="muted" style="margin:0 0 8px">Marca los procesos a terminar. Los paneles mfs no se pueden marcar. Para parar solo lo lanzado desde este panel usa <strong>Detener todo</strong>.</p>
+  <div class="log" id="psList" style="max-height:50vh;min-height:120px;overflow:auto"></div>
 </dialog>
 
 <dialog id="fsDialog">
@@ -516,8 +529,9 @@ async function selectRepo(name) {
   state.selected = name;
   $('#logTitle').textContent = name;
   render();
-  const { lines } = await api('/api/log?repo=' + encodeURIComponent(name));
-  $('#log').textContent = lines.join('\n') + (lines.length ? '\n' : '');
+  const { lines, fromDisk, savedAt } = await api('/api/log?repo=' + encodeURIComponent(name));
+  const head = fromDisk && lines.length ? `── log guardado de la última ejecución (${new Date(savedAt).toLocaleString()}) ──\n` : '';
+  $('#log').textContent = head + lines.join('\n') + (lines.length ? '\n' : '');
   if ($('#follow').checked) $('#log').scrollTop = $('#log').scrollHeight;
 }
 
@@ -554,6 +568,23 @@ function openCommit(names) {
   $('#commitMsg').value = localStorage.getItem('mfs.commitMsg') || '';
   $('#commitDialog').showModal();
   $('#commitMsg').focus();
+  if (withChanges.length) showCommitDiff(withChanges, without);
+}
+
+// Detalle de lo que entra en el commit: archivos (status --porcelain) y resumen de líneas (diff --stat)
+async function showCommitDiff(withChanges, without) {
+  const token = (showCommitDiff.token = {});
+  const parts = await Promise.all(withChanges.map(async (r) => {
+    try {
+      const d = await api(`/api/diffstat?repo=${encodeURIComponent(r.name)}&list=${encodeURIComponent(listName())}`);
+      const files = d.files.length ? d.files.map((f) => '    ' + f).join('\n') : '    (sin cambios)';
+      const stat = d.stat ? '\n' + d.stat.split('\n').map((l) => '    ' + l.trim()).slice(-1).join('\n') : '';
+      return `■ ${r.name}  (${r.branch})\n${files}${stat}`;
+    } catch (e) { return `■ ${r.name}  (${r.branch})\n    ${e.message}`; }
+  }));
+  if (showCommitDiff.token !== token || !$('#commitDialog').open) return; // el diálogo se cerró o se reabrió
+  $('#commitRepos').textContent = 'Se hará commit en:\n\n' + parts.join('\n\n') +
+    (without.length ? '\n\nSin cambios (se omiten):\n' + without.map((r) => `  ${r.name}`).join('\n') : '');
 }
 $('#commitCancel').onclick = () => $('#commitDialog').close();
 $('#commitOk').onclick = () => {
@@ -706,9 +737,40 @@ function connectStream() {
       r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile;
       render();
       if (msg.status !== 'running' && msg.status !== 'stopping') scheduleRefresh();
+    } else if (msg.type === 'batch') {
+      showBatch(msg);
     }
   };
 }
+
+// Resumen de una acción lanzada sobre varios repos
+let lastBatch = null;
+function showBatch(b) {
+  lastBatch = b;
+  const label = ACTION_LABEL[b.action] || b.action;
+  const text = $('#batchText'); text.textContent = '';
+  text.append(el('strong', {}, `${label}: `), el('span', { class: 'ok' }, `${b.ok.length} ok`));
+  if (b.error.length) text.append(' · ', el('span', { class: 'err' }, `${b.error.length} con error`), ` (${b.error.join(', ')})`);
+  $('#batchBar').classList.toggle('has-errors', b.error.length > 0);
+  $('#batchRetry').hidden = !b.error.length;
+  $('#batchBar').hidden = false;
+}
+$('#batchRetry').onclick = () => {
+  if (!lastBatch) return;
+  $('#batchBar').hidden = true;
+  runAction(lastBatch.action, lastBatch.error, lastBatch.extra || {});
+};
+$('#batchClose').onclick = () => { $('#batchBar').hidden = true; };
+
+// Al volver a la pestaña se recarga el estado git (como mucho cada 10 s)
+let lastFocusRefresh = 0;
+function refreshOnReturn() {
+  if (document.visibilityState !== 'visible' || Date.now() - lastFocusRefresh < 10000) return;
+  lastFocusRefresh = Date.now();
+  scheduleRefresh();
+}
+document.addEventListener('visibilitychange', refreshOnReturn);
+window.addEventListener('focus', refreshOnReturn);
 
 // ── Eventos ──
 document.querySelectorAll('header [data-action]').forEach((b) =>
@@ -725,29 +787,40 @@ $('#runCmd').addEventListener('change', saveRunCmd);
 async function loadPs() {
   try {
     const { processes } = await api('/api/ps');
-    $('#psList').textContent = processes.length
-      ? processes.map((p) => {
-          const tag = p.self ? '← este panel'
-            : p.panel ? `← panel mfs :${p.panel.port} (${p.panel.workDir})`
-            : (p.command || '');
-          return `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${tag}`;
-        }).join('\n')
-      : 'No hay procesos de Node en ejecución.';
+    const list = $('#psList'); list.textContent = '';
+    if (!processes.length) { list.textContent = 'No hay procesos de Node en ejecución.'; return; }
+    for (const p of processes) {
+      const protectedProc = p.self || !!p.panel;
+      const tag = p.self ? '← este panel'
+        : p.panel ? `← panel mfs :${p.panel.port} (${p.panel.workDir})`
+        : (p.command || '');
+      const box = el('input', { type: 'checkbox', value: String(p.pid), ...(protectedProc ? { disabled: '' } : {}) });
+      list.append(el('label', { class: 'ps-row' }, box, el('span', {}, `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${tag}`)));
+    }
   } catch (e) { $('#psList').textContent = e.message; }
 }
+const psBoxes = () => [...$('#psList').querySelectorAll('input[type=checkbox]:not(:disabled)')];
 $('#psBtn').onclick = () => { $('#psDialog').showModal(); loadPs(); };
 $('#psRefresh').onclick = loadPs;
 $('#psClose').onclick = () => $('#psDialog').close();
+$('#psSelectAll').onclick = () => {
+  const boxes = psBoxes(); const all = boxes.every((b) => b.checked);
+  boxes.forEach((b) => { b.checked = !all; });
+};
 $('#killNode').onclick = async () => {
+  const pids = psBoxes().filter((b) => b.checked).map((b) => Number(b.value));
+  if (!pids.length) return toast('Marca al menos un proceso');
   const ok = await ask({
     title: 'Matar procesos Node',
-    message: 'Se detendrán TODOS los procesos de Node de este equipo (también los iniciados fuera del panel), excepto los paneles mfs abiertos.',
-    okText: 'Matar todos',
+    message: `Se terminarán ${pids.length} proceso(s) de Node:\n\n${pids.map((p) => '  PID ' + p).join('\n')}\n\nPueden incluir procesos iniciados fuera del panel.`,
+    okText: 'Matar seleccionados',
     danger: true,
   });
   if (!ok) return;
-  try { const r = await api('/api/kill-node', { method: 'POST' }); toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800); }
-  catch (e) { toast(e.message); }
+  try {
+    const r = await api('/api/kill-node', { method: 'POST', body: JSON.stringify({ pids }) });
+    toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800);
+  } catch (e) { toast(e.message); }
 };
 
 // Equivalente a "mfs help"
@@ -994,6 +1067,7 @@ $('#editorSave').onclick = async () => {
   $('#installCmd').value = localStorage.getItem('mfs.installCmd') || '';
   try {
     const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
+    $('#version').textContent = 'v' + info.version;
     showTokenState(info.hasToken);
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
     $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');

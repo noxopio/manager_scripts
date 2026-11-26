@@ -1,6 +1,6 @@
 # Manager Repo 
 
-**Versión 6.0.1** - Paquete de instalación para uso global.
+Paquete de instalación para uso global. La versión instalada se ve con `mfs version` (archivo [`VERSION`](Manager_install/VERSION)).
 
 Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente, tanto desde la terminal como desde un **panel web local** (`mfs ui`).
 

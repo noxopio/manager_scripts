@@ -1,6 +1,6 @@
 # Manager Repo 
 
-**Versión 6.0.1** - Paquete de instalación para uso global.
+Paquete de instalación para uso global. La versión instalada se ve con `mfs version` (archivo [`VERSION`](VERSION)).
 
 Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
 
@@ -28,7 +28,8 @@ Este script ha sido diseñado para optimizar la gestión de múltiples repositor
 
 1. **Dependencias necesarias**:
    - `npm`
-   - `git`
+   - `git` (en Windows, Git for Windows con Git Bash)
+   - `node` 18 o superior, solo para el panel `mfs ui` (sin `npm install`). `mfs ui` lo comprueba al arrancar.
 
 2. **Permisos de ejecución**:
    Es necesario asegurarse de que los scripts tengan permisos de ejecución:
@@ -105,6 +106,11 @@ https://github.com/usuario/repo4.git npm run dev #NEW
 | `mfs -b rama checkout`   | Cambia todos los repos a esa rama.               |
 | `mfs -b rama newbranch`  | Crea la rama en todos los repos desde su rama actual. |
 | `mfs -b rama -B base newbranch` | Crea la rama desde una rama base específica. |
+| `mfs version`            | Muestra la versión instalada (archivo `VERSION`). |
+| `mfs update`             | `git pull --ff-only` del repo de origen y reinstala sin preguntas. |
+
+>[!NOTE]
+> Los repos con `#NEW` se abren en una ventana nueva: en Windows con `start`, en macOS con Terminal y en Linux con el primer emulador disponible (`$TERMINAL`, `x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `xterm`). Dentro de `tmux` se abre una ventana de tmux. Sin entorno gráfico, el repo corre en segundo plano y su salida va a `<repo>/mfs-run.log`.
 
 >[!WARNING]
 > El comando `mfs list` sobrescribirá el contenido existente del archivo `listRep.txt`. Se recomienda realizar un respaldo si contiene información importante.
@@ -202,14 +208,18 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - Cada repo corre como un proceso independiente, con su propio log en el panel y su botón **Detener**. Los repos marcados con `#NEW` siguen abriendo su propia ventana, como en `mfs run`.
 - **Git**: los botones *Ver cambios*, *Commit…*, *Push*, *Checkout* y *Nueva rama* actúan sobre los repos seleccionados, y cada tarjeta tiene además *Cambios*, *Commit* y *Push*. *Nueva rama* pide el nombre y permite elegir una base común; por defecto parte de la rama actual de cada repo.
   - Las tarjetas muestran `● N cambios`, `↑N` (commits por subir) y `↓N` (commits por traer).
-  - Commit solo actúa sobre los repos con cambios. Push y checkout piden confirmación con la lista de repos y su rama.
+  - Commit solo actúa sobre los repos con cambios. Antes de confirmar, el diálogo muestra los archivos de cada repo y el resumen de líneas (`git diff --stat`). Push y checkout piden confirmación con la lista de repos y su rama.
+- Al terminar una acción sobre varios repos (pull, install, commit…) aparece un **resumen** con cuántos acabaron bien y cuáles fallaron, y un botón **Reintentar fallidos**.
+- El log de la última ejecución de cada repo se guarda en `~/.mfs_ui/logs/`, así que sigue visible al cerrar y reabrir el panel.
+- El estado git se recarga solo al volver a la pestaña del panel (como mucho cada 10 s), además del botón de recargar.
+- Las listas nuevas solo se pueden crear dentro de la carpeta de trabajo; las que ya existen se pueden editar estén donde estén.
 - **Token git**: campo de la cabecera para repos privados (URL `https://usuario@host/...`). Se guarda solo en la memoria del panel mientras está abierto, nunca en disco. También lo usa "Importar de GitHub" si su campo de token está vacío. Si un push necesita credenciales y no hay token ni gestor de credenciales, falla con un mensaje en lugar de quedarse esperando.
 - **Install con**: comando que usan Install y Updeps (equivale a `mfs -i`). Si se deja vacío, se usa `npm install`. Trae sugerencias como `npm i --legacy-peer-deps` o `npm ci`.
 - **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`.
 - Un indicador discreto a la derecha del estado del token muestra cuántas operaciones siguen activas y respeta la preferencia del sistema para reducir movimiento.
 - La consola vacía muestra una marca de agua MFS; los estados vacíos tienen iconos y las tarjetas usan acentos sutiles según su estado.
 - **Seguir** (en el panel de logs): desplaza el log automáticamente hasta la última línea. Desmárcalo para leer líneas anteriores sin que la salida nueva mueva la vista.
-- **Procesos Node** equivale a `mfs ps` / `mfs kill`. Indica qué procesos son paneles mfs, y "Matar todos" respeta todos los paneles mfs abiertos (no solo el propio).
+- **Procesos Node** equivale a `mfs ps` / `mfs kill`, pero solo termina los procesos que marques (**Matar seleccionados**, con confirmación). Los paneles mfs abiertos aparecen señalados y no se pueden marcar.
 - **Editar lista** permite importar repos de una organización o usuario de GitHub, o insertar la plantilla de ejemplo (equivale a `mfs list`).
 - **Ayuda** muestra este README (equivale a `mfs help`).
 - **Base64** permite codificar texto UTF-8, decodificarlo o formatearlo como JSON desde una ventana del panel; no requiere `jq`.
@@ -229,7 +239,7 @@ mfs ui --port 5000                    # --port fuerza un puerto concreto (falla 
 ```
 - Sin `--port`, cada panel toma el primer puerto libre a partir de 4777. La consola indica cuál usa.
 - Cada panel tiene su carpeta, sus logs y su "Detener todo", que solo afecta a lo que lanzó ese panel.
-- Los paneles abiertos se registran en `~/.mfs_ui/panels/`, para que "Matar todos" en el panel no los cierre.
+- Los paneles abiertos se registran en `~/.mfs_ui/panels/`, para que "Procesos Node" no permita matarlos.
 
 >[!WARNING]
 > "Detener todo" en el panel detiene solo los procesos lanzados desde el panel. **No** uses `mfs kill` en la terminal con paneles abiertos: mata *todos* los procesos de Node, incluidos los paneles.

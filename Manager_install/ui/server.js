@@ -56,6 +56,16 @@ const BRANCH_RE = /^[\w./-]{1,200}$/;
 // Comando de install: flags normales sí; encadenar comandos o expansiones de shell no.
 const INSTALL_CMD_RE = /^[^;&|<>`$\r\n]{1,200}$/;
 const MAX_LOG_LINES = 2000;
+const VERSION = (() => { try { return fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim(); } catch { return 'desconocida'; } })();
+// Último log de cada repo, para poder verlo tras cerrar y reabrir el panel.
+const LOGS_DIR = path.join(os.homedir(), '.mfs_ui', 'logs');
+const logFile = (name) => path.join(LOGS_DIR, `${name.replace(/[^\w.-]/g, '_')}.log`);
+
+// true si file está dentro de root (o es root).
+function isInside(root, file) {
+  const rel = path.relative(path.resolve(root), path.resolve(file));
+  return rel === '' || (!!rel && !rel.startsWith('..') && !path.isAbsolute(rel));
+}
 
 function isValidGitBranchName(name) {
   return new Promise((resolve) => {
@@ -240,6 +250,19 @@ function gitInfo(dir) {
   }));
 }
 
+// Resumen de lo que entraría en un commit: archivos (status --porcelain) y líneas (diff --stat HEAD).
+function gitDiffStat(dir) {
+  const run = (gitArgs) => new Promise((resolve) => {
+    execFile('git', ['--no-optional-locks', '-C', dir, ...gitArgs], { timeout: 15000, windowsHide: true, env: childEnv(), maxBuffer: 4e6 },
+      (err, out) => resolve(err ? '' : out.replace(/\s+$/, '')));
+  });
+  return withGitSlot(async () => {
+    const files = await run(['-c', 'color.status=false', 'status', '--porcelain']);
+    const stat = files ? await run(['diff', '--stat', 'HEAD']) : '';
+    return { files: files ? files.split(/\r?\n/) : [], stat };
+  });
+}
+
 // Bloqueo de git abandonado (.git/index.lock): devuelve su antigüedad en segundos, o null si no hay.
 function lockAge(dir) {
   try { return Math.round((Date.now() - fs.statSync(path.join(dir, '.git', 'index.lock')).mtimeMs) / 1000); }
@@ -335,7 +358,32 @@ function waitPortFree(port, timeoutMs = 20000) {
   });
 }
 
-function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, commitMsg } = {}) {
+// ── Lotes: los repos lanzados en una misma acción; al terminar todos se envía un resumen ──
+const batches = new Map();
+let batchSeq = 0;
+function createBatch(action, names, extra) {
+  const id = ++batchSeq;
+  batches.set(id, { action, extra, pending: new Set(names), ok: [], error: [] });
+  return id;
+}
+function batchDone(id, name, status) {
+  const b = batches.get(id);
+  if (!b || !b.pending.delete(name)) return;
+  if (status === 'ok') b.ok.push(name);
+  else if (status === 'error') b.error.push(name); // los detenidos a mano no cuentan como fallo
+  if (b.pending.size) return;
+  batches.delete(id);
+  broadcast({ type: 'batch', action: b.action, ok: b.ok, error: b.error, extra: b.extra });
+}
+
+function saveLog(name, job) {
+  try {
+    fs.mkdirSync(LOGS_DIR, { recursive: true });
+    fs.writeFileSync(logFile(name), job.log.join('\n') + '\n', 'utf8');
+  } catch (e) { console.error('[WARNING] No se pudo guardar el log de', name, e.message); }
+}
+
+function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, commitMsg } = {}, batchId = null) {
   const existing = jobs.get(repo.name);
   if (existing && (existing.status === 'running' || existing.status === 'stopping')) return false;
 
@@ -359,7 +407,7 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
   jobs.set(repo.name, {
     child, action, status: 'running', log: [], port: null, stopping: false,
     compile: action === 'run' && !repo.isNew ? 'compiling' : null,
-    closed: false, killDone: false,
+    closed: false, killDone: false, batchId,
   });
   setStatus(repo.name, 'running');
   const shown = opts.map((o, i) => (i % 2 ? `"${o}"` : o)).join(' ');
@@ -371,14 +419,17 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
   child.on('error', (err) => {
     pushLog(repo.name, `[ERROR] No se pudo ejecutar "${BASH}": ${err.message}. Define MFS_BASH con la ruta a bash.exe.`);
     setStatus(repo.name, 'error');
+    if (batchId) batchDone(batchId, repo.name, 'error');
   });
   child.on('close', (code) => {
     const job = jobs.get(repo.name);
     if (!job || job.child !== child) return;
     job.closed = true;
     pushLog(repo.name, `── proceso terminado (código ${code}) ──`);
+    saveLog(repo.name, job);
     if (job.stopping) finishStop(repo.name); // "detenido" solo cuando además el puerto quede libre
     else setStatus(repo.name, code === 0 ? 'ok' : 'error');
+    if (batchId) batchDone(batchId, repo.name, job.stopping ? 'stopped' : code === 0 ? 'ok' : 'error');
   });
   return true;
 }
@@ -465,10 +516,11 @@ async function listNodeWithPanels() {
   return procs.map((p) => ({ ...p, panel: panels.get(p.pid) || null }));
 }
 
-// Mata todos los procesos node EXCEPTO este panel y los demás paneles mfs abiertos.
-async function killAllNode() {
-  for (const job of jobs.values()) if (job.status === 'running') job.stopping = true;
-  const targets = (await listNodeWithPanels()).filter((p) => !p.self && !p.panel);
+// Mata los procesos node indicados (elegidos en la lista "Procesos Node"), nunca este panel
+// ni otros paneles mfs abiertos: solo se aceptan PIDs que siguen vivos en la lista actual.
+async function killNode(pids) {
+  const wanted = new Set(pids.map(Number));
+  const targets = (await listNodeWithPanels()).filter((p) => wanted.has(p.pid) && !p.self && !p.panel);
   if (IS_WIN) {
     for (let i = 0; i < targets.length; i += 50) {
       const taskArgs = ['/F'];
@@ -478,7 +530,6 @@ async function killAllNode() {
   } else {
     for (const p of targets) { try { process.kill(p.pid, 'SIGTERM'); } catch {} }
   }
-  stopAll(); // limpia también los bash de los trabajos del panel
   return targets.length;
 }
 
@@ -542,7 +593,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && p === '/api/info') {
-      return send(res, 200, { workDir: WORK_DIR, script: SCRIPT, bash: BASH, defaultList: DEFAULT_LIST, hasToken: !!gitToken });
+      return send(res, 200, { workDir: WORK_DIR, script: SCRIPT, bash: BASH, defaultList: DEFAULT_LIST, hasToken: !!gitToken, version: VERSION });
     }
 
     if (req.method === 'POST' && p === '/api/token') {
@@ -571,7 +622,9 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && p === '/api/kill-node') {
-      return send(res, 200, { killed: await killAllNode() });
+      const body = await readBody(req);
+      if (!Array.isArray(body.pids) || !body.pids.length) return send(res, 400, { error: 'Selecciona al menos un proceso' });
+      return send(res, 200, { killed: await killNode(body.pids) });
     }
 
     if (req.method === 'POST' && p === '/api/github') {
@@ -591,8 +644,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && p === '/api/log') {
-      const job = jobs.get(url.searchParams.get('repo') || '');
-      return send(res, 200, { lines: job ? job.log : [] });
+      const name = url.searchParams.get('repo') || '';
+      const job = jobs.get(name);
+      if (job) return send(res, 200, { lines: job.log });
+      // Sin trabajo en memoria (panel reabierto): último log guardado en disco
+      try {
+        const file = logFile(name);
+        const stat = fs.statSync(file);
+        const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean);
+        return send(res, 200, { lines, fromDisk: true, savedAt: stat.mtime.toISOString() });
+      } catch { return send(res, 200, { lines: [] }); }
+    }
+
+    if (req.method === 'GET' && p === '/api/diffstat') {
+      const name = url.searchParams.get('repo') || '';
+      const { repos } = readRepos(url.searchParams.get('list'));
+      if (!repos.some((r) => r.name === name)) return send(res, 400, { error: 'Repo no encontrado en la lista' });
+      const dir = path.join(WORK_DIR, name);
+      if (!fs.existsSync(dir)) return send(res, 400, { error: 'El repo no está clonado' });
+      return send(res, 200, await gitDiffStat(dir));
     }
 
     if (req.method === 'GET' && p === '/api/stream') {
@@ -612,6 +682,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'PUT' && p === '/api/list') {
       const body = await readBody(req);
       const file = resolveListPath(body.list);
+      // Crear listas nuevas solo dentro del directorio de trabajo; fuera, solo editar las que ya existen.
+      if (!fs.existsSync(file) && !isInside(WORK_DIR, file)) {
+        return send(res, 400, { error: `Solo se pueden crear listas nuevas dentro de ${WORK_DIR}` });
+      }
       let content = String(body.content || '');
       if (!content.endsWith('\n')) content += '\n'; // el bash necesita salto de línea final
       fs.writeFileSync(file, content, 'utf8');
@@ -647,9 +721,13 @@ const server = http.createServer(async (req, res) => {
       const wanted = new Set(Array.isArray(body.repos) ? body.repos.map(String) : []);
       const started = [];
       const busy = [];
-      for (const r of repos) {
-        if (!wanted.has(r.name)) continue;
-        (startJob(r, action, file, { branch, baseBranch, installCmd, runCmd, commitMsg }) ? started : busy).push(r.name);
+      const targets = repos.filter((r) => wanted.has(r.name));
+      const extra = { branch, baseBranch, installCmd, runCmd, commitMsg };
+      // Resumen al terminar el lote (no en "run": sus procesos siguen vivos hasta que se detienen)
+      const free = targets.filter((r) => { const j = jobs.get(r.name); return !j || (j.status !== 'running' && j.status !== 'stopping'); });
+      const batchId = action !== 'run' && free.length > 1 ? createBatch(action, free.map((r) => r.name), extra) : null;
+      for (const r of targets) {
+        (startJob(r, action, file, extra, batchId) ? started : busy).push(r.name);
       }
       return send(res, 200, { started, busy });
     }
@@ -691,38 +769,45 @@ function openBrowser(url) {
   try { spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', windowsHide: true }).unref(); } catch {}
 }
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE' && PORT < BASE_PORT + PORT_TRIES - 1) {
-    PORT++; // sin --port: probar el siguiente puerto
-    server.listen(PORT, HOST);
-    return;
-  }
-  if (err.code === 'EADDRINUSE') {
-    console.error(PORT_EXPLICIT
-      ? `[ERROR] El puerto ${PORT} está en uso. Usa: mfs ui --port <otro>`
-      : `[ERROR] No hay puertos libres entre ${BASE_PORT} y ${PORT}. Usa: mfs ui --port <otro>`);
-  } else {
-    console.error('[ERROR]', err.message);
-  }
-  process.exit(1);
-});
-
-server.on('listening', () => {
-  registerPanel();
-  const url = `http://${HOST}:${PORT}`;
-  console.log(`\n  Panel mfs en ${url}`);
-  if (PORT !== BASE_PORT) console.log(`  (el puerto ${BASE_PORT} estaba ocupado, se usa el ${PORT})`);
-  console.log(`  Directorio de trabajo: ${WORK_DIR}`);
-  console.log('  Ctrl+C para cerrar (detiene los procesos lanzados desde el panel).\n');
-  if (OPEN_BROWSER) openBrowser(url);
-});
-
-server.listen(PORT, HOST);
-
 function shutdown() {
   const n = stopAll();
   setTimeout(() => process.exit(0), n ? 3000 : 0); // dar tiempo a que taskkill termine
 }
-process.on('exit', unregisterPanel);
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+
+function main() {
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && PORT < BASE_PORT + PORT_TRIES - 1) {
+      PORT++; // sin --port: probar el siguiente puerto
+      server.listen(PORT, HOST);
+      return;
+    }
+    if (err.code === 'EADDRINUSE') {
+      console.error(PORT_EXPLICIT
+        ? `[ERROR] El puerto ${PORT} está en uso. Usa: mfs ui --port <otro>`
+        : `[ERROR] No hay puertos libres entre ${BASE_PORT} y ${PORT}. Usa: mfs ui --port <otro>`);
+    } else {
+      console.error('[ERROR]', err.message);
+    }
+    process.exit(1);
+  });
+
+  server.on('listening', () => {
+    registerPanel();
+    const url = `http://${HOST}:${PORT}`;
+    console.log(`\n  Panel mfs ${VERSION} en ${url}`);
+    if (PORT !== BASE_PORT) console.log(`  (el puerto ${BASE_PORT} estaba ocupado, se usa el ${PORT})`);
+    console.log(`  Directorio de trabajo: ${WORK_DIR}`);
+    console.log('  Ctrl+C para cerrar (detiene los procesos lanzados desde el panel).\n');
+    if (OPEN_BROWSER) openBrowser(url);
+  });
+
+  server.listen(PORT, HOST);
+  process.on('exit', unregisterPanel);
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+// Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
+if (require.main === module) main();
+
+module.exports = { parseList, normalizePath, isInside, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };

@@ -3,7 +3,7 @@ set -e
 # Documentación del Script  
 # ==========================
 # Script de Instalación de Manager Scripts
-# Versión: 2.0.3
+# Versión: ver el archivo VERSION (mfs version)
 # Fecha: [27/02/2025]
 ##Esta version requiere estar en el mismo directorio con el script manager_logs.sh, ya que este contiene las funciones de mensajes.
 # __| |_______________________________________| |__
@@ -61,6 +61,7 @@ SHOW_BORDER=true
 INSTALL_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 INSTALL_DIR="$HOME/manager_scripts"
 SOURCE_DIR="$(dirname "$0")"
+VERSION="$(cat "$SOURCE_DIR/VERSION" 2>/dev/null || echo "desconocida")"
 FORCE_REINSTALL=false
 HELP=false
 ALIAS_FILE="$HOME/.bashrc"
@@ -69,12 +70,12 @@ FAVORITES_FILE="$HOME/.cdlist_favorites"
 help(){
     log_info "Uso: $0" "no-prefix"
     log_info "Este script instala los scripts de gestión de repositorios en un directorio específico y configura alias en el archivo .bashrc para facilitar su uso." "no-prefix"
-    exit 1
+    exit 0
 }
 update_manager_repo() {
     log_info "Desinstalando ..."
-    "$SOURCE_DIR/manager_uninstall.sh" "$@"
-    "$SOURCE_DIR/manager_install.sh" "$@"
+    "$SOURCE_DIR/manager_uninstall.sh"
+    "$SOURCE_DIR/manager_install.sh"
 }
 # Procesar argumentos
 
@@ -100,10 +101,11 @@ create_install_directory() {
         MFS_MANAGER
         log_warning "$INSTALL_DATE" "no-prefix"
         if [ "$FORCE_REINSTALL" = true ]; then
-            clear
+            [ "$MFS_UPDATE" = 1 ] || clear
             update_manager_repo
+            exit $?
         fi
-        exit 1
+        exit 0
     fi
 }
 
@@ -116,12 +118,15 @@ copy_scripts() {
     # cp "$SOURCE_DIR/readme.md" "$INSTALL_DIR/"
     
     cp -r "$SOURCE_DIR/"* "$INSTALL_DIR/"
+    # Ruta absoluta del repo de origen, para "mfs update"
+    (cd "$SOURCE_DIR" && pwd) > "$INSTALL_DIR/.source"
     log_info "Scripts copiados a $INSTALL_DIR"
 }
 # Agregar fecha y hora de creación y de instalación a los scripts
+# (después de la línea 1: el shebang "#!/bin/bash" debe seguir siendo la primera línea)
 add_dates() {
     for script in "$INSTALL_DIR/manager_repo.sh" "$INSTALL_DIR/url_extractor.sh" "$INSTALL_DIR/manager_uninstall.sh"; do
-        echo -e "# Fecha de creación: 2025-02-27 \n# Fecha de instalación: $INSTALL_DATE\n" | cat - "$script" > temp && mv temp "$script"
+        sed -i "1a # Fecha de creación: 2025-02-27\n# Fecha de instalación: $INSTALL_DATE" "$script"
     done
 }
 # Dar permisos de ejecución a los scripts
@@ -152,24 +157,27 @@ EOL
     fi
 }
 
-update_bashrc() {
-    source "$ALIAS_FILE"
-    log_success "Archivo .bashrc actualizado"
-}
-
 open_install_directory() {
+    # En "mfs update" no se pregunta nada
+    [ "$MFS_UPDATE" = 1 ] && exit 0
     log_info "¿Desea abrir la carpeta de instalación?"
     printf "\t[s/n]: "
     read open_directory
     case "$open_directory" in
         [sS])
             log_info "Abriendo la carpeta de instalación..."
-            cd "$INSTALL_DIR" && explorer .
-            exit 1
+            if command -v explorer >/dev/null 2>&1; then
+                (cd "$INSTALL_DIR" && explorer .) || true  # explorer devuelve 1 aunque abra bien
+            elif command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$INSTALL_DIR" >/dev/null 2>&1 &
+            elif command -v open >/dev/null 2>&1; then
+                open "$INSTALL_DIR"
+            fi
+            exit 0
         ;;
         *)
             log_info "Para abrir la carpeta  más tarde, ir a  $INSTALL_DIR"
-            exit 1
+            exit 0
         ;;
     esac
 }
@@ -181,8 +189,9 @@ main() {
     add_dates
     permissions
     create_alias
-    update_bashrc
-    log_info "mfs disponible en la terminal"
+    log_success "Archivo .bashrc actualizado"
+    log_info "Abre una terminal nueva o ejecuta: source ~/.bashrc"
+    log_info "mfs $VERSION disponible en la terminal"
     log_info "Puedes usar el comando mfs help para obtener ayuda"
     log_info "Para más información, consulte el archivo README.md en $INSTALL_DIR"
     log_success "Proceso de instalación exitoso"

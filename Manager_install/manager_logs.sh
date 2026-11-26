@@ -197,6 +197,11 @@ show_usage() {
     log_description "Abre el panel web local (pull/install/run/detener con logs por repo)."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[9]}:" "mfs ${COMMANDS[9]} [opcional: lista.txt --port N --no-open] (sin --port: primer puerto libre desde 4777)"
 
+   # Versión y actualización
+    log_description "Versión instalada y actualización desde el repo de origen (git pull + reinstalar)."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "version:" "mfs version"
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "update:" "mfs update"
+
 # Ejemplo de uso para el comando "help"
      log_warning "Consultar el archivo README.md ubicado en $INSTALL_DIR"
 }
