@@ -2,6 +2,13 @@
 
 Paquete de instalación para uso global. La versión instalada se ve con `mfs version` (archivo [`VERSION`](VERSION)).
 
+>[!WARNING]
+> **Estás en la rama de pruebas `feature/ui`.** Incluye el panel web `mfs ui`, que está en fase de pruebas.
+> La versión estable (solo terminal) está en la rama `main`. Para volver a ella:
+> ```bash
+> git checkout main && cd Manager_install && ./manager_install.sh --force
+> ```
+
 Este script ha sido diseñado para optimizar la gestión de múltiples repositorios y microfrontends (Mf), permitiendo la ejecución de tareas comunes como iniciar, clonar o detener microfrontends de manera eficiente.
 
 ---
@@ -23,7 +30,7 @@ Este script ha sido diseñado para optimizar la gestión de múltiples repositor
 > 
 > Ejemplo:
 > ```bash
-> sh manager_install.sh
+> ./manager_install.sh      # o: bash manager_install.sh (no "sh": en Ubuntu/Debian es dash)
 > ```
 
 1. **Dependencias necesarias**:
@@ -57,6 +64,30 @@ El script `manager_install.sh` automatiza la instalación de la herramienta `mfs
 > ```bash
 > chmod +x manager_install.sh
 > ```
+
+---
+
+## Linux y WSL
+
+La instalación es la misma que en Git Bash, con estos detalles:
+
+- **Ejecuta el instalador con bash**: `./manager_install.sh` o `bash manager_install.sh`. No uses `sh manager_install.sh`: en Ubuntu/Debian `sh` es `dash` y los scripts fallan.
+- **WSL es otro sistema**: tiene su propio home (`/home/<usuario>`) y su propio `~/.bashrc`. Lo instalado desde Git Bash en Windows no existe dentro de WSL, así que instala mfs también dentro de WSL. Clona en el home de Linux (`~`), no en `/mnt/c/...`.
+- **Node para `mfs ui`**: instálalo dentro de Linux/WSL, por ejemplo con nvm:
+  ```bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  source ~/.bashrc && nvm install --lts
+  node --version   # 18 o superior
+  which node       # debe ser /home/<usuario>/.nvm/..., no /mnt/c/... (el Node de Windows no sirve)
+  ```
+- **`cannot execute: required file not found`** (o `$'\r': command not found`): los scripts tienen saltos de línea de Windows (CRLF). El repo fuerza LF con `.gitattributes`, pero si copiaste los archivos desde Windows conviértelos e instala de nuevo:
+  ```bash
+  sudo apt install -y dos2unix
+  dos2unix *.sh ui/* VERSION readme.md && ./manager_install.sh --force
+  ```
+- **zsh**: el instalador solo escribe en `~/.bashrc`. Añade al final de `~/.zshrc`: `source ~/manager_scripts/manager_rc.sh`
+- **Panel en WSL**: `mfs ui --no-open` y abre en el navegador de Windows la URL que muestra (`http://127.0.0.1:4777`).
+- **Repos `#NEW`**: se abren en el primer emulador de terminal disponible; sin entorno gráfico corren en segundo plano con la salida en `<repo>/mfs-run.log`.
 
 ---
 
