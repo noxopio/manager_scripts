@@ -46,6 +46,15 @@
   .card.status-error { border-left-color: var(--err); }
   .card.status-stopped { border-left-color: var(--muted); }
   .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .group > summary { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; list-style: none; user-select: none; }
+  .group > summary::-webkit-details-marker { display: none; }
+  .group > summary::before { content: ""; width: 0; height: 0; border-left: 5px solid var(--muted); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
+  .group[open] > summary::before { transform: rotate(90deg); }
+  .group > summary:hover { border-color: var(--accent); }
+  .group .group-name { font-weight: 600; }
+  .group .group-actions { margin-left: auto; display: flex; gap: 4px; }
+  .group > .card { margin-left: 12px; }
   .card .top { display: flex; align-items: center; gap: 8px; }
   .card .name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--muted); align-items: center; }
@@ -142,6 +151,7 @@
       <input type="text" id="runCmd" placeholder="comando del .txt" maxlength="500" style="width:210px" autocomplete="off"></label>
     <span class="sep"></span>
     <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
+    <button class="sm" id="toggleGroups" title="Expande o contrae todos los grupos (## Nombre en el .txt)" hidden>Contraer grupos</button>
     <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull)">Pull</button>
     <button class="primary" data-action="install" title="Ejecuta el comando de 'Install con' en los repos sin node_modules">Install</button>
     <button data-action="updeps" title="Ejecuta el comando de 'Install con' en todos los repos (reinstala)">Updeps</button>
@@ -194,7 +204,7 @@
 <dialog id="editor">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
     <strong id="editorTitle">listRep.txt</strong>
-    <span class="muted">Una URL por línea · <code>#EXCLUDE</code> excluye · <code>#NEW</code> abre ventana externa · comando opcional tras la URL</span>
+    <span class="muted">Una URL por línea · <code>#EXCLUDE</code> excluye · <code>#NEW</code> abre ventana externa · comando opcional tras la URL · <code>## Grupo</code> agrupa los repos de debajo</span>
   </div>
   <div class="row" style="margin-bottom:8px">
     <span class="muted">Importar (como <code>mfs list</code>):</span>
@@ -333,7 +343,7 @@
 
 <script>
 const $ = (s) => document.querySelector(s);
-const state = { repos: [], selected: null, checked: new Set(), first: true };
+const state = { repos: [], selected: null, checked: new Set(), first: true, collapsed: new Set() };
 const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido', stopping: 'deteniendo…' };
 // Estado de compilación de un Run (el puerto se anuncia antes de que termine de compilar)
 const COMPILE_LABEL = { compiling: 'compilando…', ready: 'listo', failed: 'error de compilación' };
@@ -381,6 +391,12 @@ async function api(path, opts = {}) {
 const listName = () => $('#list').value || 'listRep.txt';
 const runCmdKey = () => 'mfs.runCmd.' + listName();
 function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; }
+// Grupos plegados (## Nombre en el .txt), por lista y en este navegador
+const collapsedKey = () => 'mfs.collapsed.' + listName();
+function loadCollapsed() {
+  try { state.collapsed = new Set(JSON.parse(localStorage.getItem(collapsedKey()) || '[]')); } catch { state.collapsed = new Set(); }
+}
+function saveCollapsed() { localStorage.setItem(collapsedKey(), JSON.stringify([...state.collapsed])); }
 function saveRunCmd() {
   const value = $('#runCmd').value.trim();
   if (value) localStorage.setItem(runCmdKey(), value); else localStorage.removeItem(runCmdKey());
@@ -478,13 +494,75 @@ function render(emptyMsg) {
   updateActivityIndicator();
   if (!state.repos.length) {
     box.append(emptyState('repo', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
+    $('#toggleGroups').hidden = true;
     return;
   }
+  const hasGroups = state.repos.some((r) => r.group);
+  $('#toggleGroups').hidden = !hasGroups;
+  if (!hasGroups) { for (const r of state.repos) box.append(repoCard(r)); return; }
+  // Agrupa respetando el orden del .txt; los repos antes de la primera cabecera van a "Sin grupo"
+  const groups = new Map();
   for (const r of state.repos) {
+    const g = r.group || 'Sin grupo';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(r);
+  }
+  for (const [g, repos] of groups) box.append(groupNode(g, repos));
+  const allCollapsed = [...groups.keys()].every((g) => state.collapsed.has(g));
+  $('#toggleGroups').textContent = allCollapsed ? 'Expandir grupos' : 'Contraer grupos';
+}
+
+const isBusy = (r) => r.status === 'running' || r.status === 'stopping';
+
+function groupNode(g, repos) {
+  const names = repos.map((r) => r.name);
+  const nChecked = names.filter((n) => state.checked.has(n)).length;
+  const cb = el('input', { type: 'checkbox', title: 'Seleccionar los repos de este grupo', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
+    for (const n of names) ev.target.checked ? state.checked.add(n) : state.checked.delete(n);
+    $('#selectAll').checked = state.checked.size === state.repos.length;
+    render();
+  } });
+  cb.checked = nChecked === names.length;
+  cb.indeterminate = nChecked > 0 && nChecked < names.length;
+  const busy = repos.filter(isBusy).length;
+  const changes = repos.filter((r) => r.cloned && r.changes).length;
+  const locked = repos.filter((r) => r.locked).length;
+  const act = (a) => (ev) => { ev.preventDefault(); ev.stopPropagation(); runAction(a, names); };
+  const summary = el('summary', {},
+    cb,
+    el('span', { class: 'group-name' }, g),
+    el('span', { class: 'muted' }, `${repos.length} repo${repos.length > 1 ? 's' : ''}`),
+    busy ? el('span', { class: 'badge', title: 'Acciones en curso en este grupo' }, `${busy} en ejecución`) : null,
+    changes ? el('span', { class: 'badge warn', title: 'Repos con cambios sin commit' }, `● ${changes} con cambios`) : null,
+    locked ? el('span', { class: 'badge warn lock-badge', title: 'Repos con .git/index.lock' }, icon('lock'), `${locked} bloqueado${locked > 1 ? 's' : ''}`) : null,
+    el('span', { class: 'group-actions' },
+      el('button', { class: 'sm', title: 'Pull de todos los repos del grupo', onclick: act('pull') }, 'Pull'),
+      el('button', { class: 'sm', title: 'Run de todos los repos del grupo', onclick: act('run') }, 'Run'),
+      el('button', { class: 'sm danger', title: 'Detiene los repos en ejecución del grupo', onclick: (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        repos.filter((r) => r.status === 'running').forEach((r) => stop(r.name));
+      }, ...(repos.some((r) => r.status === 'running') ? {} : { disabled: '' }) }, 'Detener'),
+    ),
+  );
+  const d = el('details', { class: 'group' }, summary, ...repos.map(repoCard));
+  d.open = !state.collapsed.has(g);
+  d.addEventListener('toggle', () => {
+    if (d.open === !state.collapsed.has(g)) return; // toggle provocado al pintar, no por el usuario
+    d.open ? state.collapsed.delete(g) : state.collapsed.add(g);
+    saveCollapsed();
+    const all = [...document.querySelectorAll('#repos > details.group')].every((x) => !x.open);
+    $('#toggleGroups').textContent = all ? 'Expandir grupos' : 'Contraer grupos';
+  });
+  return d;
+}
+
+function repoCard(r) {
+  {
     const running = r.status === 'running' || r.status === 'stopping'; // ocupado: sin acciones nuevas
     const cb = el('input', { type: 'checkbox', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
       ev.target.checked ? state.checked.add(r.name) : state.checked.delete(r.name);
       $('#selectAll').checked = state.checked.size === state.repos.length;
+      if (state.repos.some((x) => x.group)) render(); // actualiza el checkbox del grupo (marcado / indeterminado)
     } });
     cb.checked = state.checked.has(r.name);
     const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
@@ -514,7 +592,7 @@ function render(emptyMsg) {
         el('button', { class: 'sm', title: 'git push', onclick: (ev) => { ev.stopPropagation(); gitPush([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Push'),
       ),
     );
-    box.append(card);
+    return card;
   }
 }
 
@@ -779,7 +857,13 @@ document.querySelectorAll('header [data-action]').forEach((b) =>
 $('#stopAll').onclick = () => stop(null);
 $('#refresh').onclick = loadRepos;
 $('#selectAll').onchange = (ev) => { state.checked = ev.target.checked ? new Set(state.repos.map((r) => r.name)) : new Set(); render(); };
-$('#list').onchange = () => { rememberList(listName()); loadLists(); state.first = true; loadRepos(); };
+$('#list').onchange = () => { rememberList(listName()); loadLists(); loadCollapsed(); state.first = true; loadRepos(); };
+$('#toggleGroups').onclick = () => {
+  const names = [...new Set(state.repos.map((r) => r.group || 'Sin grupo'))];
+  const allCollapsed = names.every((g) => state.collapsed.has(g));
+  state.collapsed = allCollapsed ? new Set() : new Set(names);
+  saveCollapsed(); render();
+};
 $('#list').addEventListener('change', loadRunCmd);
 $('#runCmd').addEventListener('change', saveRunCmd);
 
@@ -959,8 +1043,11 @@ $('#tplBtn').onclick = async () => {
     "# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE'.",
     "# EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.",
     '# EXCLUDE # Se puede indicar el comando a ejecutar al final de la URL.',
+    "# EXCLUDE # '## Nombre' agrupa en el panel los repos de debajo (la terminal lo ignora).",
+    '## Grupo A',
     'https://github.com/usuario/repo1.git #NEW',
     'https://github.com/usuario/repo2.git',
+    '## Grupo B',
     'https://github.com/usuario/repo3.git #EXCLUDE',
     'https://github.com/usuario/repo4.git npm run dev #NEW',
     'https://github.com/usuario/repo5.git npm run dev',
@@ -1016,7 +1103,7 @@ async function fsSearch() {
 }
 async function fsUse(file, edit) {
   $('#list').value = file;
-  loadRunCmd();
+  loadRunCmd(); loadCollapsed();
   rememberList(file); loadLists(); state.first = true;
   $('#fsDialog').close();
   await loadRepos();
@@ -1072,7 +1159,7 @@ $('#editorSave').onclick = async () => {
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
     $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');
   } catch { $('#list').value = 'listRep.txt'; }
-  loadRunCmd();
+  loadRunCmd(); loadCollapsed();
   await loadLists();
   await loadRepos();
   connectStream();

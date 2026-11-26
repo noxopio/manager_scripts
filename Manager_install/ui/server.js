@@ -185,8 +185,11 @@ function searchTxt(dirArg, q) {
 // Mismas reglas que manager_repo.sh (bucle "while read line").
 function parseList(content) {
   const repos = [];
+  let group = null; // "## Nombre" abre un grupo para los repos de debajo (la terminal lo ignora como comentario)
   for (const raw of content.split(/\r?\n/)) {
     const line = raw.trim();
+    const header = !line.includes('#EXCLUDE') && line.match(/^##\s+(.+)$/);
+    if (header) { group = header[1].trim(); continue; }
     if (!line || line.includes('#EXCLUDE') || line.startsWith('#')) continue;
     const tokens = line.split(/\s+/);
     const url = tokens[0];
@@ -196,7 +199,7 @@ function parseList(content) {
     const command = cmdTokens.join(' ') || 'npm run start';
     // Igual que en bash: `basename "$repo_url" .git` (nombre de la carpeta que crea git clone)
     const name = url.replace(/\/+$/, '').split('/').pop().replace(/\.git$/, '');
-    repos.push({ name, url: stripCreds(url), command, isNew });
+    repos.push({ name, url: stripCreds(url), command, isNew, group });
   }
   return repos;
 }

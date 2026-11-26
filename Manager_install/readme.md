@@ -101,11 +101,15 @@ El archivo `listRep.txt` actúa como el núcleo de configuración de la herramie
   - `#NEW`: Abre el repositorio en una nueva ventana de terminal.
   - `#EXCLUDE`: Excluye el repositorio de las operaciones.
 - Es posible agregar comandos específicos al final de la URL.
+- Grupos (solo panel web): una línea `## Nombre` abre un grupo y los repos de debajo pertenecen a él hasta la siguiente cabecera. El panel los muestra en acordeones plegables, con selección y Pull/Run/Detener por grupo. Los repos antes de la primera cabecera aparecen en "Sin grupo". La terminal trata estas líneas como comentarios y procesa todos los repos igual que antes.
 
 **Ejemplo**:
 ```text
+## Pagos
 https://github.com/usuario/repo1.git #NEW
 https://github.com/usuario/repo2.git
+
+## Auth
 https://github.com/usuario/repo3.git #EXCLUDE
 https://github.com/usuario/repo4.git npm run dev #NEW
 ```
