@@ -36,6 +36,29 @@
   button:disabled { opacity: .5; cursor: default; }
   button.sm { padding: 2px 8px; font-size: 12px; }
   .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+  /* Cabecera por secciones: acciones siempre visibles, configuración plegable, herramientas en menú */
+  .hrow { margin-top: 6px; }
+  /* Lista · Repos · Git en una sola barra: en pantallas anchas van en línea, en estrechas saltan de línea */
+  .hbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 26px; margin-top: 8px; }
+  .hsec { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .hsec .section-label { min-width: 0; }
+  .row-end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .section-label { min-width: 44px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .config > summary, .menu > summary { list-style: none; cursor: pointer; user-select: none; }
+  .config > summary::-webkit-details-marker, .menu > summary::-webkit-details-marker { display: none; }
+  .config > summary { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 2px 0; }
+  .config > summary::before { content: ""; border-left: 5px solid var(--muted); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
+  .config[open] > summary::before { transform: rotate(90deg); }
+  .config .config-title { font-weight: 600; }
+  .config > summary:hover .config-title { color: var(--accent); }
+  .config[open] #configSummary { display: none; }
+  .config-body { margin: 6px 0 2px 13px; }
+  .menu { position: relative; }
+  .menu > summary { padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+  .menu > summary:hover, .menu[open] > summary { border-color: var(--accent); }
+  .menu-list { position: absolute; right: 0; top: calc(100% + 4px); z-index: 3; min-width: 170px; display: flex; flex-direction: column; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+  .menu-list button { border: 0; text-align: left; background: transparent; }
+  .menu-list button:hover, .menu-list button:focus-visible { background: var(--bg); }
   main { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1.2fr); gap: 12px; padding: 12px 16px; flex: 1; min-height: 0; }
   @media (max-width: 900px) { body { height: auto; } main { grid-template-columns: 1fr; } }
   .list { overflow: auto; display: flex; flex-direction: column; gap: 6px; }
@@ -136,20 +159,32 @@
     <h1>mfs · Repos</h1>
     <span class="badge" id="version" title="Versión de mfs (mfs version)"></span>
     <span class="muted" id="workdir"></span>
+    <span class="row-end">
+      <div class="matrix-status" id="matrixStatus" role="status" aria-live="polite" hidden>
+        <span class="matrix-rain" aria-hidden="true"><span class="matrix-column">1<br>0<br>1<br>0</span><span class="matrix-column">0<br>1<br>0<br>1</span><span class="matrix-column">1<br>1<br>0<br>1</span></span>
+        <span id="matrixText"></span>
+      </div>
+      <details class="menu" id="toolsMenu">
+        <summary title="Procesos Node, Base64 y Ayuda">Herramientas ▾</summary>
+        <div class="menu-list" role="menu">
+          <button id="psBtn" role="menuitem" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
+          <button id="codecBtn" role="menuitem" title="Codificar o decodificar texto en Base64">Base64</button>
+          <button id="helpBtn" role="menuitem" title="Equivalente a mfs help">Ayuda</button>
+        </div>
+      </details>
+      <button class="icon-btn" id="refresh" title="Recargar estado" aria-label="Recargar estado"></button>
+    </span>
   </div>
-  <div class="row" style="margin-top:8px">
-    <label class="field" title="Cualquier .txt: relativo (../listas/otra.txt), C:\ruta\lista.txt o /c/ruta/lista.txt">Lista
-      <input type="text" id="list" list="lists" style="width:240px" placeholder="listRep.txt"></label>
+  <div class="hbar">
+  <div class="hsec">
+    <label class="field" title="Cualquier .txt: relativo (../listas/otra.txt), C:\ruta\lista.txt o /c/ruta/lista.txt"><span class="section-label">Lista</span>
+      <input type="text" id="list" list="lists" style="width:260px" placeholder="listRep.txt"></label>
     <datalist id="lists"></datalist>
     <button class="icon-btn" id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">Buscar…</button>
-    <label class="field" title="Rama para Pull y Checkout. Nueva rama permite elegir nombre y base en su propio diálogo.">Rama (Pull/Checkout) <input type="text" id="branch" placeholder="main" list="branches"></label>
-    <datalist id="branches"><option value="main"><option value="develop"><option value="master"></datalist>
-    <label class="field" title="Comando que usan Install y Updeps (equivale a mfs -i). Vacío = npm install">Install con
-      <input type="text" id="installCmd" placeholder="npm install" list="installCmds" style="width:200px"></label>
-    <datalist id="installCmds"><option value="npm install"><option value="npm i --legacy-peer-deps"><option value="npm ci"><option value="pnpm install"><option value="yarn install"></datalist>
-    <label class="field" title="Comando para Run en los repos seleccionados. Vacío = comando definido en el .txt o npm run start. Se guarda en este navegador por lista, no modifica el .txt, y se ejecuta dentro de cada repo.">Run con
-      <input type="text" id="runCmd" placeholder="comando del .txt" maxlength="500" style="width:210px" autocomplete="off"></label>
-    <span class="sep"></span>
+    <button id="edit">Editar lista</button>
+  </div>
+  <div class="hsec" role="toolbar" aria-label="Acciones de repos">
+    <span class="section-label">Repos</span>
     <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
     <button class="sm" id="toggleGroups" title="Expande o contrae todos los grupos (## Nombre en el .txt)" hidden>Contraer grupos</button>
     <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull)">Pull</button>
@@ -157,31 +192,34 @@
     <button data-action="updeps" title="Ejecuta el comando de 'Install con' en todos los repos (reinstala)">Updeps</button>
     <button class="primary" data-action="run" title="Ejecuta el comando configurado de cada repo">Run</button>
     <button class="danger" id="stopAll" title="Detiene solo los procesos lanzados desde este panel">Detener todo</button>
-    <span class="sep"></span>
-    <button id="edit">Editar lista</button>
-    <button id="psBtn" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
-    <button id="codecBtn" title="Codificar o decodificar texto en Base64">Base64</button>
-    <button id="helpBtn" title="Equivalente a mfs help">Ayuda</button>
-    <button class="icon-btn" id="refresh" title="Recargar estado" aria-label="Recargar estado"></button>
   </div>
-  <div class="row" style="margin-top:8px">
-    <span class="muted">Git:</span>
+  <div class="hsec" role="toolbar" aria-label="Acciones git">
+    <span class="section-label">Git</span>
     <button data-git="status" title="git status de los repos seleccionados (se ve en el log)">Ver cambios</button>
     <button data-git="commit" title="git add . + git commit -m en los repos seleccionados con cambios">Commit…</button>
     <button data-git="push" title="git push de los repos seleccionados (nunca --force)">Push</button>
     <button data-git="checkout" title="Cambia los repos seleccionados a la rama del campo Rama">Checkout</button>
     <button data-git="newbranch" title="Elige el nombre y la rama base para crear una nueva rama">Nueva rama…</button>
-    <span class="sep"></span>
-    <label class="field" title="Token para repos privados. Se usa cuando git lo pide (URL tipo https://usuario@host/...). Solo se guarda en la memoria del panel, nunca en disco.">Token git
-      <input type="password" id="gitToken" placeholder="no cargado" autocomplete="off" style="width:170px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
-    <button class="sm" id="tokenApply">Aplicar</button>
-    <button class="sm" id="tokenClear">Quitar</button>
-    <span class="badge" id="tokenState">sin token</span>
-    <div class="matrix-status" id="matrixStatus" role="status" aria-live="polite" hidden>
-      <span class="matrix-rain" aria-hidden="true"><span class="matrix-column">1<br>0<br>1<br>0</span><span class="matrix-column">0<br>1<br>0<br>1</span><span class="matrix-column">1<br>1<br>0<br>1</span></span>
-      <span id="matrixText"></span>
-    </div>
   </div>
+  </div>
+  <details class="config hrow" id="configPanel">
+    <summary><span class="config-title">Configuración</span> <span class="muted" id="configSummary"></span></summary>
+    <div class="row config-body">
+      <label class="field" title="Rama para Pull y Checkout. Nueva rama permite elegir nombre y base en su propio diálogo.">Rama (Pull/Checkout) <input type="text" id="branch" placeholder="main" list="branches"></label>
+      <datalist id="branches"><option value="main"><option value="develop"><option value="master"></datalist>
+      <label class="field" title="Comando que usan Install y Updeps (equivale a mfs -i). Vacío = npm install">Install con
+        <input type="text" id="installCmd" placeholder="npm install" list="installCmds" style="width:200px"></label>
+      <datalist id="installCmds"><option value="npm install"><option value="npm i --legacy-peer-deps"><option value="npm ci"><option value="pnpm install"><option value="yarn install"></datalist>
+      <label class="field" title="Comando para Run en los repos seleccionados. Vacío = comando definido en el .txt o npm run start. Se guarda en este navegador por lista, no modifica el .txt, y se ejecuta dentro de cada repo.">Run con
+        <input type="text" id="runCmd" placeholder="comando del .txt" maxlength="500" style="width:210px" autocomplete="off"></label>
+      <span class="sep"></span>
+      <label class="field" title="Token para repos privados. Se usa cuando git lo pide (URL tipo https://usuario@host/...). Solo se guarda en la memoria del panel, nunca en disco.">Token git
+        <input type="password" id="gitToken" placeholder="no cargado" autocomplete="off" style="width:170px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+      <button class="sm" id="tokenApply">Aplicar</button>
+      <button class="sm" id="tokenClear">Quitar</button>
+      <span class="badge" id="tokenState">sin token</span>
+    </div>
+  </details>
   <div class="batch-bar" id="batchBar" role="status" aria-live="polite" hidden>
     <span id="batchText"></span>
     <button class="sm" id="batchRetry" hidden>Reintentar fallidos</button>
@@ -390,7 +428,7 @@ async function api(path, opts = {}) {
 }
 const listName = () => $('#list').value || 'listRep.txt';
 const runCmdKey = () => 'mfs.runCmd.' + listName();
-function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; }
+function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; updateConfigSummary(); }
 // Grupos plegados (## Nombre en el .txt), por lista y en este navegador
 const collapsedKey = () => 'mfs.collapsed.' + listName();
 function loadCollapsed() {
@@ -783,7 +821,29 @@ document.querySelectorAll('header [data-git]').forEach((b) => b.addEventListener
 function showTokenState(has) {
   $('#tokenState').textContent = has ? 'token cargado ✓' : 'sin token';
   $('#tokenState').classList.toggle('warn', !has);
+  state.hasToken = has;
+  updateConfigSummary();
 }
+
+// Resumen de la configuración visible con el panel plegado
+function updateConfigSummary() {
+  const v = (id) => $(id).value.trim();
+  $('#configSummary').textContent = [
+    'rama: ' + (v('#branch') || 'main'),
+    'install: ' + (v('#installCmd') || 'npm install'),
+    'run: ' + (v('#runCmd') || 'del .txt'),
+    'token: ' + (state.hasToken ? 'cargado' : 'no'),
+  ].join(' · ');
+}
+['#branch', '#installCmd', '#runCmd'].forEach((id) => $(id).addEventListener('input', updateConfigSummary));
+$('#configPanel').open = localStorage.getItem('mfs.configOpen') === '1';
+$('#configPanel').addEventListener('toggle', () => localStorage.setItem('mfs.configOpen', $('#configPanel').open ? '1' : '0'));
+
+// Menú Herramientas: se cierra al elegir una opción, al pulsar fuera o con Esc
+const toolsMenu = $('#toolsMenu');
+toolsMenu.querySelector('.menu-list').addEventListener('click', () => { toolsMenu.open = false; });
+document.addEventListener('click', (ev) => { if (toolsMenu.open && !toolsMenu.contains(ev.target)) toolsMenu.open = false; });
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && toolsMenu.open) { toolsMenu.open = false; toolsMenu.querySelector('summary').focus(); } });
 $('#tokenApply').onclick = async () => {
   const token = $('#gitToken').value.trim();
   if (!token) return toast('Escribe el token');
