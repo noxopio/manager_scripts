@@ -56,6 +56,10 @@
   --engrave-fill: color-mix(in srgb, var(--bg) 86%, var(--text));
   --engrave-light: rgba(255, 255, 255, .08);
   --engrave-dark: rgba(0, 0, 0, .7);
+  /* Grabado sobre la consola: el log es oscuro también en tema claro, así que estos valores no cambian */
+  --log-engrave-fill: #161a21;
+  --log-engrave-light: rgba(255, 255, 255, .07);
+  --log-engrave-dark: rgba(0, 0, 0, .8);
 }
 
 @media (prefers-color-scheme: light) {
@@ -117,7 +121,16 @@
   --accent: #ff7ad1; --accent-strong: #ff55c2; --accent-text: #1f0614; --accent-soft: rgba(255, 122, 209, .15);
   --bg-blob-1: rgba(200, 70, 160, .30);
 }
+/* Rojo anaranjado: distinto del rosado de errores (--err) para que los botones principales no parezcan de error */
+:root[data-accent="rojo"] {
+  --accent: #ff5a4e; --accent-strong: #ff3b2f; --accent-text: #1a0503; --accent-soft: rgba(255, 90, 78, .15);
+  --bg-blob-1: rgba(210, 60, 45, .30);
+}
 @media (prefers-color-scheme: light) {
+  :root[data-accent="rojo"] {
+    --accent: #d6372b; --accent-strong: #b82c22; --accent-text: #fff; --accent-soft: rgba(214, 55, 43, .12);
+    --bg-blob-1: rgba(255, 140, 120, .30);
+  }
   :root[data-accent="verde"] {
     --accent: #0a9f5c; --accent-strong: #078a4f; --accent-text: #fff; --accent-soft: rgba(10, 159, 92, .12);
     --bg-blob-1: rgba(80, 220, 150, .32);

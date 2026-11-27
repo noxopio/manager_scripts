@@ -8,6 +8,7 @@ import './tools.js';
 import './curl.js';
 import { loadLists, rememberList } from './lists.js';
 import { connectStream } from './stream.js';
+import { pickQuip } from './quips.js';
 
 $('#browseBtn').prepend(icon('folder'));
 $('#refresh').append(icon('refresh'));
@@ -35,22 +36,10 @@ $('#list').addEventListener('change', loadRunCmd);
 $('#runCmd').addEventListener('change', saveRunCmd);
 $('#clearLog').onclick = () => { $('#log').textContent = ''; };
 
-// Frase al azar en el tooltip del título 👾 (una por carga)
-const BRAND_QUIPS = [
-  'Ningún repo fue maltratado (casi)',
-  'Encodeado con lágrimas de dev',
-  'Push bajo su propia responsabilidad',
-  'Domando repos desde que git es git',
-  'Funciona en mi máquina™',
-  'node_modules: el agujero negro oficial',
-  'Hoy compila. Mañana, quién sabe',
-  'Commit temprano, commit a menudo, push con fe',
-  'Detener todo: el botón favorito de los viernes',
-  'Si no está en el .txt, no existe',
-  'Insert coin para hacer pull',
-];
-const brandQuip = BRAND_QUIPS[Math.floor(Math.random() * BRAND_QUIPS.length)];
-const brandTitle = (workDir) => brandQuip + (workDir ? '\nDirectorio de trabajo: ' + workDir : '');
+// Tooltip del 👾: frase según el estado del panel, nueva en cada hover (ver quips.js)
+let brandWorkDir = '';
+const brandTitle = () => pickQuip(state.repos) + (brandWorkDir ? '\nDirectorio de trabajo: ' + brandWorkDir : '');
+$('#brand').addEventListener('mouseenter', () => { $('#brand').title = brandTitle(); });
 
 (async function init() {
   $('#branch').value = localStorage.getItem('mfs.branch') || '';
@@ -58,7 +47,8 @@ const brandTitle = (workDir) => brandQuip + (workDir ? '\nDirectorio de trabajo:
   $('#brand').title = brandTitle();
   try {
     const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
-    $('#brand').title = brandTitle(info.workDir);
+    brandWorkDir = info.workDir;
+    $('#brand').title = brandTitle();
     $('#list').title += '\nDirectorio de trabajo: ' + info.workDir;
     $('#version').textContent = 'v' + info.version;
     renderMfsInfo(info);

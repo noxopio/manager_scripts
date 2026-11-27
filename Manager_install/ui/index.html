@@ -20,9 +20,9 @@
 <header class="topbar glass">
   <div class="row">
     <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Repos · Git)" aria-label="Panel de control"></button>
-    <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span> mfs</h1>
+    <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span></h1>
     <details class="menu" id="toolsMenu">
-      <summary title="Procesos Node, cURL, Base64 y Ayuda">Herramientas ▾</summary>
+      <summary title="Procesos Node, cURL, Base64 y Ayuda">Herramientas</summary>
       <div class="menu-list" role="menu">
         <button id="psBtn" role="menuitem" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
         <button id="curlBtn" role="menuitem" title="Ejecutar un comando curl y ver la respuesta (JSON formateado)">cURL</button>
@@ -65,8 +65,8 @@
 <!-- Panel de control lateral (plegable con ☰). Cada sección: parámetros arriba y, debajo, los botones que los usan.
      Plegada, una sección muestra un resumen de su estado. -->
 <aside class="sidebar glass" id="sidebar" aria-label="Panel de control">
-  <!-- Franja decorativa: solo se ilumina y, al pulsarla, muestra información de mfs (sin otras acciones) -->
-  <button class="sidebar-rail" popovertarget="mfsInfo" aria-label="Información de mfs" title="Información de mfs">
+  <!-- Franja decorativa: se ilumina y, al pulsarla, abre la tarjeta de información y apariencia de mfs -->
+  <button class="sidebar-rail" popovertarget="mfsInfo" aria-label="Información y apariencia de mfs" title="Información y apariencia de mfs">
     <span class="rail-barcode" aria-hidden="true"></span>
     <span class="rail-digits engraved" id="railDigits" aria-hidden="true"></span>
     <span class="rail-title engraved" aria-hidden="true">LAUNCH PAD</span>
@@ -121,19 +121,11 @@
     </div>
     <div class="hsec-summary"></div>
   </section>
-  <footer class="sidebar-foot">
-    <span class="badge" id="version" title="Versión de mfs (mfs version)"></span>
-    <span class="accent-picker" id="accentPicker" role="radiogroup" aria-label="Color de acento">
-      <button class="accent-swatch" data-accent="violeta" role="radio" title="Violeta" aria-label="Violeta" style="--sw:#b4a7f5"></button>
-      <button class="accent-swatch" data-accent="verde" role="radio" title="Verde neón" aria-label="Verde neón" style="--sw:#3dff9e"></button>
-      <button class="accent-swatch" data-accent="cian" role="radio" title="Cian" aria-label="Cian" style="--sw:#4de1ff"></button>
-      <button class="accent-swatch" data-accent="rosa" role="radio" title="Rosa" aria-label="Rosa" style="--sw:#ff7ad1"></button>
-    </span>
-  </footer>
+  <footer class="sidebar-foot"><span class="badge" id="version" title="Versión de mfs (mfs version)"></span></footer>
   </div>
 </aside>
 
-<!-- Información de mfs (solo lectura). API popover nativa: se cierra con Esc o al pulsar fuera. -->
+<!-- Información y apariencia de mfs. API popover nativa: se cierra con Esc o al pulsar fuera. -->
 <div id="mfsInfo" popover class="mfs-info">
   <div class="mfs-info-head">
     <span class="mfs-info-title engraved">m f s</span>
@@ -143,8 +135,16 @@
     <span class="mfs-info-time" id="infoTime"></span>
     <span class="muted" id="infoDate"></span>
   </div>
+  <div class="mfs-info-section">APARIENCIA</div>
+  <div class="accent-picker" id="accentPicker" role="radiogroup" aria-label="Color de acento (se guarda en este navegador)">
+    <button class="accent-swatch" data-accent="violeta" role="radio" style="--sw:#b4a7f5"><span class="sw-dot"></span><span class="sw-name">Violeta</span></button>
+    <button class="accent-swatch" data-accent="verde" role="radio" style="--sw:#3dff9e"><span class="sw-dot"></span><span class="sw-name">Verde neón</span></button>
+    <button class="accent-swatch" data-accent="cian" role="radio" style="--sw:#4de1ff"><span class="sw-dot"></span><span class="sw-name">Cian</span></button>
+    <button class="accent-swatch" data-accent="rosa" role="radio" style="--sw:#ff7ad1"><span class="sw-dot"></span><span class="sw-name">Rosa</span></button>
+    <button class="accent-swatch" data-accent="rojo" role="radio" style="--sw:#ff5a4e"><span class="sw-dot"></span><span class="sw-name">Rojo</span></button>
+  </div>
   <dl class="mfs-info-list" id="infoList"></dl>
-  <div class="mfs-info-cmds-title">COMANDOS PARA GIT BASH</div>
+  <div class="mfs-info-section">COMANDOS PARA GIT BASH</div>
   <ul class="mfs-info-cmds" id="infoCmds"></ul>
 </div>
 
@@ -156,7 +156,11 @@
       <label class="field" title="Desplaza el log automáticamente a la última línea. Desmárcalo para leer líneas anteriores sin que la vista se mueva."><input type="checkbox" id="follow" checked> Seguir</label>
       <button class="sm" id="clearLog">Limpiar vista</button>
     </div>
-    <pre class="log" id="log"></pre>
+    <!-- "M F S" grabado detrás de la consola: fijo (no se desplaza con el log) y sin capturar clics -->
+    <div class="log-wrap">
+      <span class="log-mark" aria-hidden="true">MFS >_</span>
+      <pre class="log" id="log"></pre>
+    </div>
   </section>
 </main>
 </div>

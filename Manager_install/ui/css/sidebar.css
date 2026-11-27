@@ -83,27 +83,29 @@ body.sidebar-closed .sidebar { display: none; }
 .hsec-summary:hover { color: var(--text); }
 .hsec[data-open="false"] .hsec-body, .hsec[data-open="true"] .hsec-summary { display: none; }
 
-/* ── Información de mfs (popover) ── */
+/* ── Información y apariencia de mfs (popover) ──
+   Contorno, halo y tinte siguen al color de acento: al elegir otro color, la propia tarjeta muestra el cambio */
 .mfs-info {
   width: min(480px, 92vw); max-height: 88vh; overflow: auto; padding: 18px 18px 14px; margin: auto;
-  color: var(--text); background: var(--glass-bg-strong);
-  border: 1px solid var(--glass-border); border-radius: calc(var(--radius) + 6px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 var(--glass-highlight);
+  color: var(--text); background-color: color-mix(in srgb, var(--accent) 6%, var(--glass-bg-strong));
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, transparent); border-radius: calc(var(--radius) + 6px);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 30px var(--accent-soft), 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 var(--glass-highlight);
   -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+  transition: border-color .3s, box-shadow .3s, background-color .3s;
 }
-.mfs-info::backdrop { background: rgba(5, 8, 14, .35); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.mfs-info::backdrop { background: color-mix(in srgb, var(--accent, #000) 10%, rgba(5, 8, 14, .35)); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .mfs-info:popover-open { animation: dlg-in .16s ease-out; }
 .mfs-info-head { display: flex; align-items: center; justify-content: space-between; }
 .mfs-info-title { font: 800 30px/1 var(--font-display); letter-spacing: .35em; text-transform: uppercase; } /* + .engraved */
 .mfs-info-version { padding: 2px 10px; border-radius: var(--radius-pill); font-weight: 700; font-size: 12px; color: var(--accent); background: var(--field-bg); box-shadow: var(--neu-in-sm); }
 .mfs-info-clock { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 12px; padding: 10px 12px; border-radius: var(--radius); background: var(--field-bg); box-shadow: var(--neu-in); }
-.mfs-info-time { font: 700 30px/1 var(--font-display); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.mfs-info-time { font: 700 30px/1 var(--font-display); letter-spacing: .06em; font-variant-numeric: tabular-nums; color: var(--accent); text-shadow: 0 0 12px var(--accent-soft); transition: color .3s; }
 .mfs-info-list { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 12px; }
 .mfs-info-list dt { color: var(--muted); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; padding-top: 2px; }
 .mfs-info-list dd { margin: 0; min-width: 0; font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
 
 /* Comandos útiles para la shell */
-.mfs-info-cmds-title { margin: 16px 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .35em; color: var(--muted); }
+.mfs-info-section { margin: 16px 0 8px; padding-left: 8px; border-left: 2px solid var(--accent); font-size: 10.5px; font-weight: 700; letter-spacing: .35em; color: var(--muted); transition: border-color .3s; }
 .mfs-info-cmds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
 .mfs-info-cmds li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 7px 10px; border-radius: var(--radius); background: var(--field-bg); box-shadow: var(--neu-in); }
 .mfs-info-cmds code { padding: 0; background: none; color: var(--text); overflow-wrap: anywhere; }
@@ -119,17 +121,25 @@ body.sidebar-closed .sidebar { display: none; }
     text-shadow: 1px 1px 1px var(--engrave-light), -1px -1px 1px var(--engrave-dark); }
 }
 
-/* ── Selector de color de acento (pie del panel) ── */
-.sidebar-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.accent-picker { display: flex; gap: 7px; padding: 5px 8px; border-radius: var(--radius-pill); background: var(--field-bg); box-shadow: var(--neu-in-sm); }
-.accent-swatch {
-  width: 16px; height: 16px; padding: 0; border-radius: 50%; border: 2px solid transparent;
-  background: var(--sw); box-shadow: var(--neu-out);
+/* ── Apariencia (en la tarjeta de información): selector de color de acento ── */
+.accent-picker {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px 6px;
+  border-radius: var(--radius); background: var(--field-bg); box-shadow: var(--neu-in);
 }
-.accent-swatch:hover { border-color: transparent; background: var(--sw); box-shadow: 0 0 8px var(--sw); }
-.accent-swatch[aria-checked="true"] { border-color: var(--text); box-shadow: 0 0 10px var(--sw); }
+.accent-swatch {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 2px;
+  border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; box-shadow: none; color: var(--muted);
+}
+.accent-swatch:hover { background: transparent; border-color: transparent; color: var(--text); }
+.accent-swatch:active:not(:disabled) { box-shadow: none; }
+.sw-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); border: 2px solid transparent; box-shadow: var(--neu-out); transition: box-shadow .15s, border-color .15s; }
+.sw-name { font-size: 10px; line-height: 1.1; text-align: center; }
+.accent-swatch:hover .sw-dot { box-shadow: 0 0 8px var(--sw); }
+.accent-swatch[aria-checked="true"] { color: var(--text); }
+.accent-swatch[aria-checked="true"] .sw-dot { border-color: var(--text); box-shadow: 0 0 12px var(--sw); }
 
 @media (prefers-reduced-motion: reduce) {
   .rail-title, .rail-barcode, .rail-barcode::before { transition: none; }
   .mfs-info:popover-open { animation: none; }
+  .mfs-info, .mfs-info-time, .mfs-info-section { transition: none; }
 }

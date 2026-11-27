@@ -77,8 +77,9 @@ $('#mfsInfo').addEventListener('toggle', (ev) => {
   clockTimer = setInterval(tickClock, 1000);
 });
 
-// ── Color de acento (violeta, verde neón, cian, rosa); se guarda en este navegador ──
-const ACCENTS = ['violeta', 'verde', 'cian', 'rosa'];
+// ── Color de acento (violeta, verde neón, cian, rosa, rojo); el selector está en la tarjeta de LAUNCH PAD
+//    y la elección se guarda en este navegador ──
+const ACCENTS = ['violeta', 'verde', 'cian', 'rosa', 'rojo'];
 function applyAccent(name) {
   const accent = ACCENTS.includes(name) ? name : 'violeta';
   if (accent === 'violeta') document.documentElement.removeAttribute('data-accent');

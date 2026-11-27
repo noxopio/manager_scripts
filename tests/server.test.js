@@ -161,6 +161,24 @@ test('curl-history: redactCurl oculta credenciales y deja lo demás', async () =
   assert.equal(redactCurl('curl https://a.dev?token=abc'), 'curl https://a.dev?token=abc'); // la URL no se toca
 });
 
+test('quips: la frase del 👾 depende del estado del panel', async () => {
+  const { pickQuip, RANDOM_QUIPS } = await import('../Manager_install/ui/js/quips.js');
+  const r = (o) => ({ status: 'idle', cloned: true, changes: 0, locked: false, ...o });
+  // rand fijo 0.3: no cae en la frase al azar (≥ 0.25) y elige la frase 0 de las categorías de 3 y la 1 de las de 4
+  const at = (v) => () => v;
+  assert.equal(pickQuip([], at(0.5)), 'Sin repos a la vista. ¿Editar lista?');
+  // Prioridad: bloqueado gana a cambios sin commit; error gana a en ejecución
+  assert.equal(pickQuip([r({ locked: true, changes: 2 })], at(0.3)), '1 repo con index.lock. Git está en huelga');
+  assert.equal(pickQuip([r({ status: 'error' }), r({ status: 'running' })], at(0.3)), '1 error. Respira, lee el log, vuelve a intentar');
+  assert.equal(pickQuip([r({ status: 'running' }), r({ status: 'running' }), r({ status: 'stopping' })], at(0.3)), '3 procesos corriendo: el ventilador lo sabe');
+  assert.equal(pickQuip([r({ status: 'running' })], at(0.3)), '1 proceso corriendo: el ventilador lo sabe'); // singular
+  assert.equal(pickQuip([r({ changes: 4 }), r({ changes: 1 })], at(0.6)), '2 repos piden un commit con buen mensaje');
+  assert.equal(pickQuip([r({ cloned: false })], at(0.3)), '1 repo esperando su primer pull');
+  assert.equal(pickQuip([r(), r()], at(0.3)), 'Working tree clean. Disfruta el momento');
+  // Por debajo de 0.25: frase al azar aunque haya categoría
+  assert.equal(pickQuip([r({ status: 'running' })], at(0)), RANDOM_QUIPS[0]);
+});
+
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
   const out = parseCurlOutput([
     'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',

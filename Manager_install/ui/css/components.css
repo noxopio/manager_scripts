@@ -7,6 +7,20 @@
 .menu[open] > summary { box-shadow: var(--neu-in); }
 .menu > summary::-webkit-details-marker { display: none; }
 .menu > summary:hover, .menu[open] > summary { border-color: var(--accent); background: var(--control-bg-hover); }
+
+/* Herramientas: pestaña en píldora igual que los títulos del panel lateral (R E P O S, G I T…),
+   con el triángulo que gira al abrir en lugar de "▾" */
+#toolsMenu > summary {
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 15px 0 12px;
+  border: 1px solid var(--glass-border); border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong); box-shadow: var(--neu-out);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .35em; text-transform: uppercase; color: var(--muted);
+  transition: color .15s, border-color .15s, box-shadow .15s;
+}
+#toolsMenu > summary::before { content: ""; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
+#toolsMenu[open] > summary::before { transform: rotate(90deg); }
+#toolsMenu > summary:hover, #toolsMenu > summary:focus-visible, #toolsMenu[open] > summary { color: var(--accent); border-color: var(--accent); background: var(--glass-bg-strong); outline: none; }
+#toolsMenu[open] > summary { box-shadow: var(--neu-in); }
 /* Panel desplegable: bandeja hundida que flota (sombra interior + sombra exterior para separarla del fondo) */
 .menu-list { position: absolute; left: 0; top: calc(100% + 6px); z-index: 3; min-width: 180px; display: flex; flex-direction: column; gap: 4px; padding: 6px;
   border-radius: var(--radius);
@@ -88,8 +102,18 @@ pre.log, div.log {
   background: var(--log-bg); color: var(--log-text);
   font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word;
 }
-.logpane pre.log { flex: 1; margin: 0 10px 10px; border-radius: var(--radius); box-shadow: var(--neu-in); } /* consola hundida en el panel */
-#log:empty::after { content: "MFS\A>_"; position: absolute; right: 22px; bottom: 18px; color: var(--log-text); opacity: .055; text-align: right; white-space: normal; font: 700 58px/.9 ui-monospace, Consolas, monospace; pointer-events: none; user-select: none; }
+/* Consola hundida en el panel; detrás, "M F S" grabado como en la tarjeta de información.
+   La marca está en el contenedor (no dentro del <pre>), así no se desplaza con el log */
+.log-wrap {
+  position: relative; flex: 1; min-height: 0; margin: 0 10px 10px; overflow: hidden;
+  border-radius: var(--radius); background: var(--log-bg); box-shadow: var(--neu-in);
+}
+.log-mark {
+  position: absolute; right: 26px; bottom: 18px; pointer-events: none; user-select: none;
+  font: 800 24px/1 var(--font-display); letter-spacing: .35em; margin-right: -.35em;
+  color: var(--log-engrave-fill); text-shadow: 1px 1px 1px var(--log-engrave-light), -1px -1px 1px var(--log-engrave-dark);
+}
+.log-wrap > pre.log { position: relative; height: 100%; background: transparent; }
 
 /* ── Vacíos ── */
 .empty { padding: 24px; text-align: center; color: var(--muted); }
