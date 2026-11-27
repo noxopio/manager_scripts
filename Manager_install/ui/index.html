@@ -23,7 +23,10 @@
   body { margin: 0; height: 100vh; display: flex; flex-direction: column; font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
   header { position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  h1 { font-size: 16px; margin: 0 12px 0 0; }
+  h1 { font-size: 16px; margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+  .brand-icon { display: inline-block; font-size: 18px; }
+  #brand:hover .brand-icon { animation: hop .45s ease; }
+  @keyframes hop { 40% { transform: translateY(-4px) rotate(-8deg); } }
   .muted { color: var(--muted); font-size: 12px; }
   label.field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
   input[type=text], select { font: inherit; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
@@ -122,7 +125,7 @@
   .logpane .head { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
   .logpane .head strong { flex: 1; }
   pre.log { position: relative; margin: 0; flex: 1; overflow: auto; padding: 10px; background: var(--log-bg); color: var(--log-text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
-  #log:empty::after { content: "mfs\A>_"; position: absolute; right: 22px; bottom: 18px; color: var(--log-text); opacity: .055; text-align: right; white-space: pre; font: 700 58px/.9 ui-monospace, Consolas, monospace; pointer-events: none; user-select: none; }
+  #log:empty::after { content: "MFS\A>_"; position: absolute; right: 22px; bottom: 18px; color: var(--log-text); opacity: .055; text-align: right; white-space: normal; font: 700 58px/.9 ui-monospace, Consolas, monospace; pointer-events: none; user-select: none; }
   .empty { padding: 24px; text-align: center; color: var(--muted); }
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 130px; }
   .empty-state > .icon { width: 28px; height: 28px; flex-basis: 28px; opacity: .8; }
@@ -169,7 +172,7 @@
   .matrix-column:nth-child(3) { animation-delay: .5s; }
   @keyframes matrix-fall { from { transform: translateY(-4px); opacity: .45; } to { transform: translateY(4px); opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
-    .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column { animation: none; }
+    .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column, #brand:hover .brand-icon { animation: none; }
   }
 </style>
 </head>
@@ -177,7 +180,7 @@
 <header>
   <div class="row">
     <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Repos · Git)" aria-label="Panel de control"></button>
-    <h1>mfs · Repos</h1>
+    <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span> mfs</h1>
     <details class="menu" id="toolsMenu">
       <summary title="Procesos Node, Base64 y Ayuda">Herramientas ▾</summary>
       <div class="menu-list" role="menu">
@@ -1316,12 +1319,30 @@ $('#editorSave').onclick = async () => {
   } catch (e) { toast(e.message); }
 };
 
+// Frase al azar en el tooltip del título 👾 (una por carga)
+const BRAND_QUIPS = [
+  'Ningún repo fue maltratado (casi)',
+  'Encodeado con lágrimas de dev',
+  'Push bajo su propia responsabilidad',
+  'Domando repos desde que git es git',
+  'Funciona en mi máquina™',
+  'node_modules: el agujero negro oficial',
+  'Hoy compila. Mañana, quién sabe',
+  'Commit temprano, commit a menudo, push con fe',
+  'Detener todo: el botón favorito de los viernes',
+  'Si no está en el .txt, no existe',
+  'Insert coin para hacer pull',
+];
+const brandQuip = BRAND_QUIPS[Math.floor(Math.random() * BRAND_QUIPS.length)];
+const brandTitle = (workDir) => brandQuip + (workDir ? '\nDirectorio de trabajo: ' + workDir : '');
+
 (async function init() {
   $('#branch').value = localStorage.getItem('mfs.branch') || '';
   $('#installCmd').value = localStorage.getItem('mfs.installCmd') || '';
+  $('#brand').title = brandTitle();
   try {
     const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
-    $('h1').title = 'Directorio de trabajo: ' + info.workDir;
+    $('#brand').title = brandTitle(info.workDir);
     $('#list').title += '\nDirectorio de trabajo: ' + info.workDir;
     $('#version').textContent = 'v' + info.version;
     showTokenState(info.hasToken);
