@@ -3,7 +3,7 @@ import { $, api, state, listName, loadCollapsed, saveCollapsed, saveRunCmd } fro
 import { icon } from './icons.js';
 import { loadRepos, render, runAction, stop, setGroupsBtn } from './repos.js';
 import './git.js';
-import { loadRunCmd, showTokenState } from './sidebar.js';
+import { loadRunCmd, showTokenState, renderMfsInfo } from './sidebar.js';
 import './tools.js';
 import './curl.js';
 import { loadLists, rememberList } from './lists.js';
@@ -61,6 +61,7 @@ const brandTitle = (workDir) => brandQuip + (workDir ? '\nDirectorio de trabajo:
     $('#brand').title = brandTitle(info.workDir);
     $('#list').title += '\nDirectorio de trabajo: ' + info.workDir;
     $('#version').textContent = 'v' + info.version;
+    renderMfsInfo(info);
     showTokenState(info.hasToken);
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
     $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');

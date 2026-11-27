@@ -1,24 +1,5 @@
-/* Componentes: secciones del panel, menú, cards, grupos, badges, estado, log, toast, batch-bar */
-
-/* ── Secciones plegables del panel lateral ── */
-.hsec { padding: 6px 0 12px; border-bottom: 1px solid var(--border); }
-.hsec:last-of-type { border-bottom: 0; }
-.hsec-head { width: 100%; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0; border: 0; background: none; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.hsec-head:hover { background: none; }
-.hsec-head::before { content: ""; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
-.hsec-head[aria-expanded="true"]::before { transform: rotate(90deg); }
-.hsec-head:hover, .hsec-head:focus-visible { color: var(--accent); box-shadow: none; }
-.hsec-body { display: flex; flex-direction: column; gap: 9px; }
-.hsec-body input[type=text], .hsec-body input[type=password] { width: 100%; }
-.sfield { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
-.hsec-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.btn-grid.cols3 { grid-template-columns: repeat(3, 1fr); }
-.btn-grid > button { justify-content: center; }
-.btn-grid > .span2 { grid-column: 1 / -1; }
-.hsec-summary { font-size: 12px; color: var(--muted); padding-left: 12px; cursor: pointer; overflow-wrap: anywhere; }
-.hsec-summary:hover { color: var(--text); }
-.hsec[data-open="false"] .hsec-body, .hsec[data-open="true"] .hsec-summary { display: none; }
+/* Componentes: menú, cards, grupos, badges, estado, log, toast, batch-bar.
+   Las secciones del panel lateral (.hsec, .btn-grid, .sfield) están en sidebar.css. */
 
 /* ── Menú Herramientas ── */
 .menu { position: relative; }

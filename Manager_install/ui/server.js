@@ -57,6 +57,21 @@ const BRANCH_RE = /^[\w./-]{1,200}$/;
 const INSTALL_CMD_RE = /^[^;&|<>`$\r\n]{1,200}$/;
 const MAX_LOG_LINES = 2000;
 const VERSION = (() => { try { return fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim(); } catch { return 'desconocida'; } })();
+// Datos de la instalación para el panel de información (franja NEW BRANCH)
+// El instalador escribe "# Fecha de instalación: AAAA-MM-DD HH:MM:SS" en la cabecera de manager_repo.sh.
+function readInstallDate(text) {
+  const m = /^# Fecha de instalación: (.+)$/m.exec(String(text || ''));
+  return m ? m[1].trim() : null;
+}
+const INSTALL_DIR = path.resolve(__dirname, '..');
+const INSTALL_INFO = (() => {
+  const read = (f) => { try { return fs.readFileSync(path.join(INSTALL_DIR, f), 'utf8'); } catch { return ''; } };
+  return {
+    installDate: readInstallDate(read('manager_repo.sh').split('\n').slice(0, 10).join('\n')),
+    sourceDir: read('.source').trim() || null,
+  };
+})();
+const STARTED_AT = new Date().toISOString();
 // Último log de cada repo, para poder verlo tras cerrar y reabrir el panel.
 const LOGS_DIR = path.join(os.homedir(), '.mfs_ui', 'logs');
 const logFile = (name) => path.join(LOGS_DIR, `${name.replace(/[^\w.-]/g, '_')}.log`);
@@ -760,7 +775,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && p === '/api/info') {
-      return send(res, 200, { workDir: WORK_DIR, script: SCRIPT, bash: BASH, defaultList: DEFAULT_LIST, hasToken: !!gitToken, version: VERSION });
+      return send(res, 200, {
+        workDir: WORK_DIR, script: SCRIPT, bash: BASH, defaultList: DEFAULT_LIST, hasToken: !!gitToken, version: VERSION,
+        installDir: INSTALL_DIR, ...INSTALL_INFO, startedAt: STARTED_AT, port: PORT, node: process.version, platform: process.platform,
+      });
     }
 
     if (req.method === 'POST' && p === '/api/token') {
@@ -984,4 +1002,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, normalizePath, isInside, staticFile, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };
+module.exports = { parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };

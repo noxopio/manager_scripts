@@ -1,5 +1,56 @@
-// Panel lateral: secciones plegables, toggle ☰, resúmenes y token git.
-import { $, api, toast, state, runCmdKey, saveRunCmd } from './core.js';
+// Panel lateral: secciones plegables, toggle ☰, resúmenes, token git y la franja NEW BRANCH (información de mfs).
+import { $, el, api, toast, state, runCmdKey, saveRunCmd, listName } from './core.js';
+
+// ── Franja NEW BRANCH: al pulsarla muestra información de mfs (solo lectura) ──
+let mfsInfo = null;
+let clockTimer = null;
+const fmtDate = (d) => d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+const fmtDuration = (ms) => {
+  const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  return d ? `${d} d ${h % 24} h` : h ? `${h} h ${m % 60} min` : `${m} min`;
+};
+function infoRow(label, value, copy = false) {
+  if (!value) return [];
+  const span = el('span', { title: value }, value);
+  const btn = copy ? el('button', { class: 'sm', title: 'Copiar', onclick: async () => {
+    try { await navigator.clipboard.writeText(value); toast('Copiado'); } catch { toast('No se pudo copiar'); }
+  } }, 'Copiar') : null;
+  return [el('dt', {}, label), el('dd', {}, span, btn)];
+}
+function tickClock() {
+  const now = new Date();
+  $('#infoTime').textContent = now.toLocaleTimeString();
+  $('#infoDate').textContent = fmtDate(now);
+  const up = $('#infoUptime');
+  if (up && mfsInfo?.startedAt) up.textContent = `${new Date(mfsInfo.startedAt).toLocaleString()} · hace ${fmtDuration(now - new Date(mfsInfo.startedAt))}`;
+}
+function fillInfoList() {
+  const i = mfsInfo || {};
+  const list = $('#infoList');
+  list.replaceChildren(
+    ...infoRow('Instalado', i.installDate || 'sin instalar (panel lanzado desde el repo)'),
+    ...infoRow('Instalación', i.installDir, true),
+    ...infoRow('Repo origen', i.sourceDir, true),
+    ...infoRow('Trabajo', i.workDir, true),
+    ...infoRow('Lista', listName(), true),
+    ...infoRow('Panel', i.port ? `http://127.0.0.1:${i.port}` : ''),
+    el('dt', {}, 'Abierto'), el('dd', {}, el('span', { id: 'infoUptime' }, '')),
+    ...infoRow('Node', i.node ? `${i.node} · ${i.platform}` : ''),
+    ...infoRow('Bash', i.bash, true),
+  );
+}
+export function renderMfsInfo(info) {
+  mfsInfo = info;
+  $('#infoVersion').textContent = info.version ? 'v' + info.version : '';
+  $('#railDigits').textContent = String(info.version || '').replace(/\D/g, '');
+}
+$('#mfsInfo').addEventListener('toggle', (ev) => {
+  clearInterval(clockTimer);
+  if (ev.newState !== 'open') return;
+  fillInfoList(); // la lista activa puede haber cambiado
+  tickClock();
+  clockTimer = setInterval(tickClock, 1000);
+});
 
 export function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; updateSummaries(); }
 

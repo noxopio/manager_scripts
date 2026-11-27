@@ -45,6 +45,16 @@
   --radius-sm: 7px;
   --radius-pill: 999px;
   --gap: 12px;
+
+  /* Profundidad (panel lateral): sombras "soft UI" y extrusión del texto NEW BRANCH */
+  --font-display: "Bahnschrift Condensed", "Bahnschrift SemiBold Condensed", "Arial Narrow", Impact, sans-serif;
+  --neu-out: 4px 4px 10px rgba(0, 0, 0, .45), -2px -2px 8px rgba(255, 255, 255, .04);
+  --neu-in: inset 3px 3px 8px rgba(0, 0, 0, .45), inset -2px -2px 6px rgba(255, 255, 255, .05);
+  --extrude-1: color-mix(in srgb, var(--accent) 55%, #000);
+  --extrude-2: color-mix(in srgb, var(--accent) 35%, #000);
+  --extrude-3: color-mix(in srgb, var(--accent) 18%, #000);
+  --rail-text-from: #ffffff;
+  --rail-text-to: rgba(180, 167, 245, .15);
 }
 
 @media (prefers-color-scheme: light) {
@@ -81,5 +91,13 @@
 
     --log-bg: rgba(14, 18, 26, .88);
     --log-text: #00e636;
+
+    --neu-out: 4px 4px 10px rgba(40, 50, 90, .16), -3px -3px 8px rgba(255, 255, 255, .85);
+    --neu-in: inset 3px 3px 7px rgba(40, 50, 90, .16), inset -3px -3px 7px rgba(255, 255, 255, .9);
+    --extrude-1: color-mix(in srgb, var(--accent) 70%, #fff);
+    --extrude-2: color-mix(in srgb, var(--accent) 45%, #fff);
+    --extrude-3: color-mix(in srgb, var(--accent) 25%, #fff);
+    --rail-text-from: #3b2f9e;
+    --rail-text-to: rgba(107, 91, 214, .12);
   }
 }

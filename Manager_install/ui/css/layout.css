@@ -11,9 +11,7 @@ h1 { font-size: 16px; margin: 0 12px 0 4px; display: inline-flex; align-items: c
 #sidebarToggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
 .layout { display: flex; gap: var(--gap); flex: 1; min-height: 0; }
-.sidebar { flex: none; width: 290px; overflow: auto; padding: 6px 16px 12px; display: flex; flex-direction: column; }
-.sidebar-foot { margin-top: auto; padding-top: 10px; } /* versión abajo a la izquierda: solo visible con el panel abierto */
-body.sidebar-closed .sidebar { display: none; }
+/* Panel lateral: ver sidebar.css */
 
 main { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1.2fr); gap: var(--gap); }
 
@@ -21,5 +19,4 @@ main { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-column
   body { height: auto; }
   main { grid-template-columns: 1fr; }
   .layout { flex-direction: column; }
-  .sidebar { width: auto; }
 }

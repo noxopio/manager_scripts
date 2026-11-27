@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, normalizePath, isInside, staticFile, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
+  parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -118,6 +118,12 @@ test('parseCurl: opciones cortas agrupadas, descartadas y bloqueadas', () => {
   assert.throws(() => parseCurl('curl -H "x: 1"'), /URL/);
   assert.throws(() => parseCurl("curl 'https://x.dev"), /comillas/);
   assert.throws(() => parseCurl('  '), /Pega/);
+});
+
+test('readInstallDate: lee la fecha que escribe el instalador', () => {
+  assert.equal(readInstallDate('#!/bin/bash\n# Fecha de creación: 2025-02-27\n# Fecha de instalación: 2026-11-27 10:42:05\n# resto'), '2026-11-27 10:42:05');
+  assert.equal(readInstallDate('#!/bin/bash\n# sin instalar (repo de origen)\n'), null);
+  assert.equal(readInstallDate(''), null);
 });
 
 // Módulo del navegador (ES module): Node 22 lo carga con import() aunque sea .js

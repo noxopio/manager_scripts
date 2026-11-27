@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/dialogs.css">
 <link rel="stylesheet" href="css/curl.css">
+<link rel="stylesheet" href="css/sidebar.css">
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -63,6 +64,15 @@
 <!-- Panel de control lateral (plegable con ☰). Cada sección: parámetros arriba y, debajo, los botones que los usan.
      Plegada, una sección muestra un resumen de su estado. -->
 <aside class="sidebar glass" id="sidebar" aria-label="Panel de control">
+  <!-- Franja decorativa: solo se ilumina y, al pulsarla, muestra información de mfs (sin otras acciones) -->
+  <button class="sidebar-rail" popovertarget="mfsInfo" aria-label="Información de mfs" title="Información de mfs">
+    <span class="rail-beams" aria-hidden="true"></span>
+    <span class="rail-barcode" aria-hidden="true"></span>
+    <span class="rail-digits" id="railDigits" aria-hidden="true"></span>
+    <span class="rail-title" aria-hidden="true">NEW BRANCH</span>
+    <span class="rail-band" aria-hidden="true">mfs · git</span>
+  </button>
+  <div class="sidebar-body">
   <section class="hsec" data-sec="repos">
     <button class="hsec-head" aria-expanded="true" aria-controls="sec-repos">Repos</button>
     <div class="hsec-body" id="sec-repos">
@@ -113,7 +123,21 @@
     <div class="hsec-summary"></div>
   </section>
   <footer class="sidebar-foot"><span class="badge" id="version" title="Versión de mfs (mfs version)"></span></footer>
+  </div>
 </aside>
+
+<!-- Información de mfs (solo lectura). API popover nativa: se cierra con Esc o al pulsar fuera. -->
+<div id="mfsInfo" popover class="mfs-info">
+  <div class="mfs-info-head">
+    <span class="mfs-info-title">m f s</span>
+    <span class="mfs-info-version" id="infoVersion"></span>
+  </div>
+  <div class="mfs-info-clock">
+    <span class="mfs-info-time" id="infoTime"></span>
+    <span class="muted" id="infoDate"></span>
+  </div>
+  <dl class="mfs-info-list" id="infoList"></dl>
+</div>
 
 <main>
   <section class="list" id="repos"></section>
