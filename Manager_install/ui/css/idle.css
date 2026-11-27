@@ -1,0 +1,43 @@
+/* Aviso de inactividad ("404 · HUMAN NOT FOUND"): letras grabadas con neón en los bordes al pasar el ratón.
+   Se cierra al hacer clic fuera de la tarjeta o con Esc (js/idle.js). */
+.idle-overlay {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
+  background: color-mix(in srgb, var(--accent) 8%, rgba(5, 8, 14, .55));
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: idle-fade .35s ease-out;
+}
+.idle-card {
+  max-width: 94vw; padding: 34px 56px 22px; text-align: center; outline: none;
+  color: var(--text); background-color: color-mix(in srgb, var(--accent) 6%, var(--glass-bg-strong));
+  border: 1px solid color-mix(in srgb, var(--accent) 65%, transparent); border-radius: calc(var(--radius) + 6px);
+  box-shadow: 0 0 0 1px var(--accent-soft), 0 0 40px var(--accent-soft), 0 24px 60px rgba(0, 0, 0, .5), inset 0 1px 0 var(--glass-highlight);
+  -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+  animation: idle-in .35s ease-out;
+}
+.idle-card > .engraved {
+  font-family: var(--font-display); font-weight: 800; text-transform: uppercase; font-style: italic;
+  -webkit-text-stroke: 1px transparent; transition: text-shadow .25s, -webkit-text-stroke-color .25s;
+  cursor: default; user-select: none;
+}
+.idle-l1 { font-size: 34px; line-height: 1; letter-spacing: .12em; }
+.idle-404 { font-size: 150px; line-height: .9; letter-spacing: .02em; margin: 8px 0 6px; }
+.idle-l2 { font-size: 34px; line-height: 1.1; letter-spacing: .06em; }
+.idle-l3 { font-size: 18px; line-height: 1.2; letter-spacing: .12em; margin-top: 2px; }
+/* Neón en los bordes de cada línea */
+.idle-card > .engraved:hover {
+  -webkit-text-stroke-color: var(--accent);
+  text-shadow: 0 0 3px var(--accent), 0 0 10px var(--accent), 0 0 24px var(--accent-soft), 0 0 40px var(--accent-soft);
+}
+.idle-hint { margin: 18px 0 0; font-size: 11px; color: var(--muted); }
+
+@keyframes idle-fade { from { opacity: 0; } }
+@keyframes idle-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+@media (max-width: 600px) {
+  .idle-card { padding: 26px 24px 18px; }
+  .idle-404 { font-size: 100px; }
+  .idle-l1, .idle-l2 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .idle-overlay, .idle-card { animation: none; }
+  .idle-card > .engraved { transition: none; }
+}

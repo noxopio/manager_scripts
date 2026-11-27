@@ -32,7 +32,7 @@ function exportHistory(redacted) {
   const now = new Date();
   const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   const text = formatHistory(redacted ? items.map(redactCurl) : items, {
-    version: ($('#version').textContent || '').replace(/^v/, ''),
+    version: $('#railDigits').textContent || '', // la versión que se ve bajo el código de barras de LAUNCH PAD
     date: `${day} ${pad(now.getHours())}:${pad(now.getMinutes())}`,
   });
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));

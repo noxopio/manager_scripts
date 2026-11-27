@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="css/dialogs.css">
 <link rel="stylesheet" href="css/curl.css">
 <link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/idle.css">
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -121,7 +122,25 @@
     </div>
     <div class="hsec-summary"></div>
   </section>
-  <footer class="sidebar-foot"><span class="badge" id="version" title="Versión de mfs (mfs version)"></span></footer>
+  <footer class="sidebar-foot">
+    <!-- Jornada (js/workday.js): la ilustración pasa de neón a apagada a medida que avanza la jornada.
+         Para usar otro dibujo, sustituye el <svg> por uno que use stroke="currentColor" (líneas) o fill="currentColor" (rellenos);
+         .workday-cursor es opcional (parpadea durante la jornada). -->
+    <div class="workday" id="workday">
+      <svg class="workday-art" viewBox="0 0 120 88" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="8" y="4" width="104" height="62" rx="7"/>
+        <path d="M20 18h30M56 18h14M20 28h18M44 28h34M26 38h26M58 38h12"/>
+        <path d="M20 49l6 4.5-6 4.5"/>
+        <rect class="workday-cursor" x="31" y="55" width="9" height="3" rx="1" fill="currentColor" stroke="none"/>
+        <path d="M52 66l-3 12h22l-3-12M40 84h40"/>
+      </svg>
+      <div class="workday-bar" id="workdayBar" role="progressbar" aria-label="Avance de la jornada" aria-valuemin="0" aria-valuemax="100">
+        <span class="workday-fill"></span>
+      </div>
+      <div class="workday-text" id="workdayText"></div>
+    </div>
+  </footer>
   </div>
 </aside>
 
@@ -135,13 +154,44 @@
     <span class="mfs-info-time" id="infoTime"></span>
     <span class="muted" id="infoDate"></span>
   </div>
-  <div class="mfs-info-section">APARIENCIA</div>
-  <div class="accent-picker" id="accentPicker" role="radiogroup" aria-label="Color de acento (se guarda en este navegador)">
-    <button class="accent-swatch" data-accent="violeta" role="radio" style="--sw:#b4a7f5"><span class="sw-dot"></span><span class="sw-name">Violeta</span></button>
-    <button class="accent-swatch" data-accent="verde" role="radio" style="--sw:#3dff9e"><span class="sw-dot"></span><span class="sw-name">Verde neón</span></button>
-    <button class="accent-swatch" data-accent="cian" role="radio" style="--sw:#4de1ff"><span class="sw-dot"></span><span class="sw-name">Cian</span></button>
-    <button class="accent-swatch" data-accent="rosa" role="radio" style="--sw:#ff7ad1"><span class="sw-dot"></span><span class="sw-name">Rosa</span></button>
-    <button class="accent-swatch" data-accent="rojo" role="radio" style="--sw:#ff5a4e"><span class="sw-dot"></span><span class="sw-name">Rojo</span></button>
+  <!-- Preferencias de este navegador: color de acento e inactividad -->
+  <div class="mfs-info-prefs">
+    <div>
+      <div class="mfs-info-section">APARIENCIA</div>
+      <div class="accent-picker" id="accentPicker" role="radiogroup" aria-label="Color de acento (se guarda en este navegador)">
+        <button class="accent-swatch" data-accent="violeta" role="radio" title="Violeta" aria-label="Violeta" style="--sw:#b4a7f5"><span class="sw-dot"></span></button>
+        <button class="accent-swatch" data-accent="verde" role="radio" title="Verde neón" aria-label="Verde neón" style="--sw:#3dff9e"><span class="sw-dot"></span></button>
+        <button class="accent-swatch" data-accent="cian" role="radio" title="Cian" aria-label="Cian" style="--sw:#4de1ff"><span class="sw-dot"></span></button>
+        <button class="accent-swatch" data-accent="rosa" role="radio" title="Rosa" aria-label="Rosa" style="--sw:#ff7ad1"><span class="sw-dot"></span></button>
+        <button class="accent-swatch" data-accent="rojo" role="radio" title="Rojo" aria-label="Rojo" style="--sw:#ff5a4e"><span class="sw-dot"></span></button>
+      </div>
+    </div>
+    <div>
+      <div class="mfs-info-section">INACTIVIDAD</div>
+      <label class="idle-pref" title="Tiempo sin mover el ratón ni teclear antes de mostrar el aviso. Se guarda en este navegador.">
+        <select id="idleMinutes" aria-label="Aviso de inactividad">
+          <option value="0">Desactivado</option>
+          <option value="5">5 min</option>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">60 min</option>
+          <option value="120">120 min</option>
+        </select>
+      </label>
+    </div>
+    <div class="mfs-info-wide">
+      <div class="mfs-info-section">JORNADA</div>
+      <div class="work-pref" title="La ilustración del pie del panel se apaga a medida que avanza la jornada. Se guarda en este navegador.">
+        <label>Inicio <input type="time" id="workStart" value="09:00"></label>
+        <label>Horas
+          <select id="workHours">
+            <option value="0">Desactivada</option>
+            <option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option>
+            <option value="8">8 h</option><option value="9">9 h</option><option value="10">10 h</option><option value="12">12 h</option>
+          </select>
+        </label>
+      </div>
+    </div>
   </div>
   <dl class="mfs-info-list" id="infoList"></dl>
   <div class="mfs-info-section">COMANDOS PARA GIT BASH</div>
@@ -347,6 +397,17 @@
     <button id="curlClose">Cerrar</button>
   </div>
 </dialog>
+
+<!-- Aviso de inactividad (js/idle.js): se cierra al hacer clic fuera de la tarjeta o con Esc -->
+<div class="idle-overlay" id="idleOverlay" hidden>
+  <div class="idle-card" id="idleCard" role="dialog" aria-modal="true" aria-label="Aviso de inactividad" tabindex="-1">
+    <div class="idle-l1 engraved">ERROR</div>
+    <div class="idle-404 engraved">404</div>
+    <div class="idle-l2 engraved">HUMAN NOT FOUND</div>
+    <div class="idle-l3 engraved">SORRY!</div>
+    <p class="idle-hint">Haz clic fuera o pulsa Esc para volver</p>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 </body>

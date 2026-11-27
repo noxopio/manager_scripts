@@ -9,6 +9,8 @@ import './curl.js';
 import { loadLists, rememberList } from './lists.js';
 import { connectStream } from './stream.js';
 import { pickQuip } from './quips.js';
+import './idle.js';
+import './workday.js';
 
 $('#browseBtn').prepend(icon('folder'));
 $('#refresh').append(icon('refresh'));
@@ -50,7 +52,6 @@ $('#brand').addEventListener('mouseenter', () => { $('#brand').title = brandTitl
     brandWorkDir = info.workDir;
     $('#brand').title = brandTitle();
     $('#list').title += '\nDirectorio de trabajo: ' + info.workDir;
-    $('#version').textContent = 'v' + info.version;
     renderMfsInfo(info);
     showTokenState(info.hasToken);
     // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada

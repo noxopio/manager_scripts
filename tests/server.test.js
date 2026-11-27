@@ -179,6 +179,34 @@ test('quips: la frase del 👾 depende del estado del panel', async () => {
   assert.equal(pickQuip([r({ status: 'running' })], at(0)), RANDOM_QUIPS[0]);
 });
 
+test('idle: aviso de inactividad tras N minutos', async () => {
+  const { isIdle } = await import('../Manager_install/ui/js/idle.js');
+  const t0 = 1_000_000;
+  assert.equal(isIdle(t0, t0 + 10 * 3600000, 0), false); // desactivado
+  assert.equal(isIdle(t0, t0 + 30 * 60000 - 1000, 30), false); // 29:59
+  assert.equal(isIdle(t0, t0 + 30 * 60000, 30), true); // 30:00
+  assert.equal(isIdle(t0, t0 + 3000, 0.05), true); // 0.05 min = 3 s
+  assert.equal(isIdle(t0, t0 + 2999, 0.05), false);
+});
+
+test('workday: estado y avance de la jornada', async () => {
+  const { workProgress, fmtRemaining } = await import('../Manager_install/ui/js/workday.js');
+  const at = (h, m = 0) => new Date(2026, 10, 27, h, m);
+  assert.equal(workProgress(at(13), '09:00', 0).state, 'off');
+  assert.equal(workProgress(at(8), '09:00', 8).state, 'before');
+  const mid = workProgress(at(13), '09:00', 8);
+  assert.equal(mid.state, 'during');
+  assert.equal(mid.progress, 0.5);
+  assert.equal(fmtRemaining(mid.remainingMs), '4 h 00 min');
+  assert.equal(workProgress(at(17, 30), '09:00', 8).state, 'after');
+  // Turno nocturno: 22:00 + 8 h, a las 02:00 del día siguiente va por la mitad
+  const night = workProgress(at(2), '22:00', 8);
+  assert.equal(night.state, 'during');
+  assert.equal(night.progress, 0.5);
+  assert.equal(workProgress(at(21), '22:00', 8).state, 'before');
+  assert.equal(fmtRemaining(45 * 60000), '45 min');
+});
+
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
   const out = parseCurlOutput([
     'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',

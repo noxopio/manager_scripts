@@ -67,7 +67,7 @@ function fillInfoList() {
 export function renderMfsInfo(info) {
   mfsInfo = info;
   $('#infoVersion').textContent = info.version ? 'v' + info.version : '';
-  $('#railDigits').textContent = String(info.version || '').replace(/\D/g, '');
+  $('#railDigits').textContent = String(info.version || ''); // versión bajo el código de barras, con sus puntos (8.11.0)
 }
 $('#mfsInfo').addEventListener('toggle', (ev) => {
   clearInterval(clockTimer);
