@@ -1,0 +1,60 @@
+/* Diálogos (vidrio sobre fondo desenfocado) */
+dialog {
+  width: min(900px, 95vw); padding: 16px; color: var(--text);
+  background: var(--glass-bg-strong); border: 1px solid var(--glass-border); border-radius: calc(var(--radius) + 4px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 var(--glass-highlight);
+  -webkit-backdrop-filter: blur(24px) saturate(150%); backdrop-filter: blur(24px) saturate(150%);
+}
+dialog::backdrop { background: rgba(5, 8, 14, .40); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+dialog[open] { animation: dlg-in .16s ease-out; }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
+
+.dlg-head { justify-content: space-between; margin-bottom: 10px; }
+.dlg-row { margin-bottom: 8px; }
+.dlg-foot { justify-content: flex-end; margin-top: 10px; }
+.dlg-note { margin: 0 0 8px; }
+
+dialog textarea { width: 100%; height: 55vh; font: 12px/1.45 ui-monospace, Consolas, monospace; padding: 10px; }
+
+/* Commit */
+#commitMsg { height: 90px; }
+#commitRepos { max-height: 30vh; min-height: 60px; margin-top: 8px; border-radius: var(--radius-sm); }
+
+/* Procesos / Ayuda */
+#psList { max-height: 50vh; min-height: 120px; border-radius: var(--radius-sm); }
+#helpText { max-height: 65vh; border-radius: var(--radius-sm); }
+.ps-row { display: flex; align-items: center; gap: 8px; white-space: pre; }
+.ps-row input:disabled + span { color: var(--muted); }
+
+/* Explorador de listas */
+.fslist { border: 1px solid var(--control-border); border-radius: var(--radius-sm); height: 45vh; overflow: auto; background: var(--field-bg); padding: 4px; }
+.fsitem { padding: 6px 10px; cursor: pointer; display: flex; gap: 8px; align-items: center; user-select: none; border-radius: 7px; }
+.fsitem > .icon { color: var(--muted); }
+.fsitem:hover { background: var(--control-bg-hover); }
+.fsitem.sel { background: var(--accent); color: var(--accent-text); }
+.fsitem.sel > .icon { color: inherit; }
+.fsitem .sub { color: var(--muted); font-size: 11px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.fsitem.sel .sub { color: inherit; opacity: .8; }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.chips button { border-radius: var(--radius-pill); }
+
+/* Confirmación / entrada */
+#askDialog { width: min(560px, 95vw); }
+#askMsg { margin: 8px 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px; line-height: 1.5; max-height: 50vh; overflow: auto; }
+#askInput { width: 100%; margin-top: 10px; }
+
+/* Nueva rama */
+#newBranchDialog { width: min(660px, 95vw); }
+.branch-field { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+.branch-field input[type=text] { width: 100%; }
+.branch-preview { margin: 12px 0 0; padding: 10px; max-height: 32vh; overflow: auto; border: 1px solid var(--control-border); border-radius: var(--radius-sm); background: var(--field-bg); color: var(--text); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+.branch-warning { color: var(--warn); }
+
+/* Base64 */
+#codecDialog { width: min(760px, 95vw); }
+.codec-dialog textarea { height: 18vh; min-height: 110px; max-height: 32vh; margin-top: 4px; resize: vertical; }
+.codec-field { display: block; margin-top: 10px; color: var(--muted); font-size: 13px; }
+.codec-actions { margin-top: 10px; }
+.codec-status { min-height: 1.5em; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.codec-status.error { color: var(--err); }

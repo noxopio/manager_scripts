@@ -1,0 +1,85 @@
+/* Variables de diseño (glass). Oscuro por defecto; claro con prefers-color-scheme: light. */
+:root {
+  /* Fondo de la página: color base + manchas de color (ver base.css) */
+  --bg: #0d1017;
+  --bg-blob-1: rgba(98, 84, 196, .40);   /* lavanda */
+  --bg-blob-2: rgba(40, 150, 150, .28);  /* teal */
+  --bg-blob-3: rgba(52, 82, 170, .34);   /* azul noche */
+  --bg-blob-4: rgba(170, 90, 160, .16);  /* rosa */
+
+  /* Vidrio */
+  --glass-bg: rgba(22, 26, 36, .55);
+  --glass-bg-strong: rgba(20, 24, 33, .82); /* menús y diálogos: más opacos para leer bien */
+  --glass-border: rgba(255, 255, 255, .09);
+  --glass-highlight: rgba(255, 255, 255, .06); /* brillo del borde superior */
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  --blur: 18px;
+
+  /* Controles */
+  --control-bg: rgba(255, 255, 255, .05);
+  --control-bg-hover: rgba(255, 255, 255, .10);
+  --control-border: rgba(255, 255, 255, .10);
+  --field-bg: rgba(0, 0, 0, .25);
+
+  /* Texto */
+  --text: #e6e9f2;
+  --muted: #9aa3b8;
+  --border: rgba(255, 255, 255, .10);
+
+  /* Acentos (pastel, como la barra de la captura) */
+  --accent: #b4a7f5;
+  --accent-strong: #9c8cf0;
+  --accent-text: #15121f;
+  --accent-soft: rgba(180, 167, 245, .16);
+  --ok: #7fd1c0;
+  --err: #f08aa0;
+  --run: #9fb4ff;
+  --warn: #f2c27b;
+
+  /* Log */
+  --log-bg: rgba(5, 8, 12, .55);
+  --log-text: #00ff39;
+
+  /* Formas */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-pill: 999px;
+  --gap: 12px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #eef0f7;
+    --bg-blob-1: rgba(160, 140, 255, .38);
+    --bg-blob-2: rgba(90, 200, 190, .30);
+    --bg-blob-3: rgba(120, 160, 255, .32);
+    --bg-blob-4: rgba(255, 160, 200, .22);
+
+    --glass-bg: rgba(255, 255, 255, .55);
+    --glass-bg-strong: rgba(255, 255, 255, .86);
+    --glass-border: rgba(255, 255, 255, .65);
+    --glass-highlight: rgba(255, 255, 255, .7);
+    --glass-shadow: 0 10px 30px rgba(40, 50, 90, .12);
+
+    --control-bg: rgba(255, 255, 255, .55);
+    --control-bg-hover: rgba(255, 255, 255, .85);
+    --control-border: rgba(30, 40, 80, .12);
+    --field-bg: rgba(255, 255, 255, .6);
+
+    --text: #1d2233;
+    --muted: #5f6880;
+    --border: rgba(30, 40, 80, .12);
+
+    --accent: #6b5bd6;
+    --accent-strong: #5a49c8;
+    --accent-text: #fff;
+    --accent-soft: rgba(107, 91, 214, .12);
+    --ok: #1d8a6e;
+    --err: #c8466a;
+    --run: #4a63d8;
+    --warn: #a86a00;
+
+    --log-bg: rgba(14, 18, 26, .88);
+    --log-text: #00e636;
+  }
+}

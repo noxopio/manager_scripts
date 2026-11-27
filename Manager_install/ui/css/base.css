@@ -1,0 +1,84 @@
+/* Reset, fondo, tipografía y controles básicos */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* que hidden gane a display:flex/inline-flex de las clases */
+
+html { background: var(--bg); }
+body {
+  margin: 0; height: 100vh; display: flex; flex-direction: column; gap: var(--gap); padding: var(--gap);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(60vmax 50vmax at 8% 10%, var(--bg-blob-1), transparent 60%),
+    radial-gradient(55vmax 45vmax at 95% 20%, var(--bg-blob-2), transparent 60%),
+    radial-gradient(60vmax 55vmax at 70% 100%, var(--bg-blob-3), transparent 60%),
+    radial-gradient(40vmax 35vmax at 20% 90%, var(--bg-blob-4), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Superficie de vidrio reutilizable */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .card, dialog, .group > summary { background: var(--glass-bg-strong) !important; }
+}
+
+a { color: var(--accent); }
+code { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border-radius: 6px; background: var(--control-bg); }
+.muted { color: var(--muted); font-size: 12px; }
+.hint { margin: 0; font-size: 11px; color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.m0 { margin: 0; }
+.grow { flex: 1; width: auto !important; min-width: 0; }
+.push-right { margin-right: auto; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-220 { width: 220px !important; }
+.w-200 { width: 200px !important; }
+
+/* Campos */
+label.field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+input[type=text], input[type=password], select, textarea {
+  font: inherit; padding: 6px 10px; color: var(--text);
+  background: var(--field-bg); border: 1px solid var(--control-border); border-radius: var(--radius-sm);
+  transition: border-color .15s, box-shadow .15s;
+}
+input[type=text], input[type=password] { width: 180px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input[type=checkbox] { accent-color: var(--accent); }
+select option { background: var(--bg); color: var(--text); }
+
+/* Botones */
+button {
+  font: inherit; padding: 6px 13px; color: var(--text); cursor: pointer;
+  background: var(--control-bg); border: 1px solid var(--control-border); border-radius: var(--radius-sm);
+  transition: background .15s, border-color .15s, box-shadow .15s, transform .05s;
+}
+button:hover { background: var(--control-bg-hover); border-color: var(--accent); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button:disabled:hover { background: var(--control-bg); border-color: var(--control-border); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
+button.primary:hover { background: var(--accent-strong); box-shadow: 0 0 16px var(--accent-soft); }
+button.primary:disabled:hover { background: var(--accent); }
+button.danger { color: var(--err); }
+button.danger:hover { border-color: var(--err); }
+button.danger-solid { background: var(--err); color: #fff; border-color: transparent; font-weight: 600; }
+button.sm { padding: 3px 9px; font-size: 12px; border-radius: 7px; }
+.icon-btn { display: inline-flex; align-items: center; gap: 6px; }
+.icon { width: 16px; height: 16px; flex: 0 0 16px; display: inline-block; vertical-align: middle; }
+.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+/* Scrollbars discretos */
+* { scrollbar-width: thin; scrollbar-color: rgba(127, 127, 160, .35) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(127, 127, 160, .35); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }

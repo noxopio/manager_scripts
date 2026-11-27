@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, normalizePath, isInside, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
+  parseList, normalizePath, isInside, staticFile, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -72,4 +72,16 @@ test('COMPILE_OK_RE / COMPILE_FAIL_RE', () => {
   assert.ok(COMPILE_FAIL_RE.test('Failed to compile.'));
   assert.ok(COMPILE_FAIL_RE.test('webpack 5.90.1 compiled with 2 errors in 900 ms'));
   assert.ok(!COMPILE_OK_RE.test('webpack 5.90.1 compiled with 2 errors in 900 ms'));
+});
+
+test('staticFile: solo /css/*.css y /js/*.js dentro de ui/', () => {
+  const root = path.resolve('ui-root');
+  assert.deepEqual(staticFile('/js/main.js', root), { file: path.join(root, 'js', 'main.js'), type: 'text/javascript; charset=utf-8' });
+  assert.equal(staticFile('/css/base.css', root).type, 'text/css; charset=utf-8');
+  assert.equal(staticFile('/js/../server.js', root), null);
+  assert.equal(staticFile('/js/%2e%2e/server.js', root), null);
+  assert.equal(staticFile('/js/main.css', root), null);
+  assert.equal(staticFile('/css/x.txt', root), null);
+  assert.equal(staticFile('/server.js', root), null);
+  assert.equal(staticFile('/js/sub/a.js', root), null);
 });

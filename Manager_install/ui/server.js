@@ -576,6 +576,18 @@ function readBody(req) {
   });
 }
 
+// Estáticos del panel: solo /css/*.css y /js/*.js dentro de esta carpeta. Devuelve { file, type } o null.
+const STATIC_TYPES = { '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+function staticFile(pathname, root = __dirname) {
+  const m = /^\/(css|js)\/[\w.-]+$/.exec(pathname);
+  if (!m) return null;
+  const ext = path.extname(pathname).toLowerCase();
+  if ((m[1] === 'css' && ext !== '.css') || (m[1] === 'js' && ext !== '.js')) return null;
+  const file = path.join(root, pathname);
+  if (!isInside(path.join(root, m[1]), file)) return null;
+  return { file, type: STATIC_TYPES[ext] };
+}
+
 // Protección básica: solo peticiones al propio host local (evita DNS rebinding)
 // y las que modifican estado deben llevar la cabecera X-MFS (bloquea CSRF de otras webs).
 function allowed(req) {
@@ -593,6 +605,12 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) {
       return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8'), 'text/html; charset=utf-8');
+    }
+
+    if (req.method === 'GET' && (p.startsWith('/css/') || p.startsWith('/js/'))) {
+      const st = staticFile(p);
+      if (!st || !fs.existsSync(st.file)) return send(res, 404, { error: 'No encontrado' });
+      return send(res, 200, fs.readFileSync(st.file, 'utf8'), st.type);
     }
 
     if (req.method === 'GET' && p === '/api/info') {
@@ -813,4 +831,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, normalizePath, isInside, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };
+module.exports = { parseList, normalizePath, isInside, staticFile, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };

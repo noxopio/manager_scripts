@@ -3,187 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
 <title>mfs · Panel de Repos</title>
 <link rel="icon" href="data:,">
-<style>
-  :root {
-    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2430; --muted: #687385; --border: #dde1e7;
-    --accent: #2f5bd3; --accent-text: #fff; --ok: #1f8a4c; --err: #c23b3b; --run: #2f5bd3; --warn: #a66a00;
-    --log-bg: #11161f; --log-text: #00ff39;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151b; --panel: #1a1f27; --text: #e4e8ee; --muted: #93a0b2; --border: #2b323d;
-      --accent: #5b82f0; --ok: #46b97a; --err: #e46a6a; --run: #6d93f5; --warn: #e0a640;
-      --log-bg: #0b0e13; --log-text: #00ff39;
-    }
-  }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; } /* que hidden gane a display:flex/inline-flex de las clases */
-  body { margin: 0; height: 100vh; display: flex; flex-direction: column; font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  header { position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  h1 { font-size: 16px; margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
-  .brand-icon { display: inline-block; font-size: 18px; }
-  #brand:hover .brand-icon { animation: hop .45s ease; }
-  @keyframes hop { 40% { transform: translateY(-4px) rotate(-8deg); } }
-  .muted { color: var(--muted); font-size: 12px; }
-  label.field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
-  input[type=text], select { font: inherit; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-  input[type=text] { width: 180px; }
-  button { font: inherit; padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  .icon-btn { display: inline-flex; align-items: center; gap: 6px; }
-  .icon { width: 16px; height: 16px; flex: 0 0 16px; display: inline-block; vertical-align: middle; }
-  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-  button.danger { color: var(--err); }
-  button:disabled { opacity: .5; cursor: default; }
-  button.sm { padding: 2px 8px; font-size: 12px; }
-  .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
-  .row-end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-  .toplist { display: flex; align-items: center; gap: 8px; flex: 1 1 420px; min-width: 0; }
-  .toplist input { flex: 1; min-width: 180px; max-width: 560px; width: auto; }
-  #sidebarToggle { padding: 5px 8px; }
-  #sidebarToggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
-  /* Layout: panel de control lateral (plegable) + repos y log */
-  .layout { display: flex; flex: 1; min-height: 0; }
-  .sidebar { flex: none; width: 290px; overflow: auto; background: var(--panel); border-right: 1px solid var(--border); padding: 4px 14px 10px; display: flex; flex-direction: column; }
-  .sidebar-foot { margin-top: auto; padding-top: 10px; } /* versión abajo a la izquierda: solo visible con el panel abierto */
-  .btn-grid.cols3 { grid-template-columns: repeat(3, 1fr); }
-  .hint { margin: 0; font-size: 11px; color: var(--muted); }
-  body.sidebar-closed .sidebar { display: none; }
-  .layout > main { flex: 1; min-width: 0; }
-  /* Secciones plegables del panel: cabecera a todo el ancho, debajo controles o resumen */
-  .hsec { padding: 6px 0 12px; border-bottom: 1px solid var(--border); }
-  .hsec:last-of-type { border-bottom: 0; }
-  .hsec-head { width: 100%; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0; border: 0; background: none; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .hsec-head::before { content: ""; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
-  .hsec-head[aria-expanded="true"]::before { transform: rotate(90deg); }
-  .hsec-head:hover, .hsec-head:focus-visible { color: var(--accent); }
-  .hsec-body { display: flex; flex-direction: column; gap: 8px; }
-  .hsec-body input[type=text], .hsec-body input[type=password] { width: 100%; font: inherit; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-  .sfield { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
-  .hsec-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .btn-grid > button { justify-content: center; }
-  .btn-grid > .span2 { grid-column: 1 / -1; }
-  .hsec-summary { font-size: 12px; color: var(--muted); padding-left: 12px; cursor: pointer; overflow-wrap: anywhere; }
-  .hsec-summary:hover { color: var(--text); }
-  .hsec[data-open="false"] .hsec-body, .hsec[data-open="true"] .hsec-summary { display: none; }
-  .menu > summary { list-style: none; cursor: pointer; user-select: none; }
-  .menu > summary::-webkit-details-marker { display: none; }
-  .menu { position: relative; }
-  .menu > summary { padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
-  .menu > summary:hover, .menu[open] > summary { border-color: var(--accent); }
-  .menu-list { position: absolute; left: 0; top: calc(100% + 4px); z-index: 3; min-width: 170px; display: flex; flex-direction: column; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
-  .menu-list button { border: 0; text-align: left; background: transparent; }
-  .menu-list button:hover, .menu-list button:focus-visible { background: var(--bg); }
-  main { display: grid; grid-template-columns: minmax(380px, 1fr) minmax(360px, 1.2fr); gap: 12px; padding: 12px 16px; flex: 1; min-height: 0; }
-  @media (max-width: 900px) {
-    body { height: auto; } main { grid-template-columns: 1fr; }
-    .layout { flex-direction: column; }
-    .sidebar { width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
-  }
-  .list { overflow: auto; display: flex; flex-direction: column; gap: 10px; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-left-width: 3px; border-left-color: var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
-  .card.status-running { border-left-color: var(--run); }
-  .card.status-stopping { border-left-color: var(--warn); }
-  .card.status-ok { border-left-color: var(--ok); }
-  .card.status-error { border-left-color: var(--err); }
-  .card.status-stopped { border-left-color: var(--muted); }
-  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .group { display: flex; flex-direction: column; }
-  .group > summary { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; list-style: none; user-select: none; }
-  .group > summary::-webkit-details-marker { display: none; }
-  .group > summary::before { content: ""; width: 0; height: 0; border-left: 5px solid var(--muted); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
-  .group[open] > summary::before { transform: rotate(90deg); }
-  .group > summary:hover { border-color: var(--accent); }
-  .group .group-name { font-weight: 600; }
-  .group .group-actions { margin-left: auto; display: flex; gap: 4px; }
-  .group > .card { margin: 8px 0 0 12px; } /* margen, no gap: dentro de <details> el gap no se aplica a las cards */
-  .card .top { display: flex; align-items: center; gap: 8px; }
-  .card .name { font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--muted); align-items: center; }
-  .card .actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
-  .badge { font-size: 11px; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
-  .badge.branch-badge, .badge.lock-badge { display: inline-flex; align-items: center; gap: 4px; }
-  .badge .icon { width: 12px; height: 12px; flex-basis: 12px; }
-  .badge.warn { color: var(--warn); border-color: currentColor; }
-  .status { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-  .status.running { color: var(--run); } .status.running .dot { background: var(--run); animation: pulse 1.2s infinite; }
-  .status.ok { color: var(--ok); } .status.ok .dot { background: var(--ok); }
-  .status.error { color: var(--err); } .status.error .dot { background: var(--err); }
-  .status.stopped .dot { background: var(--muted); }
-  .status.stopping { color: var(--warn); } .status.stopping .dot { background: var(--warn); animation: pulse .6s infinite; }
-  .status.compiling { color: var(--warn); } .status.compiling .dot { background: var(--warn); animation: pulse 1.2s infinite; }
-  .status.ready { color: var(--ok); } .status.ready .dot { background: var(--ok); }
-  .status.failed { color: var(--err); } .status.failed .dot { background: var(--err); }
-  @keyframes pulse { 50% { opacity: .3; } }
-  a { color: var(--accent); }
-  .logpane { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; min-height: 300px; overflow: hidden; }
-  .logpane .head { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
-  .logpane .head strong { flex: 1; }
-  pre.log { position: relative; margin: 0; flex: 1; overflow: auto; padding: 10px; background: var(--log-bg); color: var(--log-text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
-  #log:empty::after { content: "MFS\A>_"; position: absolute; right: 22px; bottom: 18px; color: var(--log-text); opacity: .055; text-align: right; white-space: normal; font: 700 58px/.9 ui-monospace, Consolas, monospace; pointer-events: none; user-select: none; }
-  .empty { padding: 24px; text-align: center; color: var(--muted); }
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 130px; }
-  .empty-state > .icon { width: 28px; height: 28px; flex-basis: 28px; opacity: .8; }
-  .empty-state strong { color: var(--text); font-size: 13px; font-weight: 600; }
-  .empty-detail { max-width: 420px; font-size: 12px; }
-  dialog { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); width: min(900px, 95vw); padding: 14px; }
-  dialog textarea { width: 100%; height: 55vh; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
-  .fslist { border: 1px solid var(--border); border-radius: 6px; height: 45vh; overflow: auto; background: var(--bg); }
-  .fsitem { padding: 5px 10px; cursor: pointer; display: flex; gap: 8px; align-items: center; user-select: none; }
-  .fsitem > .icon { color: var(--muted); }
-  .fsitem:hover { background: var(--panel); }
-  .fsitem.sel { background: var(--accent); color: var(--accent-text); }
-  .fsitem.sel > .icon { color: inherit; }
-  .fsitem .sub { color: var(--muted); font-size: 11px; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
-  .fsitem.sel .sub { color: inherit; opacity: .8; }
-  .chips { display: flex; gap: 4px; flex-wrap: wrap; }
-  #askDialog { width: min(560px, 95vw); }
-  #newBranchDialog { width: min(660px, 95vw); }
-  #codecDialog { width: min(760px, 95vw); }
-  .codec-dialog textarea { width: 100%; height: 18vh; min-height: 110px; max-height: 32vh; margin-top: 4px; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; resize: vertical; }
-  .codec-field { display: block; margin-top: 10px; color: var(--muted); font-size: 13px; }
-  .codec-actions { margin-top: 10px; }
-  .codec-status { min-height: 1.5em; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
-  .codec-status.error { color: var(--err); }
-  .branch-field { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; color: var(--muted); font-size: 13px; }
-  .branch-field[hidden], .branch-warning[hidden] { display: none; }
-  .branch-preview { margin: 12px 0 0; padding: 10px; max-height: 32vh; overflow: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: 12px/1.5 ui-monospace, Consolas, monospace; white-space: pre-wrap; }
-  .branch-warning { color: var(--warn); }
-  #askMsg { margin: 8px 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px; line-height: 1.5; max-height: 50vh; overflow: auto; }
-  button.danger-solid { background: var(--err); color: #fff; border-color: var(--err); }
-  .toast { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
-  .toast.show { opacity: .95; }
-  .batch-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 10px; border: 1px solid var(--border); border-left: 3px solid var(--ok); border-radius: 6px; font-size: 13px; }
-  .batch-bar.has-errors { border-left-color: var(--err); }
-  .batch-bar[hidden] { display: none; }
-  .batch-bar .err { color: var(--err); } .batch-bar .ok { color: var(--ok); }
-  .ps-row { display: flex; align-items: center; gap: 8px; white-space: pre; }
-  .ps-row input:disabled + span { color: var(--muted); }
-  .matrix-status { margin-left: auto; display: flex; align-items: center; gap: 7px; max-width: min(300px, 100%); padding: 2px 4px; color: var(--muted); font-size: 12px; }
-  .matrix-status[hidden] { display: none; }
-  .matrix-rain { height: 25px; overflow: hidden; display: flex; gap: 3px; color: var(--log-text); font: 9px/9px ui-monospace, Consolas, monospace; }
-  .matrix-column { display: block; animation: matrix-fall 1.15s ease-in-out infinite alternate; }
-  .matrix-column:nth-child(2) { animation-delay: .25s; }
-  .matrix-column:nth-child(3) { animation-delay: .5s; }
-  @keyframes matrix-fall { from { transform: translateY(-4px); opacity: .45; } to { transform: translateY(4px); opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column, #brand:hover .brand-icon { animation: none; }
-  }
-</style>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/dialogs.css">
+<script type="module" src="js/main.js"></script>
 </head>
 <body>
-<header>
+<header class="topbar glass">
   <div class="row">
     <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Repos · Git)" aria-label="Panel de control"></button>
     <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span> mfs</h1>
     <details class="menu" id="toolsMenu">
       <summary title="Procesos Node, Base64 y Ayuda">Herramientas ▾</summary>
-      <div class="menu-list" role="menu">
+      <div class="menu-list glass" role="menu">
         <button id="psBtn" role="menuitem" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
         <button id="codecBtn" role="menuitem" title="Codificar o decodificar texto en Base64">Base64</button>
         <button id="helpBtn" role="menuitem" title="Equivalente a mfs help">Ayuda</button>
@@ -223,7 +60,7 @@
 <div class="layout">
 <!-- Panel de control lateral (plegable con ☰). Cada sección: parámetros arriba y, debajo, los botones que los usan.
      Plegada, una sección muestra un resumen de su estado. -->
-<aside class="sidebar" id="sidebar" aria-label="Panel de control">
+<aside class="sidebar glass" id="sidebar" aria-label="Panel de control">
   <section class="hsec" data-sec="repos">
     <button class="hsec-head" aria-expanded="true" aria-controls="sec-repos">Repos</button>
     <div class="hsec-body" id="sec-repos">
@@ -278,7 +115,7 @@
 
 <main>
   <section class="list" id="repos"></section>
-  <section class="logpane">
+  <section class="logpane glass">
     <div class="head">
       <strong id="logTitle">Selecciona un repo para ver su log</strong>
       <label class="field" title="Desplaza el log automáticamente a la última línea. Desmárcalo para leer líneas anteriores sin que la vista se mueva."><input type="checkbox" id="follow" checked> Seguir</label>
@@ -290,43 +127,43 @@
 </div>
 
 <dialog id="editor">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+  <div class="row dlg-head">
     <strong id="editorTitle">listRep.txt</strong>
     <span class="muted">Una URL por línea · <code>#EXCLUDE</code> excluye · <code>#NEW</code> abre ventana externa · comando opcional tras la URL · <code>## Grupo</code> agrupa los repos de debajo</span>
   </div>
-  <div class="row" style="margin-bottom:8px">
+  <div class="row dlg-row">
     <span class="muted">Importar (como <code>mfs list</code>):</span>
-    <input type="text" id="ghOrg" placeholder="organización o usuario GitHub" style="width:220px">
-    <input type="password" id="ghToken" placeholder="token (vacío = Token git del panel)" style="width:200px;font:inherit;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+    <input type="text" id="ghOrg" placeholder="organización o usuario GitHub" class="w-220">
+    <input type="password" id="ghToken" placeholder="token (vacío = Token git del panel)" class="w-200">
     <button id="ghImport">Importar de GitHub</button>
     <button id="tplBtn">Plantilla de ejemplo</button>
   </div>
   <textarea id="editorText" spellcheck="false"></textarea>
-  <div class="row" style="justify-content:flex-end;margin-top:8px">
+  <div class="row dlg-foot">
     <button id="editorCancel">Cancelar</button>
     <button class="primary" id="editorSave">Guardar</button>
   </div>
 </dialog>
 
 <dialog id="commitDialog">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+  <div class="row dlg-head">
     <strong>Commit (git add . + git commit)</strong>
     <span class="muted">Solo se hace commit en los repos con cambios</span>
   </div>
-  <textarea id="commitMsg" spellcheck="false" placeholder="Mensaje del commit (ej: fix: corrige validación del formulario)" style="height:90px"></textarea>
-  <pre class="log" id="commitRepos" style="max-height:30vh;min-height:60px;margin-top:8px"></pre>
-  <div class="row" style="justify-content:flex-end;margin-top:8px">
+  <textarea id="commitMsg" spellcheck="false" placeholder="Mensaje del commit (ej: fix: corrige validación del formulario)"></textarea>
+  <pre class="log" id="commitRepos"></pre>
+  <div class="row dlg-foot">
     <button id="commitCancel">Cancelar</button>
     <button class="primary" id="commitOk">Hacer commit</button>
   </div>
 </dialog>
 
 <dialog id="newBranchDialog">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+  <div class="row dlg-head">
     <strong>Crear nueva rama</strong>
     <span class="muted">Nombre y rama base son independientes</span>
   </div>
-  <p class="muted" style="margin:0">Vacío en “Rama base” usa la rama actual de cada repo. Una base específica se aplica a todos los repos seleccionados.</p>
+  <p class="muted m0">Vacío en “Rama base” usa la rama actual de cada repo. Una base específica se aplica a todos los repos seleccionados.</p>
   <label class="branch-field" for="newBranchName">Nombre de la rama nueva
     <input type="text" id="newBranchName" placeholder="feature/nombre-de-la-rama" maxlength="200" autocomplete="off" spellcheck="false">
   </label>
@@ -341,42 +178,42 @@
   </label>
   <pre class="branch-preview" id="newBranchPreview"></pre>
   <p class="branch-warning" id="newBranchDirtyWarning" hidden></p>
-  <div class="row" style="justify-content:flex-end;margin-top:10px">
+  <div class="row dlg-foot">
     <button id="newBranchCancel">Cancelar</button>
     <button class="primary" id="newBranchCreate" disabled>Crear rama</button>
   </div>
 </dialog>
 
 <dialog id="psDialog">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+  <div class="row dlg-head">
     <strong>Procesos de Node en ejecución</strong>
     <span class="row"><button id="psRefresh">↻</button><button id="psSelectAll" title="Marca todos excepto los paneles mfs">Marcar todos</button><button class="danger" id="killNode">Matar seleccionados</button><button id="psClose">Cerrar</button></span>
   </div>
-  <p class="muted" style="margin:0 0 8px">Marca los procesos a terminar. Los paneles mfs no se pueden marcar. Para parar solo lo lanzado desde este panel usa <strong>Detener todo</strong>.</p>
-  <div class="log" id="psList" style="max-height:50vh;min-height:120px;overflow:auto"></div>
+  <p class="muted dlg-note">Marca los procesos a terminar. Los paneles mfs no se pueden marcar. Para parar solo lo lanzado desde este panel usa <strong>Detener todo</strong>.</p>
+  <div class="log" id="psList"></div>
 </dialog>
 
 <dialog id="fsDialog">
-  <div class="row" style="margin-bottom:8px">
-    <strong style="margin-right:auto">Buscar lista .txt</strong>
+  <div class="row dlg-row">
+    <strong class="push-right">Buscar lista .txt</strong>
     <span class="chips" id="fsDrives"></span>
     <button class="sm" id="fsHome">Carpeta de trabajo</button>
   </div>
-  <div class="row" style="margin-bottom:8px">
+  <div class="row dlg-row">
     <button id="fsUp" title="Carpeta padre">↑</button>
-    <input type="text" id="fsPath" style="flex:1;width:auto" spellcheck="false">
+    <input type="text" id="fsPath" class="grow" spellcheck="false">
     <button id="fsGo">Ir</button>
   </div>
-  <div class="row" style="margin-bottom:8px">
-    <input type="text" id="fsQuery" placeholder="nombre del archivo (ej: listRep)" style="flex:1;width:auto">
+  <div class="row dlg-row">
+    <input type="text" id="fsQuery" placeholder="nombre del archivo (ej: listRep)" class="grow">
     <button id="fsSearch">Buscar en subcarpetas</button>
   </div>
-  <div class="row" style="margin-bottom:8px" id="fsRecentRow">
+  <div class="row dlg-row" id="fsRecentRow">
     <span class="muted">Recientes:</span><span class="chips" id="fsRecent"></span>
   </div>
   <div class="fslist" id="fsList"></div>
-  <div class="row" style="margin-top:8px">
-    <span class="muted" id="fsSelected" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Ningún archivo seleccionado</span>
+  <div class="row dlg-foot">
+    <span class="muted ellipsis grow" id="fsSelected">Ningún archivo seleccionado</span>
     <button id="fsNew">Nuevo .txt aquí</button>
     <button id="fsCancel">Cancelar</button>
     <button id="fsUse" disabled>Usar como lista</button>
@@ -385,18 +222,18 @@
 </dialog>
 
 <dialog id="helpDialog">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+  <div class="row dlg-head">
     <strong>Ayuda · README</strong><button id="helpClose">Cerrar</button>
   </div>
-  <pre class="log" id="helpText" style="max-height:65vh"></pre>
+  <pre class="log" id="helpText"></pre>
 </dialog>
 
 <dialog id="codecDialog" class="codec-dialog">
-  <div class="row" style="justify-content:space-between;margin-bottom:6px">
+  <div class="row dlg-head">
     <strong>Herramienta Base64</strong>
     <span class="muted">Convierte texto UTF‑8</span>
   </div>
-  <p class="muted" style="margin:0">Base64 codifica datos; no los cifra ni protege.</p>
+  <p class="muted m0">Base64 codifica datos; no los cifra ni protege.</p>
   <label class="codec-field" for="codecInput">Entrada
     <textarea id="codecInput" spellcheck="false" placeholder="Pega texto o una cadena Base64"></textarea>
   </label>
@@ -409,7 +246,7 @@
     <textarea id="codecOutput" readonly spellcheck="false" placeholder="El resultado aparecerá aquí"></textarea>
   </label>
   <p class="codec-status" id="codecStatus" role="status" aria-live="polite"></p>
-  <div class="row" style="justify-content:flex-end;margin-top:8px">
+  <div class="row dlg-foot">
     <button id="codecClear">Limpiar</button>
     <button id="codecSwap" disabled>Pasar resultado a entrada</button>
     <button id="codecCopy" disabled>Copiar resultado</button>
@@ -420,940 +257,13 @@
 <dialog id="askDialog">
   <strong id="askTitle"></strong>
   <pre id="askMsg"></pre>
-  <input type="text" id="askInput" style="width:100%;margin-top:10px" spellcheck="false">
-  <div class="row" style="justify-content:flex-end;margin-top:12px">
+  <input type="text" id="askInput" spellcheck="false">
+  <div class="row dlg-foot">
     <button id="askCancel">Cancelar</button>
     <button class="primary" id="askOk">Aceptar</button>
   </div>
 </dialog>
 
 <div class="toast" id="toast"></div>
-
-<script>
-const $ = (s) => document.querySelector(s);
-const state = { repos: [], selected: null, checked: new Set(), first: true, collapsed: new Set() };
-const STATUS_LABEL = { idle: 'inactivo', running: 'en curso', ok: 'terminado', error: 'error', stopped: 'detenido', stopping: 'deteniendo…' };
-// Estado de compilación de un Run (el puerto se anuncia antes de que termine de compilar)
-const COMPILE_LABEL = { compiling: 'compilando…', ready: 'listo', failed: 'error de compilación' };
-const ACTION_LABEL = { pull: 'pull', install: 'install', updeps: 'updeps', run: 'run', status: 'status', commit: 'commit', push: 'push', checkout: 'checkout', newbranch: 'nueva rama' };
-
-// Diálogo propio en lugar de confirm()/prompt() nativos.
-// Confirmación: resuelve true/false. Con input: resuelve el texto, o null si se cancela.
-function ask({ title, message = '', okText = 'Aceptar', danger = false, input = false, value = '' }) {
-  return new Promise((resolve) => {
-    const d = $('#askDialog'), ok = $('#askOk'), inp = $('#askInput');
-    $('#askTitle').textContent = title;
-    $('#askMsg').textContent = message;
-    $('#askMsg').style.display = message ? '' : 'none';
-    inp.style.display = input ? '' : 'none';
-    inp.value = value;
-    ok.textContent = okText;
-    ok.className = danger ? 'danger-solid' : 'primary';
-    let done = false;
-    const finish = (accepted) => {
-      if (done) return;
-      done = true;
-      d.close();
-      resolve(input ? (accepted ? inp.value.trim() : null) : accepted);
-    };
-    ok.onclick = () => finish(true);
-    $('#askCancel').onclick = () => finish(false);
-    d.oncancel = (ev) => { ev.preventDefault(); finish(false); }; // Esc
-    inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } };
-    d.showModal();
-    if (input) { inp.focus(); inp.select(); } else ok.focus();
-  });
-}
-
-function toast(msg) {
-  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
-}
-
-async function api(path, opts = {}) {
-  const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'X-MFS': '1', ...(opts.headers || {}) } });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
-  return data;
-}
-const listName = () => $('#list').value || 'listRep.txt';
-const runCmdKey = () => 'mfs.runCmd.' + listName();
-function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; updateSummaries(); }
-// Grupos plegados (## Nombre en el .txt), por lista y en este navegador
-const collapsedKey = () => 'mfs.collapsed.' + listName();
-function loadCollapsed() {
-  try { state.collapsed = new Set(JSON.parse(localStorage.getItem(collapsedKey()) || '[]')); } catch { state.collapsed = new Set(); }
-}
-function saveCollapsed() { localStorage.setItem(collapsedKey(), JSON.stringify([...state.collapsed])); }
-function saveRunCmd() {
-  const value = $('#runCmd').value.trim();
-  if (value) localStorage.setItem(runCmdKey(), value); else localStorage.removeItem(runCmdKey());
-}
-
-async function loadLists() {
-  const { files } = await api('/api/lists');
-  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]');
-  const dl = $('#lists'); dl.innerHTML = '';
-  for (const f of [...new Set([...files, ...recent])]) { const o = document.createElement('option'); o.value = f; dl.appendChild(o); }
-}
-function rememberList(name) {
-  localStorage.setItem('mfs.list', name);
-  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]').filter((x) => x !== name);
-  localStorage.setItem('mfs.recentLists', JSON.stringify([name, ...recent].slice(0, 10)));
-}
-
-async function loadRepos() {
-  try {
-    const data = await api('/api/repos?list=' + encodeURIComponent(listName()));
-    state.repos = data.repos;
-    if (state.first || $('#selectAll').checked) state.checked = new Set(data.repos.map((r) => r.name));
-    state.first = false;
-    render(data.missing ? `No existe ${data.file}. Usa "Editar lista" para crearlo.` : null);
-  } catch (e) { toast(e.message); }
-}
-
-let refreshTimer;
-const scheduleRefresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(loadRepos, 600); };
-
-function el(tag, props = {}, ...children) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(props)) {
-    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
-  }
-  for (const c of children) if (c != null) e.append(c);
-  return e;
-}
-
-const ICONS = {
-  folder: { paths: ['M3.5 7A1.5 1.5 0 0 1 5 5.5h4l2 2h8A1.5 1.5 0 0 1 20.5 9v8A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17z'] },
-  refresh: { paths: ['M20 7v5h-5', 'M19 12a7 7 0 0 0-12.1-4.9L5 9', 'M4 17v-5h5', 'M5 12a7 7 0 0 0 12.1 4.9L19 15'] },
-  branch: { paths: ['M7 4v10a4 4 0 0 0 4 4h2a4 4 0 0 0 4-4V9', 'M7 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M17 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M13 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'] },
-  lock: { paths: ['M5 10h14v10H5z', 'M8 10V7a4 4 0 1 1 8 0v3'], circles: [[12, 15, 1]] },
-  repo: { paths: ['M5 4.5h14A1.5 1.5 0 0 1 20.5 6v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5z', 'M8 4.5v15', 'M11 8h6', 'M11 12h6'] },
-  menu: { paths: ['M4 7h16', 'M4 12h16', 'M4 17h16'] },
-  collapse: { paths: ['m7 4 5 5 5-5', 'm7 20 5-5 5 5'] },
-  expand: { paths: ['m7 9 5-5 5 5', 'm7 15 5 5 5-5'] },
-  play: { paths: ['M8 5.5v13l10.5-6.5z'] },
-  stop: { paths: ['M7 7h10v10H7z'] },
-  search: { paths: ['M10.8 18.3a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z', 'm16.2 16.2 4.3 4.3'] },
-  file: { paths: ['M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z', 'M14 3.5V8h4', 'M9 12h6', 'M9 15.5h6'] },
-};
-function icon(name) {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('class', 'icon');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.7');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  const shape = ICONS[name];
-  for (const d of (shape?.paths || [])) {
-    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    p.setAttribute('d', d); svg.append(p);
-  }
-  for (const [cx, cy, r] of (shape?.circles || [])) {
-    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r); svg.append(c);
-  }
-  return svg;
-}
-function emptyState(iconName, title, detail = '') {
-  return el('div', { class: 'empty empty-state' }, icon(iconName), el('strong', {}, title), detail ? el('span', { class: 'empty-detail' }, detail) : null);
-}
-$('#browseBtn').prepend(icon('folder'));
-$('#refresh').append(icon('refresh'));
-$('#sidebarToggle').append(icon('menu'));
-$('header [data-action=run]').prepend(icon('play'));
-$('#stopAll').prepend(icon('stop'));
-setGroupsBtn(false);
-
-function statusNode(r) {
-  if (r.status === 'running' && r.action === 'run' && r.compile) {
-    return el('span', { class: 'status ' + r.compile }, el('span', { class: 'dot' }), `${COMPILE_LABEL[r.compile]} · run`);
-  }
-  const label = STATUS_LABEL[r.status] + (r.action && r.status !== 'idle' ? ` · ${ACTION_LABEL[r.action]}` : '');
-  return el('span', { class: 'status ' + r.status }, el('span', { class: 'dot' }), label);
-}
-
-// Enlace al puerto solo cuando ya compiló; mientras tanto, un aviso sin enlace.
-function portNode(r) {
-  if (!r.port || r.status !== 'running') return null;
-  if (r.compile === 'compiling') {
-    return el('span', { class: 'badge warn', title: 'webpack anunció el puerto pero aún está compilando; espera a que diga "listo"' }, `compilando… :${r.port}`);
-  }
-  return el('a', { href: 'http://localhost:' + r.port, target: '_blank', onclick: (ev) => ev.stopPropagation() }, 'localhost:' + r.port);
-}
-
-function render(emptyMsg) {
-  const box = $('#repos'); box.innerHTML = '';
-  updateActivityIndicator();
-  if (!state.repos.length) {
-    box.append(emptyState('repo', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
-    $('#toggleGroups').hidden = true;
-    return;
-  }
-  const hasGroups = state.repos.some((r) => r.group);
-  $('#toggleGroups').hidden = !hasGroups;
-  if (!hasGroups) { for (const r of state.repos) box.append(repoCard(r)); return; }
-  // Agrupa respetando el orden del .txt; los repos antes de la primera cabecera van a "Sin grupo"
-  const groups = new Map();
-  for (const r of state.repos) {
-    const g = r.group || 'Sin grupo';
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(r);
-  }
-  for (const [g, repos] of groups) box.append(groupNode(g, repos));
-  const allCollapsed = [...groups.keys()].every((g) => state.collapsed.has(g));
-  setGroupsBtn(allCollapsed);
-}
-
-// Icono de expandir/contraer grupos (con tooltip), junto a Recargar estado
-function setGroupsBtn(allCollapsed) {
-  const b = $('#toggleGroups');
-  const label = allCollapsed ? 'Expandir todos los grupos' : 'Contraer todos los grupos';
-  b.replaceChildren(icon(allCollapsed ? 'expand' : 'collapse'));
-  b.title = label + ' (## Nombre en el .txt)';
-  b.setAttribute('aria-label', label);
-}
-
-const isBusy = (r) => r.status === 'running' || r.status === 'stopping';
-
-function groupNode(g, repos) {
-  const names = repos.map((r) => r.name);
-  const nChecked = names.filter((n) => state.checked.has(n)).length;
-  const cb = el('input', { type: 'checkbox', title: 'Seleccionar los repos de este grupo', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
-    for (const n of names) ev.target.checked ? state.checked.add(n) : state.checked.delete(n);
-    $('#selectAll').checked = state.checked.size === state.repos.length;
-    render();
-  } });
-  cb.checked = nChecked === names.length;
-  cb.indeterminate = nChecked > 0 && nChecked < names.length;
-  const busy = repos.filter(isBusy).length;
-  const changes = repos.filter((r) => r.cloned && r.changes).length;
-  const locked = repos.filter((r) => r.locked).length;
-  const act = (a) => (ev) => { ev.preventDefault(); ev.stopPropagation(); runAction(a, names); };
-  const summary = el('summary', {},
-    cb,
-    el('span', { class: 'group-name' }, g),
-    el('span', { class: 'muted' }, `${repos.length} repo${repos.length > 1 ? 's' : ''}`),
-    busy ? el('span', { class: 'badge', title: 'Acciones en curso en este grupo' }, `${busy} en ejecución`) : null,
-    changes ? el('span', { class: 'badge warn', title: 'Repos con cambios sin commit' }, `● ${changes} con cambios`) : null,
-    locked ? el('span', { class: 'badge warn lock-badge', title: 'Repos con .git/index.lock' }, icon('lock'), `${locked} bloqueado${locked > 1 ? 's' : ''}`) : null,
-    el('span', { class: 'group-actions' },
-      el('button', { class: 'sm', title: 'Pull de todos los repos del grupo', onclick: act('pull') }, 'Pull'),
-      el('button', { class: 'sm', title: 'Run de todos los repos del grupo', onclick: act('run') }, 'Run'),
-      el('button', { class: 'sm danger', title: 'Detiene los repos en ejecución del grupo', onclick: (ev) => {
-        ev.preventDefault(); ev.stopPropagation();
-        repos.filter((r) => r.status === 'running').forEach((r) => stop(r.name));
-      }, ...(repos.some((r) => r.status === 'running') ? {} : { disabled: '' }) }, 'Detener'),
-    ),
-  );
-  const d = el('details', { class: 'group' }, summary, ...repos.map(repoCard));
-  d.open = !state.collapsed.has(g);
-  d.addEventListener('toggle', () => {
-    if (d.open === !state.collapsed.has(g)) return; // toggle provocado al pintar, no por el usuario
-    d.open ? state.collapsed.delete(g) : state.collapsed.add(g);
-    saveCollapsed();
-    const all = [...document.querySelectorAll('#repos > details.group')].every((x) => !x.open);
-    setGroupsBtn(all);
-  });
-  return d;
-}
-
-function repoCard(r) {
-  {
-    const running = r.status === 'running' || r.status === 'stopping'; // ocupado: sin acciones nuevas
-    const cb = el('input', { type: 'checkbox', onclick: (ev) => ev.stopPropagation(), onchange: (ev) => {
-      ev.target.checked ? state.checked.add(r.name) : state.checked.delete(r.name);
-      $('#selectAll').checked = state.checked.size === state.repos.length;
-      updateSummaries();
-      if (state.repos.some((x) => x.group)) render(); // actualiza el checkbox del grupo (marcado / indeterminado)
-    } });
-    cb.checked = state.checked.has(r.name);
-    const act = (a) => (ev) => { ev.stopPropagation(); runAction(a, [r.name]); };
-    const meta = el('div', { class: 'meta' },
-      r.cloned ? el('span', { class: 'badge branch-badge', title: r.upstream ? 'upstream: ' + r.upstream : 'sin upstream (push lo publicará con -u)' }, icon('branch'), r.branch || '?') : el('span', { class: 'badge warn' }, 'sin clonar'),
-      r.locked ? el('span', { class: 'badge warn lock-badge', title: 'Existe .git/index.lock: git cree que otra operación está en curso y rechaza commit/pull/checkout. Suele quedar al cortar un git a mitad (cerrar el panel, Detener o mfs kill durante un pull o commit).' }, icon('lock'), `bloqueado${r.lockAge >= 60 ? ` (${Math.round(r.lockAge / 60)} min)` : ''}`) : null,
-      r.locked ? el('button', { class: 'sm', title: 'Quitar el bloqueo .git/index.lock', onclick: (ev) => { ev.stopPropagation(); unlockRepo(r); }, ...(running ? { disabled: '' } : {}) }, 'Desbloquear') : null,
-      r.cloned && r.changes ? el('span', { class: 'badge warn', title: 'Archivos modificados o nuevos sin commit' }, `● ${r.changes} cambio${r.changes > 1 ? 's' : ''}`) : null,
-      r.cloned && r.ahead ? el('span', { class: 'badge', title: 'Commits pendientes de push' }, `↑${r.ahead}`) : null,
-      r.cloned && r.behind ? el('span', { class: 'badge', title: 'Commits en el remoto por traer (pull)' }, `↓${r.behind}`) : null,
-      r.cloned ? (r.hasDeps ? el('span', { class: 'badge' }, 'node_modules ✓') : el('span', { class: 'badge warn' }, 'sin dependencias')) : null,
-      r.isNew ? el('span', { class: 'badge' }, '#NEW ventana externa') : null,
-      el('span', { title: r.url }, r.command),
-      portNode(r),
-    );
-    const card = el('div', { class: `card status-${r.status}` + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
-      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), statusNode(r)),
-      meta,
-      el('div', { class: 'actions' },
-        el('button', { class: 'sm', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
-        el('button', { class: 'sm', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
-        el('button', { class: 'sm', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
-        el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(r.status === 'running' ? {} : { disabled: '' }) }, 'Detener'),
-        el('span', { class: 'sep' }),
-        el('button', { class: 'sm', title: 'git status', onclick: act('status'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Cambios'),
-        el('button', { class: 'sm', title: 'git add . + commit', onclick: (ev) => { ev.stopPropagation(); openCommit([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Commit'),
-        el('button', { class: 'sm', title: 'git push', onclick: (ev) => { ev.stopPropagation(); gitPush([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Push'),
-      ),
-    );
-    return card;
-  }
-}
-
-function updateActivityIndicator() {
-  updateSummaries(); // selección y repos en ejecución cambian en cada render
-  const count = state.repos.filter((r) => r.status === 'running' || r.status === 'stopping').length;
-  const indicator = $('#matrixStatus');
-  indicator.hidden = count === 0;
-  if (count) $('#matrixText').textContent = count === 1 ? '1 comando en ejecución' : `${count} comandos en ejecución`;
-}
-
-async function selectRepo(name) {
-  state.selected = name;
-  $('#logTitle').textContent = name;
-  render();
-  const { lines, fromDisk, savedAt } = await api('/api/log?repo=' + encodeURIComponent(name));
-  const head = fromDisk && lines.length ? `── log guardado de la última ejecución (${new Date(savedAt).toLocaleString()}) ──\n` : '';
-  $('#log').textContent = head + lines.join('\n') + (lines.length ? '\n' : '');
-  if ($('#follow').checked) $('#log').scrollTop = $('#log').scrollHeight;
-}
-
-async function runAction(action, names, extra = {}) {
-  if (!names.length) return toast('No hay repos seleccionados');
-  const branch = $('#branch').value.trim();
-  const installCmd = $('#installCmd').value.trim();
-  const runCmd = action === 'run' ? $('#runCmd').value.trim() : '';
-  localStorage.setItem('mfs.branch', branch);
-  localStorage.setItem('mfs.installCmd', installCmd);
-  if (action === 'run') saveRunCmd();
-  try {
-    const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ action, repos: names, branch, installCmd, runCmd, list: listName(), ...extra }) });
-    toast(`${ACTION_LABEL[action] || action}: ${r.started.length} iniciado(s)` + (r.busy.length ? `, ${r.busy.length} ocupado(s)` : ''));
-    if (r.started[0] && (!state.selected || !r.started.includes(state.selected))) selectRepo(r.started[0]);
-  } catch (e) { toast(e.message); }
-}
-
-// ── Git ──
-const selectedNames = () => state.repos.map((r) => r.name).filter((n) => state.checked.has(n));
-const repoBy = (n) => state.repos.find((r) => r.name === n);
-let commitTargets = [];
-
-function openCommit(names) {
-  const repos = names.map(repoBy).filter((r) => r && r.cloned);
-  if (!repos.length) return toast('No hay repos clonados seleccionados');
-  const withChanges = repos.filter((r) => r.changes > 0);
-  const without = repos.filter((r) => !r.changes);
-  commitTargets = withChanges.map((r) => r.name);
-  $('#commitRepos').textContent =
-    (withChanges.length ? 'Se hará commit en:\n' + withChanges.map((r) => `  ${r.name}  (${r.branch})  ● ${r.changes} cambio(s)`).join('\n') : 'Ningún repo seleccionado tiene cambios.') +
-    (without.length ? '\n\nSin cambios (se omiten):\n' + without.map((r) => `  ${r.name}`).join('\n') : '');
-  $('#commitOk').disabled = !withChanges.length;
-  $('#commitMsg').value = localStorage.getItem('mfs.commitMsg') || '';
-  $('#commitDialog').showModal();
-  $('#commitMsg').focus();
-  if (withChanges.length) showCommitDiff(withChanges, without);
-}
-
-// Detalle de lo que entra en el commit: archivos (status --porcelain) y resumen de líneas (diff --stat)
-async function showCommitDiff(withChanges, without) {
-  const token = (showCommitDiff.token = {});
-  const parts = await Promise.all(withChanges.map(async (r) => {
-    try {
-      const d = await api(`/api/diffstat?repo=${encodeURIComponent(r.name)}&list=${encodeURIComponent(listName())}`);
-      const files = d.files.length ? d.files.map((f) => '    ' + f).join('\n') : '    (sin cambios)';
-      const stat = d.stat ? '\n' + d.stat.split('\n').map((l) => '    ' + l.trim()).slice(-1).join('\n') : '';
-      return `■ ${r.name}  (${r.branch})\n${files}${stat}`;
-    } catch (e) { return `■ ${r.name}  (${r.branch})\n    ${e.message}`; }
-  }));
-  if (showCommitDiff.token !== token || !$('#commitDialog').open) return; // el diálogo se cerró o se reabrió
-  $('#commitRepos').textContent = 'Se hará commit en:\n\n' + parts.join('\n\n') +
-    (without.length ? '\n\nSin cambios (se omiten):\n' + without.map((r) => `  ${r.name}`).join('\n') : '');
-}
-$('#commitCancel').onclick = () => $('#commitDialog').close();
-$('#commitOk').onclick = () => {
-  const msg = $('#commitMsg').value.trim();
-  if (!msg) return toast('Escribe el mensaje del commit');
-  localStorage.setItem('mfs.commitMsg', msg);
-  $('#commitDialog').close();
-  runAction('commit', commitTargets, { commitMsg: msg });
-};
-
-async function unlockRepo(r) {
-  const ok = await ask({
-    title: 'Quitar bloqueo de git',
-    message: `${r.name} tiene un archivo .git/index.lock${r.lockAge != null ? ` (de hace ${r.lockAge >= 60 ? Math.round(r.lockAge / 60) + ' min' : r.lockAge + ' s'})` : ''}.\n\n` +
-      'Git lo crea mientras trabaja y lo borra al terminar. Si quedó abandonado (un git cortado a mitad), git rechaza commit, pull y checkout en este repo.\n\n' +
-      'Quítalo solo si no hay ningún git trabajando en este repo (por ejemplo, un commit abierto en VS Code).',
-    okText: 'Quitar bloqueo',
-  });
-  if (!ok) return;
-  try {
-    const res = await api('/api/unlock', { method: 'POST', body: JSON.stringify({ repo: r.name, list: listName() }) });
-    toast(res.unlocked ? `Bloqueo quitado en ${r.name}` : res.message);
-    loadRepos();
-  } catch (e) { toast(e.message); }
-}
-
-async function gitPush(names) {
-  const repos = names.map(repoBy).filter((r) => r && r.cloned);
-  const pending = repos.filter((r) => r.ahead > 0 || !r.upstream);
-  if (!pending.length) return toast('Nada que subir en los repos seleccionados');
-  const lines = pending.map((r) => `• ${r.name} (${r.branch}) ${r.upstream ? '↑' + r.ahead : 'nueva rama → push -u'}`).join('\n');
-  const ok = await ask({ title: 'Push (sin --force)', message: `Se hará git push en:\n\n${lines}`, okText: 'Hacer push' });
-  if (ok) runAction('push', pending.map((r) => r.name));
-}
-
-const BRANCH_NAME_RE = /^[\w./-]{1,200}$/;
-let newBranchTargets = [];
-
-function updateNewBranchPreview() {
-  const name = $('#newBranchName').value.trim();
-  const useSpecificBase = $('#newBranchBaseMode').value === 'specific';
-  const base = $('#newBranchBase').value.trim();
-  const repos = newBranchTargets.map(repoBy).filter(Boolean);
-  const repoLines = repos.map((r) => `  • ${r.name} — actual: ${r.branch || 'desconocida'}${r.changes ? ` · ${r.changes} cambio(s) sin commit` : ''}`);
-  const dirty = repos.filter((r) => r.changes > 0).map((r) => r.name);
-  const baseText = useSpecificBase ? (base || '(indica la rama base)') : 'rama actual de cada repo';
-  $('#newBranchPreview').textContent =
-    `Nueva rama: ${name || '(escribe un nombre)'}\nCrear desde: ${baseText}\n\nRepos seleccionados:\n${repoLines.join('\n')}`;
-  $('#newBranchDirtyWarning').hidden = !dirty.length;
-  $('#newBranchDirtyWarning').textContent = dirty.length ? `Atención: hay cambios sin commit en ${dirty.join(', ')}.` : '';
-  $('#newBranchCreate').disabled = !BRANCH_NAME_RE.test(name) || (useSpecificBase && !BRANCH_NAME_RE.test(base)) || !repos.length;
-}
-
-function openNewBranchDialog() {
-  const names = selectedNames();
-  if (!names.length) return toast('No hay repos seleccionados');
-  newBranchTargets = names;
-  $('#newBranchName').value = '';
-  $('#newBranchBaseMode').value = 'current';
-  $('#newBranchBase').value = '';
-  $('#newBranchBaseWrap').hidden = true;
-  updateNewBranchPreview();
-  $('#newBranchDialog').showModal();
-  $('#newBranchName').focus();
-}
-
-function submitNewBranch() {
-  const branch = $('#newBranchName').value.trim();
-  const useSpecificBase = $('#newBranchBaseMode').value === 'specific';
-  const baseBranch = useSpecificBase ? $('#newBranchBase').value.trim() : '';
-  if (!BRANCH_NAME_RE.test(branch)) return toast('Escribe un nombre de rama válido');
-  if (useSpecificBase && !BRANCH_NAME_RE.test(baseBranch)) return toast('Escribe una rama base válida');
-  const names = [...newBranchTargets];
-  $('#newBranchDialog').close();
-  runAction('newbranch', names, { branch, baseBranch });
-}
-
-$('#newBranchName').addEventListener('input', updateNewBranchPreview);
-$('#newBranchBase').addEventListener('input', updateNewBranchPreview);
-$('#newBranchBaseMode').onchange = () => {
-  const specific = $('#newBranchBaseMode').value === 'specific';
-  $('#newBranchBaseWrap').hidden = !specific;
-  if (specific && !$('#newBranchBase').value.trim()) $('#newBranchBase').value = $('#branch').value.trim();
-  updateNewBranchPreview();
-};
-$('#newBranchName').onkeydown = $('#newBranchBase').onkeydown = (ev) => {
-  if (ev.key === 'Enter') { ev.preventDefault(); submitNewBranch(); }
-};
-$('#newBranchCancel').onclick = () => $('#newBranchDialog').close();
-$('#newBranchCreate').onclick = submitNewBranch;
-
-async function gitBranchAction(action) {
-  const branch = $('#branch').value.trim();
-  if (!branch) return toast('Escribe la rama en el campo "Rama (pull/checkout)"');
-  const names = selectedNames();
-  if (!names.length) return toast('No hay repos seleccionados');
-  const dirty = names.map(repoBy).filter((r) => r && r.changes > 0).map((r) => r.name);
-  const msg = `Cambiar ${names.length} repo(s) a la rama "${branch}".`;
-  const warn = dirty.length ? `\n\nAtención: tienen cambios sin commit: ${dirty.join(', ')}` : '';
-  const ok = await ask({
-    title: 'Checkout',
-    message: msg + warn,
-    okText: 'Cambiar de rama',
-  });
-  if (ok) runAction(action, names);
-}
-
-document.querySelectorAll('#sidebar [data-git]').forEach((b) => b.addEventListener('click', () => {
-  const a = b.dataset.git;
-  if (a === 'status') runAction('status', selectedNames());
-  else if (a === 'commit') openCommit(selectedNames());
-  else if (a === 'push') gitPush(selectedNames());
-  else if (a === 'newbranch') openNewBranchDialog();
-  else gitBranchAction(a);
-}));
-
-// ── Token git (solo en memoria del servidor) ──
-function showTokenState(has) {
-  $('#tokenState').textContent = has ? 'token cargado ✓' : 'sin token';
-  $('#tokenState').classList.toggle('warn', !has);
-  state.hasToken = has;
-  updateSummaries();
-}
-
-// ── Secciones plegables de la cabecera ──
-// Todas abiertas por defecto; las que el usuario pliega se recuerdan en este navegador.
-// Plegada, cada sección muestra un resumen de su estado para no perder de vista rama, lista, etc.
-const sections = [...document.querySelectorAll('.hsec')];
-// Se filtran nombres de secciones que ya no existen (p. ej. la antigua "config")
-state.sectionsClosed = new Set(JSON.parse(localStorage.getItem('mfs.sectionsClosed') || '[]').filter((s) => sections.some((x) => x.dataset.sec === s)));
-function applySections() {
-  for (const s of sections) {
-    const open = !state.sectionsClosed.has(s.dataset.sec);
-    s.dataset.open = open;
-    s.querySelector('.hsec-head').setAttribute('aria-expanded', open);
-  }
-}
-function setSection(sec, open) {
-  open ? state.sectionsClosed.delete(sec) : state.sectionsClosed.add(sec);
-  localStorage.setItem('mfs.sectionsClosed', JSON.stringify([...state.sectionsClosed]));
-  applySections();
-}
-for (const s of sections) {
-  s.querySelector('.hsec-head').onclick = () => setSection(s.dataset.sec, state.sectionsClosed.has(s.dataset.sec));
-  s.querySelector('.hsec-summary').onclick = () => setSection(s.dataset.sec, true); // pulsar el resumen también despliega
-}
-// ☰ muestra u oculta el panel de control lateral; se recuerda en este navegador
-function applySidebar(open) {
-  document.body.classList.toggle('sidebar-closed', !open);
-  $('#sidebarToggle').setAttribute('aria-expanded', open);
-}
-$('#sidebarToggle').onclick = () => {
-  const open = document.body.classList.contains('sidebar-closed');
-  localStorage.setItem('mfs.sidebarOpen', open ? '1' : '0');
-  applySidebar(open);
-};
-applySidebar(localStorage.getItem('mfs.sidebarOpen') !== '0');
-function updateSummaries() {
-  const v = (id) => $(id).value.trim();
-  const sum = (sec, text, title = text) => { const n = document.querySelector(`.hsec[data-sec="${sec}"] .hsec-summary`); n.textContent = text; n.title = title; };
-  const branch = 'rama: ' + (v('#branch') || 'main');
-  const token = 'token: ' + (state.hasToken ? 'cargado' : 'no');
-  const running = state.repos.filter((r) => r.status === 'running' || r.status === 'stopping').length;
-  const changes = state.repos.filter((r) => r.cloned && r.changes).length;
-  const checked = state.repos.filter((r) => state.checked.has(r.name)).length;
-  sum('repos', [`${checked} seleccionados de ${state.repos.length}`, running ? `${running} en ejecución` : null, branch,
-    'install: ' + (v('#installCmd') || 'npm install'), 'run: ' + (v('#runCmd') || 'del .txt')].filter(Boolean).join(' · '));
-  sum('git', changes ? `${changes} con cambios` : 'sin cambios');
-  sum('token', token);
-}
-['#branch', '#installCmd', '#runCmd', '#list'].forEach((id) => $(id).addEventListener('input', updateSummaries));
-// Rama, Install con y Run con se guardan al escribir (antes solo al lanzar una acción)
-$('#branch').addEventListener('input', () => localStorage.setItem('mfs.branch', $('#branch').value.trim()));
-$('#installCmd').addEventListener('input', () => localStorage.setItem('mfs.installCmd', $('#installCmd').value.trim()));
-$('#runCmd').addEventListener('input', saveRunCmd);
-applySections();
-
-// Menú Herramientas: se cierra al elegir una opción, al pulsar fuera o con Esc
-const toolsMenu = $('#toolsMenu');
-toolsMenu.querySelector('.menu-list').addEventListener('click', () => { toolsMenu.open = false; });
-document.addEventListener('click', (ev) => { if (toolsMenu.open && !toolsMenu.contains(ev.target)) toolsMenu.open = false; });
-document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && toolsMenu.open) { toolsMenu.open = false; toolsMenu.querySelector('summary').focus(); } });
-$('#tokenApply').onclick = async () => {
-  const token = $('#gitToken').value.trim();
-  if (!token) return toast('Escribe el token');
-  try { const r = await api('/api/token', { method: 'POST', body: JSON.stringify({ token }) }); $('#gitToken').value = ''; showTokenState(r.hasToken); toast('Token cargado en memoria del panel'); }
-  catch (e) { toast(e.message); }
-};
-$('#gitToken').onkeydown = (ev) => { if (ev.key === 'Enter') $('#tokenApply').onclick(); };
-$('#tokenClear').onclick = async () => {
-  try { const r = await api('/api/token', { method: 'POST', body: JSON.stringify({ token: '' }) }); showTokenState(r.hasToken); toast('Token eliminado'); }
-  catch (e) { toast(e.message); }
-};
-
-async function stop(name) {
-  try { await api('/api/stop', { method: 'POST', body: JSON.stringify(name ? { repo: name } : { all: true }) }); }
-  catch (e) { toast(e.message); }
-}
-
-function connectStream() {
-  const es = new EventSource('/api/stream');
-  es.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    const r = state.repos.find((x) => x.name === msg.repo);
-    if (msg.type === 'log') {
-      if (msg.repo === state.selected) {
-        const log = $('#log'); log.append(msg.line + '\n');
-        if ($('#follow').checked) log.scrollTop = log.scrollHeight;
-      }
-    } else if (msg.type === 'status' && r) {
-      r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile;
-      render();
-      if (msg.status !== 'running' && msg.status !== 'stopping') scheduleRefresh();
-    } else if (msg.type === 'batch') {
-      showBatch(msg);
-    }
-  };
-}
-
-// Resumen de una acción lanzada sobre varios repos
-let lastBatch = null;
-function showBatch(b) {
-  lastBatch = b;
-  const label = ACTION_LABEL[b.action] || b.action;
-  const text = $('#batchText'); text.textContent = '';
-  text.append(el('strong', {}, `${label}: `), el('span', { class: 'ok' }, `${b.ok.length} ok`));
-  if (b.error.length) text.append(' · ', el('span', { class: 'err' }, `${b.error.length} con error`), ` (${b.error.join(', ')})`);
-  $('#batchBar').classList.toggle('has-errors', b.error.length > 0);
-  $('#batchRetry').hidden = !b.error.length;
-  $('#batchBar').hidden = false;
-}
-$('#batchRetry').onclick = () => {
-  if (!lastBatch) return;
-  $('#batchBar').hidden = true;
-  runAction(lastBatch.action, lastBatch.error, lastBatch.extra || {});
-};
-$('#batchClose').onclick = () => { $('#batchBar').hidden = true; };
-
-// Al volver a la pestaña se recarga el estado git (como mucho cada 10 s)
-let lastFocusRefresh = 0;
-function refreshOnReturn() {
-  if (document.visibilityState !== 'visible' || Date.now() - lastFocusRefresh < 10000) return;
-  lastFocusRefresh = Date.now();
-  scheduleRefresh();
-}
-document.addEventListener('visibilitychange', refreshOnReturn);
-window.addEventListener('focus', refreshOnReturn);
-
-// ── Eventos ──
-// Botones de acción global: en el panel lateral (Pull/Install/Updeps) y en la barra superior (Run)
-document.querySelectorAll('#sidebar [data-action], header [data-action]').forEach((b) =>
-  b.addEventListener('click', () => runAction(b.dataset.action, state.repos.map((r) => r.name).filter((n) => state.checked.has(n))))
-);
-$('#stopAll').onclick = () => stop(null);
-$('#refresh').onclick = loadRepos;
-$('#selectAll').onchange = (ev) => { state.checked = ev.target.checked ? new Set(state.repos.map((r) => r.name)) : new Set(); render(); };
-$('#list').onchange = () => { rememberList(listName()); loadLists(); loadCollapsed(); state.first = true; loadRepos(); };
-$('#toggleGroups').onclick = () => {
-  const names = [...new Set(state.repos.map((r) => r.group || 'Sin grupo'))];
-  const allCollapsed = names.every((g) => state.collapsed.has(g));
-  state.collapsed = allCollapsed ? new Set() : new Set(names);
-  saveCollapsed(); render();
-};
-$('#list').addEventListener('change', loadRunCmd);
-$('#runCmd').addEventListener('change', saveRunCmd);
-
-// Equivalente a "mfs ps" / "mfs kill"
-async function loadPs() {
-  try {
-    const { processes } = await api('/api/ps');
-    const list = $('#psList'); list.textContent = '';
-    if (!processes.length) { list.textContent = 'No hay procesos de Node en ejecución.'; return; }
-    for (const p of processes) {
-      const protectedProc = p.self || !!p.panel;
-      const tag = p.self ? '← este panel'
-        : p.panel ? `← panel mfs :${p.panel.port} (${p.panel.workDir})`
-        : (p.command || '');
-      const box = el('input', { type: 'checkbox', value: String(p.pid), ...(protectedProc ? { disabled: '' } : {}) });
-      list.append(el('label', { class: 'ps-row' }, box, el('span', {}, `PID ${String(p.pid).padEnd(8)} ${String(p.memory || '').padEnd(12)} ${tag}`)));
-    }
-  } catch (e) { $('#psList').textContent = e.message; }
-}
-const psBoxes = () => [...$('#psList').querySelectorAll('input[type=checkbox]:not(:disabled)')];
-$('#psBtn').onclick = () => { $('#psDialog').showModal(); loadPs(); };
-$('#psRefresh').onclick = loadPs;
-$('#psClose').onclick = () => $('#psDialog').close();
-$('#psSelectAll').onclick = () => {
-  const boxes = psBoxes(); const all = boxes.every((b) => b.checked);
-  boxes.forEach((b) => { b.checked = !all; });
-};
-$('#killNode').onclick = async () => {
-  const pids = psBoxes().filter((b) => b.checked).map((b) => Number(b.value));
-  if (!pids.length) return toast('Marca al menos un proceso');
-  const ok = await ask({
-    title: 'Matar procesos Node',
-    message: `Se terminarán ${pids.length} proceso(s) de Node:\n\n${pids.map((p) => '  PID ' + p).join('\n')}\n\nPueden incluir procesos iniciados fuera del panel.`,
-    okText: 'Matar seleccionados',
-    danger: true,
-  });
-  if (!ok) return;
-  try {
-    const r = await api('/api/kill-node', { method: 'POST', body: JSON.stringify({ pids }) });
-    toast(`${r.killed} proceso(s) de Node terminados`); setTimeout(loadPs, 800);
-  } catch (e) { toast(e.message); }
-};
-
-// Equivalente a "mfs help"
-$('#helpBtn').onclick = async () => {
-  $('#helpDialog').showModal();
-  try { $('#helpText').textContent = (await api('/api/readme')).content; } catch (e) { $('#helpText').textContent = e.message; }
-};
-$('#helpClose').onclick = () => $('#helpDialog').close();
-
-// Codificador Base64 UTF-8, sin ejecutar comandos de shell ni enviar los datos al servidor.
-let codecOutputAvailable = false;
-function encodeBase64Utf8(value) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-}
-function decodeBase64Utf8(value) {
-  const compact = value.replace(/\s/g, '');
-  if (!compact) return '';
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) throw new Error('La entrada no tiene el formato Base64 estándar.');
-  const firstPadding = compact.indexOf('=');
-  const dataLength = firstPadding < 0 ? compact.length : firstPadding;
-  const padding = compact.length - dataLength;
-  if (dataLength % 4 === 1 || (padding && (compact.length % 4 !== 0 || (padding === 1 && dataLength % 4 !== 3) || (padding === 2 && dataLength % 4 !== 2)))) {
-    throw new Error('La longitud o el relleno de la cadena Base64 no son válidos.');
-  }
-  const padded = compact + '='.repeat((4 - compact.length % 4) % 4);
-  let binary;
-  try { binary = atob(padded); }
-  catch { throw new Error('No se pudo decodificar la cadena Base64.'); }
-  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
-  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
-  catch { throw new Error('El contenido decodificado no es texto UTF-8 válido.'); }
-}
-function codecStatus(message, error = false) {
-  const status = $('#codecStatus');
-  status.textContent = message;
-  status.classList.toggle('error', error);
-}
-function transformCodec(mode) {
-  try {
-    const input = $('#codecInput').value;
-    let result;
-    if (mode === 'encode') {
-      result = encodeBase64Utf8(input);
-      codecStatus('Texto codificado en Base64.');
-    } else {
-      const decoded = decodeBase64Utf8(input);
-      if (mode === 'decodeJson') {
-        try { result = JSON.stringify(JSON.parse(decoded), null, 2); }
-        catch (e) { throw new Error(`El contenido decodificado no es JSON válido: ${e.message}`); }
-        codecStatus('JSON decodificado y formateado.');
-      } else {
-        result = decoded;
-        codecStatus('Texto decodificado.');
-      }
-    }
-    $('#codecOutput').value = result;
-    codecOutputAvailable = true;
-    $('#codecCopy').disabled = $('#codecSwap').disabled = false;
-  } catch (e) {
-    $('#codecOutput').value = '';
-    codecOutputAvailable = false;
-    $('#codecCopy').disabled = $('#codecSwap').disabled = true;
-    codecStatus(e.message, true);
-  }
-}
-document.querySelectorAll('[data-codec-action]').forEach((button) => {
-  button.addEventListener('click', () => transformCodec(button.dataset.codecAction));
-});
-$('#codecBtn').onclick = () => { $('#codecDialog').showModal(); $('#codecInput').focus(); };
-$('#codecClose').onclick = () => $('#codecDialog').close();
-$('#codecInput').oninput = () => {
-  $('#codecOutput').value = '';
-  codecOutputAvailable = false;
-  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
-  codecStatus('');
-};
-$('#codecClear').onclick = () => {
-  $('#codecInput').value = $('#codecOutput').value = '';
-  codecOutputAvailable = false;
-  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
-  codecStatus('');
-  $('#codecInput').focus();
-};
-$('#codecSwap').onclick = () => {
-  if (!codecOutputAvailable) return;
-  $('#codecInput').value = $('#codecOutput').value;
-  $('#codecOutput').value = '';
-  codecOutputAvailable = false;
-  $('#codecCopy').disabled = $('#codecSwap').disabled = true;
-  codecStatus('Resultado pasado a la entrada.');
-  $('#codecInput').focus();
-};
-$('#codecCopy').onclick = async () => {
-  if (!codecOutputAvailable) return;
-  try {
-    await navigator.clipboard.writeText($('#codecOutput').value);
-    codecStatus('Resultado copiado.');
-  } catch {
-    const output = $('#codecOutput'); output.focus(); output.select();
-    const copied = document.execCommand('copy');
-    codecStatus(copied ? 'Resultado copiado.' : 'No se pudo copiar; selecciona y copia el resultado manualmente.', !copied);
-  }
-};
-
-// Equivalente a "mfs list": importar de GitHub o plantilla
-$('#ghImport').onclick = async () => {
-  const org = $('#ghOrg').value.trim();
-  if (!org) return toast('Escribe la organización o usuario de GitHub');
-  if ($('#editorText').value.trim() && !(await ask({
-    title: 'Reemplazar contenido del editor',
-    message: 'La lista importada de GitHub reemplazará el contenido actual del editor.\nNo se guarda en disco hasta pulsar Guardar.',
-    okText: 'Importar',
-  }))) return;
-  $('#ghImport').disabled = true; $('#ghImport').textContent = 'Importando...';
-  try {
-    const { urls } = await api('/api/github', { method: 'POST', body: JSON.stringify({ org, token: $('#ghToken').value }) });
-    $('#editorText').value = urls.join('\n') + '\n';
-    toast(`${urls.length} repos importados. Revisa y pulsa Guardar.`);
-  } catch (e) { toast(e.message); }
-  finally { $('#ghImport').disabled = false; $('#ghImport').textContent = 'Importar de GitHub'; }
-};
-$('#tplBtn').onclick = async () => {
-  if ($('#editorText').value.trim() && !(await ask({
-    title: 'Reemplazar contenido del editor',
-    message: 'La plantilla de ejemplo reemplazará el contenido actual del editor.\nNo se guarda en disco hasta pulsar Guardar.',
-    okText: 'Usar plantilla',
-  }))) return;
-  $('#editorText').value = [
-    '# EXCLUDE ## Archivo de ejemplo para listar repositorios.',
-    '# EXCLUDE # Cada línea debe contener la URL de un repositorio.',
-    "# EXCLUDE # Para excluir repositorios específicos, agrega '#EXCLUDE'.",
-    "# EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.",
-    '# EXCLUDE # Se puede indicar el comando a ejecutar al final de la URL.',
-    "# EXCLUDE # '## Nombre' agrupa en el panel los repos de debajo (la terminal lo ignora).",
-    '## Grupo A',
-    'https://github.com/usuario/repo1.git #NEW',
-    'https://github.com/usuario/repo2.git',
-    '## Grupo B',
-    'https://github.com/usuario/repo3.git #EXCLUDE',
-    'https://github.com/usuario/repo4.git npm run dev #NEW',
-    'https://github.com/usuario/repo5.git npm run dev',
-    '',
-  ].join('\n');
-};
-$('#clearLog').onclick = () => { $('#log').textContent = ''; };
-// ── Explorador / buscador de listas .txt ──
-const fs_ = { dir: null, parent: null, sep: '\\', selected: null, workDir: null };
-function fsSelect(file) {
-  fs_.selected = file;
-  $('#fsSelected').textContent = file || 'Ningún archivo seleccionado';
-  $('#fsUse').disabled = $('#fsUseEdit').disabled = !file;
-  document.querySelectorAll('#fsList .fsitem').forEach((n) => n.classList.toggle('sel', n.dataset.file === file));
-}
-function fsItem(iconName, label, sub, { file, onopen } = {}) {
-  const n = el('div', { class: 'fsitem' }, icon(iconName), el('span', { class: 'fs-label' }, label), sub ? el('span', { class: 'sub', title: sub }, sub) : null);
-  if (file) {
-    n.dataset.file = file;
-    n.onclick = () => fsSelect(file);
-    n.ondblclick = () => fsUse(file, false);
-  } else if (onopen) n.onclick = onopen;
-  return n;
-}
-async function fsOpen(dir) {
-  try {
-    const r = await api('/api/fs/list' + (dir ? '?dir=' + encodeURIComponent(dir) : ''));
-    Object.assign(fs_, { dir: r.dir, parent: r.parent, sep: r.sep });
-    $('#fsPath').value = r.dir; $('#fsUp').disabled = !r.parent;
-    const box = $('#fsDrives'); box.innerHTML = '';
-    for (const d of r.drives) box.append(el('button', { class: 'sm', onclick: () => fsOpen(d) }, d.replace(/\\$/, '')));
-    const list = $('#fsList'); list.innerHTML = '';
-    const join = (name) => r.dir.replace(/[\\/]$/, '') + r.sep + name;
-    if (!r.entries.length) list.append(emptyState('folder', 'Carpeta vacía', 'No hay subcarpetas ni archivos .txt aquí.'));
-    for (const e of r.entries) {
-      list.append(e.type === 'dir' ? fsItem('folder', e.name, null, { onopen: () => fsOpen(join(e.name)) }) : fsItem('file', e.name, null, { file: join(e.name) }));
-    }
-    fsSelect(null);
-  } catch (e) { toast(e.message); }
-}
-async function fsSearch() {
-  const q = $('#fsQuery').value.trim();
-  if (!q) return toast('Escribe parte del nombre del archivo');
-  const list = $('#fsList'); list.innerHTML = ''; list.append(el('div', { class: 'empty' }, 'Buscando...'));
-  try {
-    const r = await api(`/api/fs/search?dir=${encodeURIComponent(fs_.dir || '')}&q=${encodeURIComponent(q)}`);
-    list.innerHTML = '';
-    if (!r.results.length) list.append(emptyState('search', 'No se encontraron archivos', `No hay .txt con "${q}" bajo ${r.root}`));
-    for (const f of r.results) list.append(fsItem('file', f.split(/[\\/]/).pop(), f, { file: f }));
-    if (r.truncated) list.append(el('div', { class: 'empty' }, 'Resultados truncados: afina el nombre o busca desde una carpeta más concreta.'));
-    fsSelect(null);
-  } catch (e) { list.innerHTML = ''; toast(e.message); }
-}
-async function fsUse(file, edit) {
-  $('#list').value = file;
-  loadRunCmd(); loadCollapsed();
-  rememberList(file); loadLists(); state.first = true;
-  $('#fsDialog').close();
-  await loadRepos();
-  if (edit) $('#edit').onclick();
-}
-$('#browseBtn').onclick = () => {
-  const recent = JSON.parse(localStorage.getItem('mfs.recentLists') || '[]');
-  const box = $('#fsRecent'); box.innerHTML = '';
-  for (const f of recent) box.append(el('button', { class: 'sm', title: f, onclick: () => fsUse(f, false) }, f.split(/[\\/]/).pop()));
-  $('#fsRecentRow').style.display = recent.length ? '' : 'none';
-  $('#fsQuery').value = '';
-  $('#fsDialog').showModal();
-  fsOpen(fs_.dir);
-};
-$('#fsUp').onclick = () => fs_.parent && fsOpen(fs_.parent);
-$('#fsGo').onclick = () => fsOpen($('#fsPath').value);
-$('#fsPath').onkeydown = (ev) => { if (ev.key === 'Enter') fsOpen($('#fsPath').value); };
-$('#fsHome').onclick = () => fsOpen(null);
-$('#fsSearch').onclick = fsSearch;
-$('#fsQuery').onkeydown = (ev) => { if (ev.key === 'Enter') fsSearch(); };
-$('#fsCancel').onclick = () => $('#fsDialog').close();
-$('#fsUse').onclick = () => fs_.selected && fsUse(fs_.selected, false);
-$('#fsUseEdit').onclick = () => fs_.selected && fsUse(fs_.selected, true);
-$('#fsNew').onclick = async () => {
-  let name = (await ask({ title: 'Nuevo archivo .txt', message: `Se creará en:\n${fs_.dir}`, okText: 'Crear', input: true, value: 'listRep.txt' })) || '';
-  if (!name) return;
-  if (/[\\/:*?"<>|]/.test(name)) return toast('Nombre no válido');
-  if (!name.toLowerCase().endsWith('.txt')) name += '.txt';
-  fsUse(fs_.dir.replace(/[\\/]$/, '') + fs_.sep + name, true);
-};
-
-$('#edit').onclick = async () => {
-  try {
-    const { file, content } = await api('/api/list?list=' + encodeURIComponent(listName()));
-    $('#editorTitle').textContent = file; $('#editorText').value = content; $('#editor').showModal();
-  } catch (e) { toast(e.message); }
-};
-$('#editorCancel').onclick = () => $('#editor').close();
-$('#editorSave').onclick = async () => {
-  try {
-    await api('/api/list', { method: 'PUT', body: JSON.stringify({ list: listName(), content: $('#editorText').value }) });
-    $('#editor').close(); toast('Lista guardada'); state.first = true; loadRepos();
-  } catch (e) { toast(e.message); }
-};
-
-// Frase al azar en el tooltip del título 👾 (una por carga)
-const BRAND_QUIPS = [
-  'Ningún repo fue maltratado (casi)',
-  'Encodeado con lágrimas de dev',
-  'Push bajo su propia responsabilidad',
-  'Domando repos desde que git es git',
-  'Funciona en mi máquina™',
-  'node_modules: el agujero negro oficial',
-  'Hoy compila. Mañana, quién sabe',
-  'Commit temprano, commit a menudo, push con fe',
-  'Detener todo: el botón favorito de los viernes',
-  'Si no está en el .txt, no existe',
-  'Insert coin para hacer pull',
-];
-const brandQuip = BRAND_QUIPS[Math.floor(Math.random() * BRAND_QUIPS.length)];
-const brandTitle = (workDir) => brandQuip + (workDir ? '\nDirectorio de trabajo: ' + workDir : '');
-
-(async function init() {
-  $('#branch').value = localStorage.getItem('mfs.branch') || '';
-  $('#installCmd').value = localStorage.getItem('mfs.installCmd') || '';
-  $('#brand').title = brandTitle();
-  try {
-    const info = await api('/api/info'); $('#workdir').textContent = info.workDir;
-    $('#brand').title = brandTitle(info.workDir);
-    $('#list').title += '\nDirectorio de trabajo: ' + info.workDir;
-    $('#version').textContent = 'v' + info.version;
-    showTokenState(info.hasToken);
-    // "mfs ui otra/lista.txt" tiene prioridad; si no, la última lista usada
-    $('#list').value = info.defaultList !== 'listRep.txt' ? info.defaultList : (localStorage.getItem('mfs.list') || 'listRep.txt');
-  } catch { $('#list').value = 'listRep.txt'; }
-  loadRunCmd(); loadCollapsed();
-  await loadLists();
-  await loadRepos();
-  connectStream();
-})();
-</script>
 </body>
 </html>
