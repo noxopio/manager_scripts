@@ -30,7 +30,10 @@ body {
 }
 
 a { color: var(--accent); }
-code { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border-radius: 6px; background: var(--control-bg); }
+code { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border-radius: 6px; background: var(--field-bg); }
+
+/* Profundidad: contenedores de vidrio en relieve (.glass), contenido hundido (.sunken), controles en relieve (button) */
+.sunken { background: var(--field-bg); box-shadow: var(--neu-in); border-radius: var(--radius); }
 .muted { color: var(--muted); font-size: 12px; }
 .hint { margin: 0; font-size: 11px; color: var(--muted); }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -45,12 +48,13 @@ code { font: 12px ui-monospace, Consolas, monospace; padding: 1px 5px; border-ra
 label.field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
 input[type=text], input[type=password], select, textarea {
   font: inherit; padding: 6px 10px; color: var(--text);
-  background: var(--field-bg); border: 1px solid var(--control-border); border-radius: var(--radius-sm);
+  background: var(--field-bg); border: 1px solid transparent; border-radius: var(--radius-sm);
+  box-shadow: var(--neu-in); /* campos hundidos */
   transition: border-color .15s, box-shadow .15s;
 }
 input[type=text], input[type=password] { width: 180px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none; border-color: var(--accent); box-shadow: var(--neu-in), 0 0 0 3px var(--accent-soft);
 }
 input[type=checkbox] { accent-color: var(--accent); }
 select option { background: var(--bg); color: var(--text); }
@@ -59,15 +63,16 @@ select option { background: var(--bg); color: var(--text); }
 button {
   font: inherit; padding: 6px 13px; color: var(--text); cursor: pointer;
   background: var(--control-bg); border: 1px solid var(--control-border); border-radius: var(--radius-sm);
+  box-shadow: var(--neu-out); /* controles en relieve; al pulsar se hunden */
   transition: background .15s, border-color .15s, box-shadow .15s, transform .05s;
 }
 button:hover { background: var(--control-bg-hover); border-color: var(--accent); }
-button:active:not(:disabled) { transform: translateY(1px); }
-button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
-button:disabled { opacity: .45; cursor: default; }
+button:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--neu-in); }
+button:focus-visible { outline: none; box-shadow: var(--neu-out), 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; box-shadow: none; }
 button:disabled:hover { background: var(--control-bg); border-color: var(--control-border); }
 button.primary { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
-button.primary:hover { background: var(--accent-strong); box-shadow: 0 0 16px var(--accent-soft); }
+button.primary:hover { background: var(--accent-strong); box-shadow: var(--neu-out), 0 0 16px var(--accent-soft); }
 button.primary:disabled:hover { background: var(--accent); }
 button.danger { color: var(--err); }
 button.danger:hover { border-color: var(--err); }

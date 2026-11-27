@@ -46,15 +46,16 @@
   --radius-pill: 999px;
   --gap: 12px;
 
-  /* Profundidad (panel lateral): sombras "soft UI" y extrusión del texto NEW BRANCH */
+  /* Profundidad: sombras "soft UI" */
   --font-display: "Bahnschrift Condensed", "Bahnschrift SemiBold Condensed", "Arial Narrow", Impact, sans-serif;
   --neu-out: 4px 4px 10px rgba(0, 0, 0, .45), -2px -2px 8px rgba(255, 255, 255, .04);
   --neu-in: inset 3px 3px 8px rgba(0, 0, 0, .45), inset -2px -2px 6px rgba(255, 255, 255, .05);
-  --extrude-1: color-mix(in srgb, var(--accent) 55%, #000);
-  --extrude-2: color-mix(in srgb, var(--accent) 35%, #000);
-  --extrude-3: color-mix(in srgb, var(--accent) 18%, #000);
-  --rail-text-from: #ffffff;
-  --rail-text-to: rgba(180, 167, 245, .15);
+  --neu-in-sm: inset 1px 1px 3px rgba(0, 0, 0, .35);
+  /* Grabado (M F S, LAUNCH PAD, código de barras): relleno OPACO apenas distinto de la superficie,
+     para que la sombra clara no se vea por dentro de las letras; luz abajo-derecha, sombra arriba-izquierda */
+  --engrave-fill: color-mix(in srgb, var(--bg) 86%, var(--text));
+  --engrave-light: rgba(255, 255, 255, .08);
+  --engrave-dark: rgba(0, 0, 0, .7);
 }
 
 @media (prefers-color-scheme: light) {
@@ -94,10 +95,39 @@
 
     --neu-out: 4px 4px 10px rgba(40, 50, 90, .16), -3px -3px 8px rgba(255, 255, 255, .85);
     --neu-in: inset 3px 3px 7px rgba(40, 50, 90, .16), inset -3px -3px 7px rgba(255, 255, 255, .9);
-    --extrude-1: color-mix(in srgb, var(--accent) 70%, #fff);
-    --extrude-2: color-mix(in srgb, var(--accent) 45%, #fff);
-    --extrude-3: color-mix(in srgb, var(--accent) 25%, #fff);
-    --rail-text-from: #3b2f9e;
-    --rail-text-to: rgba(107, 91, 214, .12);
+    --neu-in-sm: inset 1px 1px 3px rgba(40, 50, 90, .14);
+    --engrave-fill: color-mix(in srgb, var(--bg) 90%, var(--text));
+    --engrave-light: rgba(255, 255, 255, .95);
+    --engrave-dark: rgba(40, 50, 90, .3);
+  }
+}
+
+/* ── Colores de acento ──
+   Violeta es el de por defecto (arriba). Los demás se eligen en el pie del panel lateral
+   y se guardan en este navegador (data-accent en <html>, ver js/theme-boot.js). */
+:root[data-accent="verde"] {
+  --accent: #3dff9e; --accent-strong: #1fe887; --accent-text: #03140b; --accent-soft: rgba(61, 255, 158, .15);
+  --bg-blob-1: rgba(30, 190, 110, .30);
+}
+:root[data-accent="cian"] {
+  --accent: #4de1ff; --accent-strong: #22cdf0; --accent-text: #031419; --accent-soft: rgba(77, 225, 255, .15);
+  --bg-blob-1: rgba(30, 160, 210, .32);
+}
+:root[data-accent="rosa"] {
+  --accent: #ff7ad1; --accent-strong: #ff55c2; --accent-text: #1f0614; --accent-soft: rgba(255, 122, 209, .15);
+  --bg-blob-1: rgba(200, 70, 160, .30);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-accent="verde"] {
+    --accent: #0a9f5c; --accent-strong: #078a4f; --accent-text: #fff; --accent-soft: rgba(10, 159, 92, .12);
+    --bg-blob-1: rgba(80, 220, 150, .32);
+  }
+  :root[data-accent="cian"] {
+    --accent: #0b8fb3; --accent-strong: #087896; --accent-text: #fff; --accent-soft: rgba(11, 143, 179, .12);
+    --bg-blob-1: rgba(90, 200, 240, .32);
+  }
+  :root[data-accent="rosa"] {
+    --accent: #c2187a; --accent-strong: #a5126a; --accent-text: #fff; --accent-soft: rgba(194, 24, 122, .12);
+    --bg-blob-1: rgba(255, 150, 210, .32);
   }
 }

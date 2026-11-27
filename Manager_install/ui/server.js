@@ -57,7 +57,7 @@ const BRANCH_RE = /^[\w./-]{1,200}$/;
 const INSTALL_CMD_RE = /^[^;&|<>`$\r\n]{1,200}$/;
 const MAX_LOG_LINES = 2000;
 const VERSION = (() => { try { return fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim(); } catch { return 'desconocida'; } })();
-// Datos de la instalación para el panel de información (franja NEW BRANCH)
+// Datos de la instalación para el panel de información (franja LAUNCH PAD)
 // El instalador escribe "# Fecha de instalación: AAAA-MM-DD HH:MM:SS" en la cabecera de manager_repo.sh.
 function readInstallDate(text) {
   const m = /^# Fecha de instalación: (.+)$/m.exec(String(text || ''));

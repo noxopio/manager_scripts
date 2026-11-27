@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="dark light">
 <title>mfs · Panel de Repos</title>
 <link rel="icon" href="data:,">
+<script src="js/theme-boot.js"></script>
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -22,7 +23,7 @@
     <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span> mfs</h1>
     <details class="menu" id="toolsMenu">
       <summary title="Procesos Node, cURL, Base64 y Ayuda">Herramientas ▾</summary>
-      <div class="menu-list glass" role="menu">
+      <div class="menu-list" role="menu">
         <button id="psBtn" role="menuitem" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
         <button id="curlBtn" role="menuitem" title="Ejecutar un comando curl y ver la respuesta (JSON formateado)">cURL</button>
         <button id="codecBtn" role="menuitem" title="Codificar o decodificar texto en Base64">Base64</button>
@@ -66,11 +67,9 @@
 <aside class="sidebar glass" id="sidebar" aria-label="Panel de control">
   <!-- Franja decorativa: solo se ilumina y, al pulsarla, muestra información de mfs (sin otras acciones) -->
   <button class="sidebar-rail" popovertarget="mfsInfo" aria-label="Información de mfs" title="Información de mfs">
-    <span class="rail-beams" aria-hidden="true"></span>
     <span class="rail-barcode" aria-hidden="true"></span>
-    <span class="rail-digits" id="railDigits" aria-hidden="true"></span>
-    <span class="rail-title" aria-hidden="true">NEW BRANCH</span>
-    <span class="rail-band" aria-hidden="true">mfs · git</span>
+    <span class="rail-digits engraved" id="railDigits" aria-hidden="true"></span>
+    <span class="rail-title engraved" aria-hidden="true">LAUNCH PAD</span>
   </button>
   <div class="sidebar-body">
   <section class="hsec" data-sec="repos">
@@ -122,14 +121,22 @@
     </div>
     <div class="hsec-summary"></div>
   </section>
-  <footer class="sidebar-foot"><span class="badge" id="version" title="Versión de mfs (mfs version)"></span></footer>
+  <footer class="sidebar-foot">
+    <span class="badge" id="version" title="Versión de mfs (mfs version)"></span>
+    <span class="accent-picker" id="accentPicker" role="radiogroup" aria-label="Color de acento">
+      <button class="accent-swatch" data-accent="violeta" role="radio" title="Violeta" aria-label="Violeta" style="--sw:#b4a7f5"></button>
+      <button class="accent-swatch" data-accent="verde" role="radio" title="Verde neón" aria-label="Verde neón" style="--sw:#3dff9e"></button>
+      <button class="accent-swatch" data-accent="cian" role="radio" title="Cian" aria-label="Cian" style="--sw:#4de1ff"></button>
+      <button class="accent-swatch" data-accent="rosa" role="radio" title="Rosa" aria-label="Rosa" style="--sw:#ff7ad1"></button>
+    </span>
+  </footer>
   </div>
 </aside>
 
 <!-- Información de mfs (solo lectura). API popover nativa: se cierra con Esc o al pulsar fuera. -->
 <div id="mfsInfo" popover class="mfs-info">
   <div class="mfs-info-head">
-    <span class="mfs-info-title">m f s</span>
+    <span class="mfs-info-title engraved">m f s</span>
     <span class="mfs-info-version" id="infoVersion"></span>
   </div>
   <div class="mfs-info-clock">
@@ -137,10 +144,12 @@
     <span class="muted" id="infoDate"></span>
   </div>
   <dl class="mfs-info-list" id="infoList"></dl>
+  <div class="mfs-info-cmds-title">COMANDOS PARA GIT BASH</div>
+  <ul class="mfs-info-cmds" id="infoCmds"></ul>
 </div>
 
 <main>
-  <section class="list" id="repos"></section>
+  <section class="list glass" id="repos"></section>
   <section class="logpane glass">
     <div class="head">
       <strong id="logTitle">Selecciona un repo para ver su log</strong>

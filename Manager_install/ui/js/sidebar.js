@@ -1,7 +1,7 @@
-// Panel lateral: secciones plegables, toggle ☰, resúmenes, token git y la franja NEW BRANCH (información de mfs).
+// Panel lateral: secciones plegables, toggle ☰, resúmenes, token git y la franja LAUNCH PAD (información de mfs).
 import { $, el, api, toast, state, runCmdKey, saveRunCmd, listName } from './core.js';
 
-// ── Franja NEW BRANCH: al pulsarla muestra información de mfs (solo lectura) ──
+// ── Franja LAUNCH PAD: al pulsarla muestra información de mfs (solo lectura) ──
 let mfsInfo = null;
 let clockTimer = null;
 const fmtDate = (d) => d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -9,13 +9,37 @@ const fmtDuration = (ms) => {
   const m = Math.floor(ms / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
   return d ? `${d} d ${h % 24} h` : h ? `${h} h ${m % 60} min` : `${m} min`;
 };
-function infoRow(label, value, copy = false) {
-  if (!value) return [];
-  const span = el('span', { title: value }, value);
-  const btn = copy ? el('button', { class: 'sm', title: 'Copiar', onclick: async () => {
-    try { await navigator.clipboard.writeText(value); toast('Copiado'); } catch { toast('No se pudo copiar'); }
-  } }, 'Copiar') : null;
-  return [el('dt', {}, label), el('dd', {}, span, btn)];
+// Datos de solo lectura
+const infoRow = (label, value) => (value ? [el('dt', {}, label), el('dd', { title: value }, value)] : []);
+
+// Ruta de Windows → ruta de Git Bash (C:\a\b → /c/a/b), entrecomillada si hace falta
+export function toShell(p) {
+  let s = String(p || '');
+  const m = /^([a-zA-Z]):[\\/](.*)$/.exec(s);
+  if (m) s = `/${m[1].toLowerCase()}/${m[2]}`;
+  s = s.replace(/\\/g, '/');
+  return /^[\w@%+=:,./~-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`;
+}
+// Comandos listos para pegar en Git Bash, con la carpeta de trabajo, la lista activa y la rama del panel
+function fillCommands() {
+  const i = mfsInfo || {};
+  const list = toShell(listName());
+  const branch = toShell($('#branch').value.trim() || 'main');
+  const cmds = [
+    i.workDir && [`cd ${toShell(i.workDir)}`, 'Ir a la carpeta de trabajo del panel'],
+    [`mfs ui ${list}`, 'Abrir el panel con la lista activa'],
+    [`mfs -b ${branch} pull ${list}`, 'Clonar o actualizar los repos de la lista'],
+    [`mfs status ${list}`, 'Ver los cambios de todos los repos'],
+    i.sourceDir && ['mfs update', 'Actualizar mfs desde su repo de origen'],
+    ['mfs version', 'Ver la versión instalada'],
+  ].filter(Boolean);
+  $('#infoCmds').replaceChildren(...cmds.map(([cmd, desc]) => el('li', {},
+    el('code', {}, cmd),
+    el('button', { class: 'sm', title: 'Copiar el comando', onclick: async () => {
+      try { await navigator.clipboard.writeText(cmd); toast('Comando copiado'); } catch { toast('No se pudo copiar'); }
+    } }, 'Copiar'),
+    el('span', { class: 'muted' }, desc),
+  )));
 }
 function tickClock() {
   const now = new Date();
@@ -29,15 +53,16 @@ function fillInfoList() {
   const list = $('#infoList');
   list.replaceChildren(
     ...infoRow('Instalado', i.installDate || 'sin instalar (panel lanzado desde el repo)'),
-    ...infoRow('Instalación', i.installDir, true),
-    ...infoRow('Repo origen', i.sourceDir, true),
-    ...infoRow('Trabajo', i.workDir, true),
-    ...infoRow('Lista', listName(), true),
+    ...infoRow('Instalación', i.installDir),
+    ...infoRow('Repo origen', i.sourceDir),
+    ...infoRow('Trabajo', i.workDir),
+    ...infoRow('Lista', listName()),
     ...infoRow('Panel', i.port ? `http://127.0.0.1:${i.port}` : ''),
-    el('dt', {}, 'Abierto'), el('dd', {}, el('span', { id: 'infoUptime' }, '')),
+    el('dt', {}, 'Abierto'), el('dd', { id: 'infoUptime' }, ''),
     ...infoRow('Node', i.node ? `${i.node} · ${i.platform}` : ''),
-    ...infoRow('Bash', i.bash, true),
+    ...infoRow('Bash', i.bash),
   );
+  fillCommands();
 }
 export function renderMfsInfo(info) {
   mfsInfo = info;
@@ -51,6 +76,20 @@ $('#mfsInfo').addEventListener('toggle', (ev) => {
   tickClock();
   clockTimer = setInterval(tickClock, 1000);
 });
+
+// ── Color de acento (violeta, verde neón, cian, rosa); se guarda en este navegador ──
+const ACCENTS = ['violeta', 'verde', 'cian', 'rosa'];
+function applyAccent(name) {
+  const accent = ACCENTS.includes(name) ? name : 'violeta';
+  if (accent === 'violeta') document.documentElement.removeAttribute('data-accent');
+  else document.documentElement.setAttribute('data-accent', accent);
+  document.querySelectorAll('#accentPicker .accent-swatch').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.accent === accent)));
+}
+document.querySelectorAll('#accentPicker .accent-swatch').forEach((b) => b.addEventListener('click', () => {
+  localStorage.setItem('mfs.accent', b.dataset.accent);
+  applyAccent(b.dataset.accent);
+}));
+applyAccent(localStorage.getItem('mfs.accent'));
 
 export function loadRunCmd() { $('#runCmd').value = localStorage.getItem(runCmdKey()) || ''; updateSummaries(); }
 
