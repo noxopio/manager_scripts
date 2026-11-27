@@ -19,6 +19,7 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; } /* que hidden gane a display:flex/inline-flex de las clases */
   body { margin: 0; height: 100vh; display: flex; flex-direction: column; font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
   header { position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -43,12 +44,15 @@
   #sidebarToggle[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
   /* Layout: panel de control lateral (plegable) + repos y log */
   .layout { display: flex; flex: 1; min-height: 0; }
-  .sidebar { flex: none; width: 290px; overflow: auto; background: var(--panel); border-right: 1px solid var(--border); padding: 4px 14px 14px; }
+  .sidebar { flex: none; width: 290px; overflow: auto; background: var(--panel); border-right: 1px solid var(--border); padding: 4px 14px 10px; display: flex; flex-direction: column; }
+  .sidebar-foot { margin-top: auto; padding-top: 10px; } /* versión abajo a la izquierda: solo visible con el panel abierto */
+  .btn-grid.cols3 { grid-template-columns: repeat(3, 1fr); }
+  .hint { margin: 0; font-size: 11px; color: var(--muted); }
   body.sidebar-closed .sidebar { display: none; }
   .layout > main { flex: 1; min-width: 0; }
   /* Secciones plegables del panel: cabecera a todo el ancho, debajo controles o resumen */
   .hsec { padding: 6px 0 12px; border-bottom: 1px solid var(--border); }
-  .hsec:last-child { border-bottom: 0; }
+  .hsec:last-of-type { border-bottom: 0; }
   .hsec-head { width: 100%; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0; border: 0; background: none; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .hsec-head::before { content: ""; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
   .hsec-head[aria-expanded="true"]::before { transform: rotate(90deg); }
@@ -172,9 +176,8 @@
 <body>
 <header>
   <div class="row">
-    <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Lista · Repos · Git)" aria-label="Panel de control"></button>
+    <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Repos · Git)" aria-label="Panel de control"></button>
     <h1>mfs · Repos</h1>
-    <span class="badge" id="version" title="Versión de mfs (mfs version)"></span>
     <details class="menu" id="toolsMenu">
       <summary title="Procesos Node, Base64 y Ayuda">Herramientas ▾</summary>
       <div class="menu-list" role="menu">
@@ -183,7 +186,6 @@
         <button id="helpBtn" role="menuitem" title="Equivalente a mfs help">Ayuda</button>
       </div>
     </details>
-    <button id="toggleGroups" title="Expande o contrae todos los grupos (## Nombre en el .txt)" hidden>Contraer grupos</button>
     <span class="sep"></span>
     <!-- Lista activa: contexto de todo el panel, siempre visible -->
     <div class="toplist">
@@ -193,12 +195,18 @@
       <button class="icon-btn" id="browseBtn" title="Buscar un archivo .txt en cualquier carpeta">Buscar…</button>
       <button id="edit">Editar lista</button>
     </div>
+    <!-- Las acciones más usadas, siempre a mano (actúan sobre los repos marcados) -->
+    <span class="sep"></span>
+    <button class="primary icon-btn" data-action="run" title="Run en los repos marcados: 'Run con' del panel o, si está vacío, el comando de cada repo en el .txt">Run</button>
+    <button class="danger icon-btn" id="stopAll" title="Detiene solo los procesos lanzados desde este panel">Detener todo</button>
     <span id="workdir" hidden></span>
     <span class="row-end">
       <div class="matrix-status" id="matrixStatus" role="status" aria-live="polite" hidden>
         <span class="matrix-rain" aria-hidden="true"><span class="matrix-column">1<br>0<br>1<br>0</span><span class="matrix-column">0<br>1<br>0<br>1</span><span class="matrix-column">1<br>1<br>0<br>1</span></span>
         <span id="matrixText"></span>
       </div>
+      <!-- A la derecha: aparecer/desaparecer no desplaza el resto de la barra -->
+      <button class="icon-btn" id="toggleGroups" hidden></button>
       <button class="icon-btn" id="refresh" title="Recargar estado" aria-label="Recargar estado"></button>
     </span>
   </div>
@@ -227,12 +235,10 @@
       <div class="hsec-line">
         <label class="field"><input type="checkbox" id="selectAll" checked> Todos</label>
       </div>
-      <div class="btn-grid" role="toolbar" aria-label="Acciones de repos">
+      <div class="btn-grid cols3" role="toolbar" aria-label="Acciones de repos">
         <button class="primary" data-action="pull" title="Clona o actualiza (git clone --depth=1 / git pull) usando la Rama">Pull</button>
         <button class="primary" data-action="install" title="Ejecuta el comando de 'Install con' en los repos sin node_modules">Install</button>
         <button data-action="updeps" title="Ejecuta el comando de 'Install con' en todos los repos (reinstala)">Updeps</button>
-        <button class="primary" data-action="run" title="Ejecuta 'Run con' o, si está vacío, el comando de cada repo en el .txt">Run</button>
-        <button class="danger span2" id="stopAll" title="Detiene solo los procesos lanzados desde este panel">Detener todo</button>
       </div>
     </div>
     <div class="hsec-summary"></div>
@@ -240,13 +246,6 @@
   <section class="hsec" data-sec="git">
     <button class="hsec-head" aria-expanded="true" aria-controls="sec-git">Git</button>
     <div class="hsec-body" id="sec-git">
-      <label class="sfield" title="Token para repos privados. Se usa cuando git lo pide (URL tipo https://usuario@host/...). Solo se guarda en la memoria del panel, nunca en disco.">Token (repos privados)
-        <input type="password" id="gitToken" placeholder="no cargado" autocomplete="off"></label>
-      <div class="hsec-line">
-        <button class="sm" id="tokenApply">Aplicar</button>
-        <button class="sm" id="tokenClear">Quitar</button>
-        <span class="badge" id="tokenState">sin token</span>
-      </div>
       <div class="btn-grid" role="toolbar" aria-label="Acciones git">
         <button data-git="status" title="git status de los repos seleccionados (se ve en el log)">Ver cambios</button>
         <button data-git="commit" title="git add . + git commit -m en los repos seleccionados con cambios">Commit…</button>
@@ -257,6 +256,21 @@
     </div>
     <div class="hsec-summary"></div>
   </section>
+  <section class="hsec" data-sec="token">
+    <button class="hsec-head" aria-expanded="true" aria-controls="sec-token">Token</button>
+    <div class="hsec-body" id="sec-token">
+      <label class="sfield" title="Token para repos privados. Se usa cuando git lo pide (URL tipo https://usuario@host/...). Solo se guarda en la memoria del panel, nunca en disco.">Token git (repos privados)
+        <input type="password" id="gitToken" placeholder="no cargado" autocomplete="off"></label>
+      <div class="hsec-line">
+        <button class="sm" id="tokenApply">Aplicar</button>
+        <button class="sm" id="tokenClear">Quitar</button>
+        <span class="badge" id="tokenState">sin token</span>
+      </div>
+      <p class="hint">Lo usan Pull, Push y Checkout cuando git lo pide. Solo se guarda en la memoria del panel, nunca en disco.</p>
+    </div>
+    <div class="hsec-summary"></div>
+  </section>
+  <footer class="sidebar-foot"><span class="badge" id="version" title="Versión de mfs (mfs version)"></span></footer>
 </aside>
 
 <main>
@@ -514,6 +528,10 @@ const ICONS = {
   lock: { paths: ['M5 10h14v10H5z', 'M8 10V7a4 4 0 1 1 8 0v3'], circles: [[12, 15, 1]] },
   repo: { paths: ['M5 4.5h14A1.5 1.5 0 0 1 20.5 6v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5z', 'M8 4.5v15', 'M11 8h6', 'M11 12h6'] },
   menu: { paths: ['M4 7h16', 'M4 12h16', 'M4 17h16'] },
+  collapse: { paths: ['m7 4 5 5 5-5', 'm7 20 5-5 5 5'] },
+  expand: { paths: ['m7 9 5-5 5 5', 'm7 15 5 5 5-5'] },
+  play: { paths: ['M8 5.5v13l10.5-6.5z'] },
+  stop: { paths: ['M7 7h10v10H7z'] },
   search: { paths: ['M10.8 18.3a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z', 'm16.2 16.2 4.3 4.3'] },
   file: { paths: ['M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z', 'M14 3.5V8h4', 'M9 12h6', 'M9 15.5h6'] },
 };
@@ -544,6 +562,9 @@ function emptyState(iconName, title, detail = '') {
 $('#browseBtn').prepend(icon('folder'));
 $('#refresh').append(icon('refresh'));
 $('#sidebarToggle').append(icon('menu'));
+$('header [data-action=run]').prepend(icon('play'));
+$('#stopAll').prepend(icon('stop'));
+setGroupsBtn(false);
 
 function statusNode(r) {
   if (r.status === 'running' && r.action === 'run' && r.compile) {
@@ -582,7 +603,16 @@ function render(emptyMsg) {
   }
   for (const [g, repos] of groups) box.append(groupNode(g, repos));
   const allCollapsed = [...groups.keys()].every((g) => state.collapsed.has(g));
-  $('#toggleGroups').textContent = allCollapsed ? 'Expandir grupos' : 'Contraer grupos';
+  setGroupsBtn(allCollapsed);
+}
+
+// Icono de expandir/contraer grupos (con tooltip), junto a Recargar estado
+function setGroupsBtn(allCollapsed) {
+  const b = $('#toggleGroups');
+  const label = allCollapsed ? 'Expandir todos los grupos' : 'Contraer todos los grupos';
+  b.replaceChildren(icon(allCollapsed ? 'expand' : 'collapse'));
+  b.title = label + ' (## Nombre en el .txt)';
+  b.setAttribute('aria-label', label);
 }
 
 const isBusy = (r) => r.status === 'running' || r.status === 'stopping';
@@ -624,7 +654,7 @@ function groupNode(g, repos) {
     d.open ? state.collapsed.delete(g) : state.collapsed.add(g);
     saveCollapsed();
     const all = [...document.querySelectorAll('#repos > details.group')].every((x) => !x.open);
-    $('#toggleGroups').textContent = all ? 'Expandir grupos' : 'Contraer grupos';
+    setGroupsBtn(all);
   });
   return d;
 }
@@ -905,7 +935,8 @@ function updateSummaries() {
   const checked = state.repos.filter((r) => state.checked.has(r.name)).length;
   sum('repos', [`${checked} seleccionados de ${state.repos.length}`, running ? `${running} en ejecución` : null, branch,
     'install: ' + (v('#installCmd') || 'npm install'), 'run: ' + (v('#runCmd') || 'del .txt')].filter(Boolean).join(' · '));
-  sum('git', [changes ? `${changes} con cambios` : 'sin cambios', token].join(' · '));
+  sum('git', changes ? `${changes} con cambios` : 'sin cambios');
+  sum('token', token);
 }
 ['#branch', '#installCmd', '#runCmd', '#list'].forEach((id) => $(id).addEventListener('input', updateSummaries));
 // Rama, Install con y Run con se guardan al escribir (antes solo al lanzar una acción)
@@ -986,7 +1017,8 @@ document.addEventListener('visibilitychange', refreshOnReturn);
 window.addEventListener('focus', refreshOnReturn);
 
 // ── Eventos ──
-document.querySelectorAll('#sidebar [data-action]').forEach((b) =>
+// Botones de acción global: en el panel lateral (Pull/Install/Updeps) y en la barra superior (Run)
+document.querySelectorAll('#sidebar [data-action], header [data-action]').forEach((b) =>
   b.addEventListener('click', () => runAction(b.dataset.action, state.repos.map((r) => r.name).filter((n) => state.checked.has(n))))
 );
 $('#stopAll').onclick = () => stop(null);
