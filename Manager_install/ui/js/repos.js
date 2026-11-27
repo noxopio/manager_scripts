@@ -79,7 +79,15 @@ export function groupNode(g, repos) {
   const busy = repos.filter(isBusy).length;
   const changes = repos.filter((r) => r.cloned && r.changes).length;
   const locked = repos.filter((r) => r.locked).length;
-  const act = (a) => (ev) => { ev.preventDefault(); ev.stopPropagation(); runAction(a, names); };
+  // Las acciones del grupo solo actúan sobre los repos marcados de ese grupo
+  const checkedNames = names.filter((n) => state.checked.has(n));
+  const checkedRunning = repos.filter((r) => state.checked.has(r.name) && r.status === 'running');
+  const act = (a) => (ev) => {
+    ev.preventDefault(); ev.stopPropagation();
+    if (!checkedNames.length) return toast('Marca al menos un repo del grupo');
+    runAction(a, checkedNames);
+  };
+  const selInfo = nChecked === names.length ? 'todos los repos del grupo' : `los ${nChecked} repos marcados del grupo`;
   const summary = el('summary', {},
     cb,
     el('span', { class: 'group-name' }, g),
@@ -88,12 +96,12 @@ export function groupNode(g, repos) {
     changes ? el('span', { class: 'badge warn', title: 'Repos con cambios sin commit' }, `● ${changes} con cambios`) : null,
     locked ? el('span', { class: 'badge warn lock-badge', title: 'Repos con .git/index.lock' }, icon('lock'), `${locked} bloqueado${locked > 1 ? 's' : ''}`) : null,
     el('span', { class: 'group-actions' },
-      el('button', { class: 'sm', title: 'Pull de todos los repos del grupo', onclick: act('pull') }, 'Pull'),
-      el('button', { class: 'sm', title: 'Run de todos los repos del grupo', onclick: act('run') }, 'Run'),
-      el('button', { class: 'sm danger', title: 'Detiene los repos en ejecución del grupo', onclick: (ev) => {
+      el('button', { class: 'sm', title: `Pull de ${selInfo}`, onclick: act('pull'), ...(nChecked ? {} : { disabled: '' }) }, 'Pull'),
+      el('button', { class: 'sm', title: `Run de ${selInfo}`, onclick: act('run'), ...(nChecked ? {} : { disabled: '' }) }, 'Run'),
+      el('button', { class: 'sm danger', title: 'Detiene los repos marcados del grupo que están en ejecución', onclick: (ev) => {
         ev.preventDefault(); ev.stopPropagation();
-        repos.filter((r) => r.status === 'running').forEach((r) => stop(r.name));
-      }, ...(repos.some((r) => r.status === 'running') ? {} : { disabled: '' }) }, 'Detener'),
+        checkedRunning.forEach((r) => stop(r.name));
+      }, ...(checkedRunning.length ? {} : { disabled: '' }) }, 'Detener'),
     ),
   );
   const d = el('details', { class: 'group' }, summary, ...repos.map(repoCard));

@@ -237,12 +237,14 @@
   </div>
   <p class="muted m0">Base64 codifica datos; no los cifra ni protege.</p>
   <label class="codec-field" for="codecInput">Entrada
-    <textarea id="codecInput" spellcheck="false" placeholder="Pega texto o una cadena Base64"></textarea>
+    <textarea id="codecInput" spellcheck="false" placeholder="Pega texto, una cadena Base64 o un JSON para formatear"></textarea>
   </label>
   <div class="row codec-actions">
     <button class="primary" data-codec-action="encode">Codificar</button>
     <button data-codec-action="decode">Decodificar</button>
     <button data-codec-action="decodeJson">Decodificar JSON</button>
+    <span class="sep"></span>
+    <button data-codec-action="formatJson" title="Ordena e indenta un JSON pegado tal cual (sin Base64), p. ej. una respuesta copiada de la consola">Formatear JSON</button>
   </div>
   <label class="codec-field" for="codecOutput">Resultado
     <textarea id="codecOutput" readonly spellcheck="false" placeholder="El resultado aparecerá aquí"></textarea>
@@ -271,6 +273,16 @@
     <strong>cURL</strong>
     <span class="row">
       <select id="curlHistory" title="Últimos 10 comandos (guardados en este navegador, con sus tokens y cookies)"><option value="">Historial…</option></select>
+      <details class="menu curl-export" id="curlExport">
+        <summary class="sm" title="Descargar el historial como .txt">Exportar ▾</summary>
+        <div class="menu-list" role="menu">
+          <button role="menuitem" data-export="full" title="Los comandos tal cual, listos para volver a ejecutarlos">Completo (con tokens)</button>
+          <button role="menuitem" data-export="redacted" title="Authorization, Cookie, api keys, -u y -b pasan a ***">Ocultando credenciales</button>
+          <span class="menu-note">Los tokens que van en la URL no se ocultan.</span>
+        </div>
+      </details>
+      <button class="sm" id="curlImport" title="Cargar comandos desde un .txt (exportado o escrito a mano, un curl por bloque)">Importar…</button>
+      <input type="file" id="curlImportFile" accept=".txt,text/plain" hidden>
       <button class="sm" id="curlHistoryClear" title="Borrar el historial de este navegador">Borrar historial</button>
     </span>
   </div>

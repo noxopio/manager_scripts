@@ -88,11 +88,38 @@ function codecStatus(message, error = false) {
   status.textContent = message;
   status.classList.toggle('error', error);
 }
+// Formatea un JSON pegado tal cual (sin Base64). Tolera lo típico de la consola:
+// JSON escapado como cadena ("{\"a\":1}") y texto antes o después ("respuesta: {...}").
+function formatJsonText(input) {
+  const text = input.replace(/^﻿/, '').trim();
+  if (!text) throw new Error('Pega un JSON en la entrada.');
+  const notes = [];
+  let value;
+  try { value = JSON.parse(text); } catch (e) {
+    const start = text.search(/[[{]/);
+    const end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
+    try {
+      if (start < 0 || end <= start) throw e;
+      value = JSON.parse(text.slice(start, end + 1));
+      notes.push('se ignoró el texto antes o después del JSON');
+    } catch { throw new Error(`No es JSON válido: ${e.message}`); }
+  }
+  // JSON que llega como cadena escapada: se vuelve a leer (hasta 3 niveles)
+  for (let i = 0; i < 3 && typeof value === 'string' && /^\s*[[{]/.test(value); i++) {
+    try { value = JSON.parse(value); if (!notes.includes('venía escapado como texto')) notes.push('venía escapado como texto'); } catch { break; }
+  }
+  return { result: JSON.stringify(value, null, 2), notes };
+}
+
 function transformCodec(mode) {
   try {
     const input = $('#codecInput').value;
     let result;
-    if (mode === 'encode') {
+    if (mode === 'formatJson') {
+      const f = formatJsonText(input);
+      result = f.result;
+      codecStatus('JSON formateado' + (f.notes.length ? ` (${f.notes.join('; ')})` : '') + '.');
+    } else if (mode === 'encode') {
       result = encodeBase64Utf8(input);
       codecStatus('Texto codificado en Base64.');
     } else {

@@ -1,6 +1,7 @@
 // Herramientas → cURL: ejecuta un comando curl en el servidor del panel y muestra la respuesta
 // (JSON como árbol plegable o texto formateado, cabeceras y salida cruda).
 import { $, el, api, toast } from './core.js';
+import { formatHistory, parseHistoryText, redactCurl } from './curl-history.js';
 
 const HISTORY_KEY = 'mfs.curlHistory';
 const HISTORY_MAX = 10;
@@ -19,6 +20,38 @@ function renderHistory() {
     sel.append(el('option', { value: String(i), title: line }, line.length > 90 ? line.slice(0, 90) + '…' : line));
   });
   $('#curlHistoryClear').disabled = !items.length;
+  $('#curlExport').classList.toggle('is-disabled', !items.length);
+  if (!items.length) $('#curlExport').open = false;
+}
+
+// ── Exportar / importar el historial (.txt) ──
+const pad = (n) => String(n).padStart(2, '0');
+function exportHistory(redacted) {
+  const items = readHistory();
+  if (!items.length) return toast('El historial está vacío');
+  const now = new Date();
+  const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const text = formatHistory(redacted ? items.map(redactCurl) : items, {
+    version: ($('#version').textContent || '').replace(/^v/, ''),
+    date: `${day} ${pad(now.getHours())}:${pad(now.getMinutes())}`,
+  });
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+  const a = el('a', { href: url, download: `curl-historial-${day}${redacted ? '-sin-credenciales' : ''}.txt` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`${items.length} comando${items.length > 1 ? 's' : ''} exportado${items.length > 1 ? 's' : ''}${redacted ? ' (sin credenciales)' : ''}`);
+}
+async function importHistory(file) {
+  if (!file) return;
+  if (file.size > 1e6) return toast('El archivo es demasiado grande (máx. 1 MB)');
+  const cmds = parseHistoryText(await file.text());
+  if (!cmds.length) return toast('No se encontró ningún curl en el archivo');
+  const before = readHistory();
+  const merged = [...cmds, ...before.filter((x) => !cmds.includes(x))];
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(merged.slice(0, HISTORY_MAX)));
+  renderHistory();
+  toast(`${cmds.length} comando${cmds.length > 1 ? 's' : ''} importado${cmds.length > 1 ? 's' : ''}` +
+    (merged.length > HISTORY_MAX ? ` · se conservan los ${HISTORY_MAX} más recientes` : ''));
 }
 function remember(cmd) {
   const items = [cmd, ...readHistory().filter((x) => x !== cmd)].slice(0, HISTORY_MAX);
@@ -157,6 +190,22 @@ $('#curlHistory').onchange = (ev) => {
   if (ev.target.value !== '' && cmd) $('#curlInput').value = cmd;
   ev.target.value = '';
   $('#curlInput').focus();
+};
+// Menú Exportar: se cierra al elegir, al pulsar fuera o con Esc (como el menú Herramientas)
+const exportMenu = $('#curlExport');
+exportMenu.querySelector('summary').addEventListener('click', (ev) => { if (exportMenu.classList.contains('is-disabled')) { ev.preventDefault(); toast('El historial está vacío'); } });
+exportMenu.querySelectorAll('[data-export]').forEach((b) => b.addEventListener('click', () => {
+  exportMenu.open = false;
+  exportHistory(b.dataset.export === 'redacted');
+}));
+$('#curlDialog').addEventListener('click', (ev) => { if (exportMenu.open && !exportMenu.contains(ev.target)) exportMenu.open = false; });
+$('#curlDialog').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && exportMenu.open) { ev.preventDefault(); exportMenu.open = false; exportMenu.querySelector('summary').focus(); }
+});
+$('#curlImport').onclick = () => $('#curlImportFile').click();
+$('#curlImportFile').onchange = async (ev) => {
+  try { await importHistory(ev.target.files[0]); } catch (e) { toast(e.message); }
+  ev.target.value = ''; // permite volver a importar el mismo archivo
 };
 $('#curlHistoryClear').onclick = () => { localStorage.removeItem(HISTORY_KEY); renderHistory(); toast('Historial de cURL borrado'); };
 document.querySelectorAll('.curl-tab').forEach((b) => { b.onclick = () => { cur.tab = b.dataset.tab; renderOut(); }; });

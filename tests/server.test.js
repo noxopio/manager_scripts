@@ -120,6 +120,41 @@ test('parseCurl: opciones cortas agrupadas, descartadas y bloqueadas', () => {
   assert.throws(() => parseCurl('  '), /Pega/);
 });
 
+// Módulo del navegador (ES module): Node 22 lo carga con import() aunque sea .js
+const curlHistory = () => import('../Manager_install/ui/js/curl-history.js');
+
+test('curl-history: exportar e importar conserva los comandos', async () => {
+  const { formatHistory, parseHistoryText } = await curlHistory();
+  const cmds = [
+    "curl 'https://a.dev/x' \\\n  -H 'accept: application/json'",
+    "curl -X POST https://b.dev --data-raw $'{\\n\\n  \"k\": 1\\n}'",
+    "curl https://c.dev -d 'linea1\n\nlinea3'", // línea en blanco dentro del comando
+  ];
+  const txt = formatHistory(cmds, { version: '8.6.0', date: '2026-11-27 10:42' });
+  assert.match(txt, /^# Historial cURL · mfs 8\.6\.0 · exportado 2026-11-27 10:42/);
+  assert.match(txt, /# ── curl 3 ──/);
+  assert.deepEqual(parseHistoryText(txt), cmds);
+  assert.deepEqual(parseHistoryText(txt.replace(/\n/g, '\r\n')), cmds.map((c) => c.replace(/\n/g, '\n')));
+});
+
+test('curl-history: .txt escrito a mano, sin separadores', async () => {
+  const { parseHistoryText } = await curlHistory();
+  const txt = '﻿# mis curls\n\ncurl https://a.dev\n\n# login\ncurl -X POST https://b.dev \\\n  -d x=1\n\nesto no es un curl\n\ncurl https://a.dev\n';
+  assert.deepEqual(parseHistoryText(txt), ['curl https://a.dev', 'curl -X POST https://b.dev \\\n  -d x=1']);
+  assert.deepEqual(parseHistoryText(''), []);
+});
+
+test('curl-history: redactCurl oculta credenciales y deja lo demás', async () => {
+  const { redactCurl } = await curlHistory();
+  assert.equal(redactCurl("curl https://a.dev -H 'Authorization: Bearer abc.def' -H 'accept: application/json'"),
+    "curl https://a.dev -H 'Authorization: ***' -H 'accept: application/json'");
+  assert.equal(redactCurl('curl https://a.dev -H "cookie: a=b; c=d"'), 'curl https://a.dev -H "cookie: ***"');
+  assert.equal(redactCurl('curl -u user:pass https://a.dev'), 'curl -u *** https://a.dev');
+  assert.equal(redactCurl("curl --cookie='s=1' --user-agent 'x' https://a.dev"), "curl --cookie='***' --user-agent 'x' https://a.dev");
+  assert.equal(redactCurl('curl ^"https://a.dev^" -H ^"X-Api-Key: k1^" -b ^"s=1^"'), 'curl ^"https://a.dev^" -H ^"X-Api-Key: ***^" -b ^"***^"');
+  assert.equal(redactCurl('curl https://a.dev?token=abc'), 'curl https://a.dev?token=abc'); // la URL no se toca
+});
+
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
   const out = parseCurlOutput([
     'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',
