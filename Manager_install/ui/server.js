@@ -557,6 +557,152 @@ async function fetchGithubRepos(owner, token) {
   throw new Error(`No se encontró la organización o usuario "${owner}" (o el token no tiene permisos).`);
 }
 
+// ── cURL (Herramientas → cURL) ──────────────────────────────────────────────
+// Se ejecuta el binario curl sin shell: el comando pegado se separa en argumentos aquí.
+
+// Separa una línea como lo haría bash: '…' literal, "…" con escapes, $'…' (estilo ANSI-C) y \ fuera de comillas.
+function splitShell(src) {
+  const out = [];
+  let cur = '', has = false, i = 0;
+  const unclosed = () => new Error('Hay comillas sin cerrar en el comando');
+  while (i < src.length) {
+    const c = src[i];
+    if (/\s/.test(c)) { if (has) { out.push(cur); cur = ''; has = false; } i++; continue; }
+    has = true;
+    if (c === "'") {
+      const j = src.indexOf("'", i + 1);
+      if (j < 0) throw unclosed();
+      cur += src.slice(i + 1, j); i = j + 1; continue;
+    }
+    if (c === '$' && src[i + 1] === "'") {
+      i += 2;
+      while (i < src.length && src[i] !== "'") {
+        if (src[i] === '\\' && i + 1 < src.length) {
+          const n = src[i + 1];
+          const hex = n === 'x' ? /^[0-9a-fA-F]{1,2}/.exec(src.slice(i + 2)) : n === 'u' ? /^[0-9a-fA-F]{1,4}/.exec(src.slice(i + 2)) : null;
+          if (hex) { cur += String.fromCharCode(parseInt(hex[0], 16)); i += 2 + hex[0].length; continue; }
+          cur += { n: '\n', t: '\t', r: '\r', '\\': '\\', "'": "'", '"': '"' }[n] ?? '\\' + n;
+          i += 2;
+        } else cur += src[i++];
+      }
+      if (i >= src.length) throw unclosed();
+      i++; continue;
+    }
+    if (c === '"') {
+      i++;
+      while (i < src.length && src[i] !== '"') {
+        if (src[i] === '\\' && '"\\$`'.includes(src[i + 1])) { cur += src[i + 1]; i += 2; } else cur += src[i++];
+      }
+      if (i >= src.length) throw unclosed();
+      i++; continue;
+    }
+    if (c === '\\' && i + 1 < src.length) { cur += src[i + 1]; i += 2; continue; }
+    cur += c; i++;
+  }
+  if (has) out.push(cur);
+  return out;
+}
+
+// Opciones cortas sin argumento (el resto de letras toman valor: -X POST, -H …, -d …)
+const CURL_NOARG = new Set('#0123456:fgGiIjklLnNpqRsSvVZ'.split(''));
+const CURL_DROP_SHORT = new Set(['s', 'S', 'i', '#']); // el panel pone su propia salida
+const CURL_BLOCK_SHORT = new Set(['o', 'O', 'D', 'c', 'K']);
+const CURL_BLOCK_LONG = new Set(['--output', '--remote-name', '--remote-name-all', '--output-dir', '--dump-header', '--cookie-jar', '--trace', '--trace-ascii', '--libcurl', '--config']);
+const CURL_DROP_LONG = new Set(['--include', '--silent', '--show-error', '--progress-bar', '--no-progress-meter']);
+const curlBlocked = (opt) => new Error(`La opción ${opt} no se admite en el panel (escribe archivos o cambia la salida que el panel necesita leer)`);
+
+// Convierte el texto pegado (bash, cmd de Chrome con ^, PowerShell con `) en los argumentos para curl.
+function parseCurl(command) {
+  let src = String(command || '').trim();
+  if (!src) throw new Error('Pega un comando curl');
+  src = src.replace(/[\\^`][ \t]*\r?\n/g, ' '); // continuaciones de línea
+  if (/\^"/.test(src)) src = src.replace(/\^([\s\S])/g, '$1'); // "Copiar como cURL (cmd)"
+  const tokens = splitShell(src);
+  if (/^curl(\.exe)?$/i.test(tokens[0] || '')) tokens.shift();
+  const args = [];
+  let maxTime = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t.startsWith('--') && t.length > 2) {
+      const [name, inline] = t.split(/=(.*)/s);
+      if (CURL_BLOCK_LONG.has(name)) throw curlBlocked(name);
+      if (CURL_DROP_LONG.has(name)) continue;
+      if (name === '--write-out') { if (inline === undefined) i++; continue; }
+      if (name === '--max-time') maxTime = Number(inline ?? tokens[i + 1]);
+      args.push(t);
+      continue;
+    }
+    if (/^-[^-]/.test(t)) {
+      let kept = '';
+      for (let k = 1; k < t.length; k++) {
+        const L = t[k];
+        if (CURL_BLOCK_SHORT.has(L)) throw curlBlocked('-' + L);
+        if (CURL_NOARG.has(L)) { if (!CURL_DROP_SHORT.has(L)) kept += L; continue; }
+        // Opción con valor: el resto del token o el siguiente
+        let value = t.slice(k + 1);
+        if (!value) {
+          if (i + 1 >= tokens.length) throw new Error(`Falta el valor de -${L}`);
+          value = tokens[++i];
+        }
+        if (kept) { args.push('-' + kept); kept = ''; }
+        if (L !== 'w') { args.push('-' + L, value); if (L === 'm') maxTime = Number(value); }
+        break;
+      }
+      if (kept) args.push('-' + kept);
+      continue;
+    }
+    args.push(t);
+  }
+  if (!args.some((a) => /^https?:\/\//i.test(a))) throw new Error('El comando no tiene una URL http:// o https://');
+  const timeoutMs = Number.isFinite(maxTime) && maxTime > 0 ? Math.min(maxTime, 600) * 1000 + 2000 : 60000;
+  return { args, timeoutMs };
+}
+
+const CURL_MARK = '__MFS_CURL__';
+// Salida de curl -D - … -w: bloques de cabeceras (uno por redirección / 100 Continue / proxy), cuerpo y métricas.
+function parseCurlOutput(text) {
+  const idx = text.lastIndexOf('\n' + CURL_MARK);
+  let rest = idx >= 0 ? text.slice(0, idx) : text;
+  const metrics = idx >= 0 ? text.slice(idx + CURL_MARK.length + 1).trim() : '';
+  let headers = [], statusLine = '';
+  while (/^HTTP\/[\d.]+ \d{3}/.test(rest)) {
+    const m = /\r?\n\r?\n/.exec(rest);
+    const block = m ? rest.slice(0, m.index) : rest;
+    rest = m ? rest.slice(m.index + m[0].length) : '';
+    const lines = block.split(/\r?\n/);
+    statusLine = lines[0];
+    headers = lines.slice(1).map((l) => { const c = l.indexOf(':'); return [l.slice(0, c).trim(), l.slice(c + 1).trim()]; }).filter(([k]) => k);
+  }
+  const [code, time, size, ...ct] = metrics.split(' ');
+  return {
+    status: Number(code) || Number((/ (\d{3})/.exec(statusLine) || [])[1]) || 0,
+    statusLine,
+    timeMs: time ? Math.round(Number(time) * 1000) : null,
+    size: size ? Number(size) : Buffer.byteLength(rest),
+    contentType: ct.join(' '),
+    headers,
+    body: rest,
+  };
+}
+
+function runCurl(args, timeoutMs = 60000) {
+  return new Promise((resolve, reject) => {
+    const full = [...args, '-sS', '-D', '-', '-w', `\\n${CURL_MARK}%{http_code} %{time_total} %{size_download} %{content_type}`];
+    execFile('curl', full, { windowsHide: true, timeout: timeoutMs, maxBuffer: 10e6, encoding: 'buffer', env: childEnv() }, (err, stdout, stderr) => {
+      if (err && err.code === 'ENOENT') return reject(new Error('No se encuentra curl en el PATH'));
+      const truncated = !!err && err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER';
+      const out = parseCurlOutput(Buffer.from(stdout || '').toString('utf8'));
+      resolve({
+        ...out,
+        truncated,
+        timedOut: !!err && err.killed && !truncated,
+        exitCode: err ? (typeof err.code === 'number' ? err.code : null) : 0,
+        stderr: Buffer.from(stderr || '').toString('utf8').trim(),
+      });
+    });
+  });
+}
+
 // ── HTTP ────────────────────────────────────────────────────────────────────
 function send(res, code, body, type = 'application/json; charset=utf-8') {
   res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
@@ -779,6 +925,13 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { stopped: stopJob(String(body.repo || '')) ? 1 : 0 });
     }
 
+    if (req.method === 'POST' && p === '/api/curl') {
+      const body = await readBody(req);
+      let parsed;
+      try { parsed = parseCurl(body.command); } catch (e) { return send(res, 400, { error: e.message }); }
+      return send(res, 200, await runCurl(parsed.args, parsed.timeoutMs));
+    }
+
     return send(res, 404, { error: 'No encontrado' });
   } catch (err) {
     return send(res, 500, { error: err.message });
@@ -831,4 +984,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, normalizePath, isInside, staticFile, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };
+module.exports = { parseList, normalizePath, isInside, staticFile, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };

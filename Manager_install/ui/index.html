@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/dialogs.css">
+<link rel="stylesheet" href="css/curl.css">
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -19,9 +20,10 @@
     <button class="icon-btn" id="sidebarToggle" aria-controls="sidebar" aria-expanded="true" title="Mostrar u ocultar el panel de control (Repos · Git)" aria-label="Panel de control"></button>
     <h1 id="brand" aria-label="mfs · Panel de Repos"><span class="brand-icon" aria-hidden="true">👾</span> mfs</h1>
     <details class="menu" id="toolsMenu">
-      <summary title="Procesos Node, Base64 y Ayuda">Herramientas ▾</summary>
+      <summary title="Procesos Node, cURL, Base64 y Ayuda">Herramientas ▾</summary>
       <div class="menu-list glass" role="menu">
         <button id="psBtn" role="menuitem" title="Equivalente a mfs ps / mfs kill">Procesos Node</button>
+        <button id="curlBtn" role="menuitem" title="Ejecutar un comando curl y ver la respuesta (JSON formateado)">cURL</button>
         <button id="codecBtn" role="menuitem" title="Codificar o decodificar texto en Base64">Base64</button>
         <button id="helpBtn" role="menuitem" title="Equivalente a mfs help">Ayuda</button>
       </div>
@@ -261,6 +263,39 @@
   <div class="row dlg-foot">
     <button id="askCancel">Cancelar</button>
     <button class="primary" id="askOk">Aceptar</button>
+  </div>
+</dialog>
+
+<dialog id="curlDialog">
+  <div class="row dlg-head">
+    <strong>cURL</strong>
+    <span class="row">
+      <select id="curlHistory" title="Últimos 10 comandos (guardados en este navegador, con sus tokens y cookies)"><option value="">Historial…</option></select>
+      <button class="sm" id="curlHistoryClear" title="Borrar el historial de este navegador">Borrar historial</button>
+    </span>
+  </div>
+  <p class="muted m0">Pega un comando curl (bash, cmd o PowerShell; también "Copiar como cURL" del navegador). Lo ejecuta el panel en esta máquina. El historial se guarda en este navegador tal cual, con tokens incluidos.</p>
+  <textarea id="curlInput" spellcheck="false" placeholder="curl 'https://api.ejemplo.com/items' -H 'accept: application/json'"></textarea>
+  <div class="row curl-actions">
+    <button class="primary" id="curlRun" title="Ctrl+Enter">Ejecutar</button>
+    <button id="curlClear">Limpiar</button>
+    <span class="curl-meta" id="curlMeta" role="status" aria-live="polite"></span>
+  </div>
+  <div class="curl-result" id="curlResult" hidden>
+    <div class="row curl-tabs" role="tablist">
+      <button class="curl-tab" role="tab" data-tab="body" aria-selected="true">Respuesta</button>
+      <button class="curl-tab" role="tab" data-tab="headers" aria-selected="false">Cabeceras</button>
+      <button class="curl-tab" role="tab" data-tab="raw" aria-selected="false">Crudo</button>
+      <span class="row-end">
+        <button class="sm" id="curlView" title="Alternar entre árbol plegable y texto formateado">Ver texto</button>
+        <button class="sm" id="curlExpand" title="Expandir todo el árbol">Expandir todo</button>
+        <button class="sm" id="curlCopy">Copiar</button>
+      </span>
+    </div>
+    <div class="curl-out" id="curlOut"></div>
+  </div>
+  <div class="row dlg-foot">
+    <button id="curlClose">Cerrar</button>
   </div>
 </dialog>
 

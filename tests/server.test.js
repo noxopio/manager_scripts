@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, normalizePath, isInside, staticFile, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
+  parseList, normalizePath, isInside, staticFile, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -84,4 +84,50 @@ test('staticFile: solo /css/*.css y /js/*.js dentro de ui/', () => {
   assert.equal(staticFile('/css/x.txt', root), null);
   assert.equal(staticFile('/server.js', root), null);
   assert.equal(staticFile('/js/sub/a.js', root), null);
+});
+
+test('parseCurl: bash multilínea, comillas y $\'…\' (Copiar como cURL de Chrome)', () => {
+  const { args } = parseCurl([
+    "curl 'https://api.example.com/items?a=1&b=2' \\",
+    "  -H 'accept: application/json' \\",
+    '  -H "Authorization: Bearer abc\\"x" \\',
+    "  --data-raw $'{\"name\":\"it\\'s\\n\"}'",
+  ].join('\n'));
+  assert.deepEqual(args, [
+    'https://api.example.com/items?a=1&b=2',
+    '-H', 'accept: application/json',
+    '-H', 'Authorization: Bearer abc"x',
+    '--data-raw', '{"name":"it\'s\n"}',
+  ]);
+});
+
+test('parseCurl: formato cmd de Chrome (^) y PowerShell (`)', () => {
+  const cmd = parseCurl('curl ^"https://x.dev/a^" ^\n  -H ^"accept: */*^" ^\n  --data-raw ^"^{\\^"k\\^":1^}^"');
+  assert.deepEqual(cmd.args, ['https://x.dev/a', '-H', 'accept: */*', '--data-raw', '{"k":1}']);
+  const ps = parseCurl('curl.exe https://x.dev `\n -X POST');
+  assert.deepEqual(ps.args, ['https://x.dev', '-X', 'POST']);
+});
+
+test('parseCurl: opciones cortas agrupadas, descartadas y bloqueadas', () => {
+  assert.deepEqual(parseCurl('curl -sSLk -XPOST -w "%{http_code}" -i https://x.dev').args, ['-Lk', '-X', 'POST', 'https://x.dev']);
+  assert.deepEqual(parseCurl('curl --silent --write-out=x --max-time 5 https://x.dev').args, ['--max-time', '5', 'https://x.dev']);
+  assert.equal(parseCurl('curl -m 5 https://x.dev').timeoutMs, 7000);
+  assert.throws(() => parseCurl('curl -o salida.json https://x.dev'), /-o no se admite/);
+  assert.throws(() => parseCurl('curl -sO https://x.dev/f.zip'), /-O no se admite/);
+  assert.throws(() => parseCurl('curl --output=f https://x.dev'), /--output no se admite/);
+  assert.throws(() => parseCurl('curl -H "x: 1"'), /URL/);
+  assert.throws(() => parseCurl("curl 'https://x.dev"), /comillas/);
+  assert.throws(() => parseCurl('  '), /Pega/);
+});
+
+test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
+  const out = parseCurlOutput([
+    'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',
+  ].join('\r\n') + '\n__MFS_CURL__200 0.123 11 application/json');
+  assert.equal(out.status, 200);
+  assert.equal(out.timeMs, 123);
+  assert.equal(out.size, 11);
+  assert.equal(out.contentType, 'application/json');
+  assert.deepEqual(out.headers, [['content-type', 'application/json'], ['x-a', '1:2']]);
+  assert.equal(out.body, '{"ok":true}');
 });

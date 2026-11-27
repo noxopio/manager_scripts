@@ -41,8 +41,8 @@
   --log-text: #00ff39;
 
   /* Formas */
-  --radius: 14px;
-  --radius-sm: 9px;
+  --radius: 8px;
+  --radius-sm: 7px;
   --radius-pill: 999px;
   --gap: 12px;
 }

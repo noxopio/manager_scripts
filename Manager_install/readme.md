@@ -256,6 +256,7 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - **Editar lista** permite importar repos de una organización o usuario de GitHub, o insertar la plantilla de ejemplo (equivale a `mfs list`).
 - **Ayuda** muestra este README (equivale a `mfs help`).
 - **Base64** permite codificar texto UTF-8, decodificarlo o formatearlo como JSON desde una ventana del panel; no requiere `jq`.
+- **cURL** ejecuta un comando `curl` pegado (formato bash, cmd o PowerShell, también "Copiar como cURL" del navegador) con el curl de esta máquina, sin pasar por un shell. Muestra el código HTTP, el tiempo, las cabeceras y la respuesta; si es JSON, como árbol plegable o texto formateado. No admite las opciones que escriben archivos (`-o`, `-O`, `-D`, `-c`, `--trace`, `-K`). Guarda los últimos 10 comandos en el navegador, con tokens incluidos (botón **Borrar historial**).
 - `mfs border` y `mfs uninstall_manager` siguen disponibles solo en la terminal.
 - Una tarjeta por repo con su estado, rama actual, dependencias y puerto detectado.
 - Botones globales y por repo para **Pull / Install / Updeps / Run / Detener**, y un log en vivo por repo.

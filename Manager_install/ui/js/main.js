@@ -5,6 +5,7 @@ import { loadRepos, render, runAction, stop, setGroupsBtn } from './repos.js';
 import './git.js';
 import { loadRunCmd, showTokenState } from './sidebar.js';
 import './tools.js';
+import './curl.js';
 import { loadLists, rememberList } from './lists.js';
 import { connectStream } from './stream.js';
 
