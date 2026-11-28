@@ -189,6 +189,21 @@ test('idle: aviso de inactividad tras N minutos', async () => {
   assert.equal(isIdle(t0, t0 + 2999, 0.05), false);
 });
 
+test('idle: los mensajes rotan sin repetir el anterior', async () => {
+  const { pickIdleMessage, IDLE_MESSAGES } = await import('../Manager_install/ui/js/idle.js');
+  const n = IDLE_MESSAGES.length;
+  for (const m of IDLE_MESSAGES) for (const k of ['l1', 'big', 'l2', 'l3']) assert.ok(m[k] && m[k].trim(), `falta ${k}`);
+  assert.notEqual(pickIdleMessage(0, () => 0), 0);
+  for (let prev = -1; prev < n; prev++) {
+    for (const r of [0, 0.25, 0.5, 0.75, 0.9999]) {
+      const i = pickIdleMessage(prev, () => r);
+      assert.ok(i >= 0 && i < n, `fuera de rango: ${i}`);
+      assert.notEqual(i, prev);
+    }
+  }
+  assert.equal(pickIdleMessage(0, () => 0.5, 1), 0); // un solo mensaje: siempre ese
+});
+
 test('workday: estado y avance de la jornada', async () => {
   const { workProgress, fmtRemaining } = await import('../Manager_install/ui/js/workday.js');
   const at = (h, m = 0) => new Date(2026, 10, 27, h, m);

@@ -1,4 +1,4 @@
-/* Aviso de inactividad ("404 · HUMAN NOT FOUND"): letras grabadas con neón en los bordes al pasar el ratón.
+/* Aviso de inactividad (taza de café + mensaje rotativo): letras grabadas con neón en los bordes al pasar el ratón.
    Se cierra al hacer clic fuera de la tarjeta o con Esc (js/idle.js). */
 .idle-overlay {
   position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px;
@@ -20,9 +20,32 @@
   cursor: default; user-select: none;
 }
 .idle-l1 { font-size: 34px; line-height: 1; letter-spacing: .12em; }
-.idle-404 { font-size: 150px; line-height: .9; letter-spacing: .02em; margin: 8px 0 6px; }
+.idle-card > .idle-big { font-size: 150px; line-height: .9; letter-spacing: .02em; margin: 8px 0 6px; text-transform: none; } /* respeta "Zzz" */
 .idle-l2 { font-size: 34px; line-height: 1.1; letter-spacing: .06em; }
 .idle-l3 { font-size: 18px; line-height: 1.2; letter-spacing: .12em; margin-top: 2px; }
+/* Las líneas largas de algunos mensajes hacen salto en lugar de desbordar */
+.idle-l1, .idle-l2, .idle-l3 { max-width: min(560px, 90vw); margin-inline: auto; text-wrap: balance; }
+
+/* Taza de café: grabada en reposo, neón al pasar el ratón; el vapor siempre vivo en el color del tema */
+.idle-art {
+  display: block; width: 76px; height: auto; margin: 0 auto 6px; overflow: visible;
+  color: var(--engrave-fill);
+  filter: drop-shadow(1px 1px 0 var(--engrave-light)) drop-shadow(-1px -1px 0 var(--engrave-dark));
+  transition: color .25s, filter .25s;
+}
+.idle-art:hover { color: var(--accent); filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 10px var(--accent-soft)); }
+.idle-steam {
+  stroke: var(--accent); stroke-width: 2.4; opacity: .35;
+  filter: drop-shadow(0 0 4px var(--accent));
+  transform-box: fill-box; transform-origin: 50% 100%;
+  animation: idle-steam 2.8s ease-in-out infinite;
+}
+.idle-steam.s2 { animation-delay: 1.4s; }
+/* El vapor sube un poco, se intensifica y se desvanece, alternando los dos hilos */
+@keyframes idle-steam {
+  0%, 100% { opacity: .25; transform: translateY(3px) scaleY(.9); }
+  50% { opacity: 1; transform: translateY(-3px) scaleY(1.05); }
+}
 /* Neón en los bordes de cada línea */
 .idle-card > .engraved:hover {
   -webkit-text-stroke-color: var(--accent);
@@ -34,10 +57,11 @@
 @keyframes idle-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
 @media (max-width: 600px) {
   .idle-card { padding: 26px 24px 18px; }
-  .idle-404 { font-size: 100px; }
+  .idle-card > .idle-big { font-size: 100px; }
   .idle-l1, .idle-l2 { font-size: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .idle-overlay, .idle-card { animation: none; }
-  .idle-card > .engraved { transition: none; }
+  .idle-card > .engraved, .idle-art { transition: none; }
+  .idle-steam { animation: none; opacity: .8; } /* vapor quieto y visible */
 }

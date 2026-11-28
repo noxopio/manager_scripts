@@ -125,15 +125,24 @@
   <footer class="sidebar-foot">
     <!-- Jornada (js/workday.js): la ilustración pasa de neón a apagada a medida que avanza la jornada.
          Para usar otro dibujo, sustituye el <svg> por uno que use stroke="currentColor" (líneas) o fill="currentColor" (rellenos);
-         .workday-cursor es opcional (parpadea durante la jornada). -->
+         .workday-cursor es opcional (parpadea durante la jornada).
+         Fuera de la jornada (antes, después o desactivada) se muestra la taza de café (la misma del aviso de inactividad). -->
     <div class="workday" id="workday">
-      <svg class="workday-art" viewBox="0 0 120 88" aria-hidden="true" fill="none" stroke="currentColor"
+      <svg class="workday-art workday-monitor" viewBox="0 0 120 88" aria-hidden="true" fill="none" stroke="currentColor"
            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="8" y="4" width="104" height="62" rx="7"/>
         <path d="M20 18h30M56 18h14M20 28h18M44 28h34M26 38h26M58 38h12"/>
         <path d="M20 49l6 4.5-6 4.5"/>
         <rect class="workday-cursor" x="31" y="55" width="9" height="3" rx="1" fill="currentColor" stroke="none"/>
         <path d="M52 66l-3 12h22l-3-12M40 84h40"/>
+      </svg>
+      <svg class="workday-art workday-cup" viewBox="0 0 80 80" aria-hidden="true" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path class="idle-steam" d="M30 27c-4-4 4-8 0-12s4-8 0-12"/>
+        <path class="idle-steam s2" d="M42 27c-4-4 4-8 0-12s4-8 0-12"/>
+        <path d="M18 34h40v18a14 14 0 0 1-14 14h-12a14 14 0 0 1-14-14z"/>
+        <path d="M58 40h4a7 7 0 0 1 0 14h-4"/>
+        <path d="M12 74h56"/>
       </svg>
       <div class="workday-bar" id="workdayBar" role="progressbar" aria-label="Avance de la jornada" aria-valuemin="0" aria-valuemax="100">
         <span class="workday-fill"></span>
@@ -401,10 +410,21 @@
 <!-- Aviso de inactividad (js/idle.js): se cierra al hacer clic fuera de la tarjeta o con Esc -->
 <div class="idle-overlay" id="idleOverlay" hidden>
   <div class="idle-card" id="idleCard" role="dialog" aria-modal="true" aria-label="Aviso de inactividad" tabindex="-1">
-    <div class="idle-l1 engraved">ERROR</div>
-    <div class="idle-404 engraved">404</div>
-    <div class="idle-l2 engraved">HUMAN NOT FOUND</div>
-    <div class="idle-l3 engraved">SORRY!</div>
+    <!-- Taza de café: grabada en reposo, neón al pasar el ratón; el vapor (.idle-steam) se anima.
+         Se puede cambiar por otro SVG con stroke/fill="currentColor". -->
+    <svg class="idle-art" viewBox="0 0 80 80" aria-hidden="true" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path class="idle-steam" d="M30 27c-4-4 4-8 0-12s4-8 0-12"/>
+      <path class="idle-steam s2" d="M42 27c-4-4 4-8 0-12s4-8 0-12"/>
+      <path d="M18 34h40v18a14 14 0 0 1-14 14h-12a14 14 0 0 1-14-14z"/>
+      <path d="M58 40h4a7 7 0 0 1 0 14h-4"/>
+      <path d="M12 74h56"/>
+    </svg>
+    <!-- El texto lo rellena js/idle.js con uno de IDLE_MESSAGES (rota en cada aparición) -->
+    <div class="idle-l1 engraved" id="idleL1">ERROR</div>
+    <div class="idle-big engraved" id="idleBig">404</div>
+    <div class="idle-l2 engraved" id="idleL2">HUMAN NOT FOUND</div>
+    <div class="idle-l3 engraved" id="idleL3">SORRY!</div>
     <p class="idle-hint">Haz clic fuera o pulsa Esc para volver</p>
   </div>
 </div>

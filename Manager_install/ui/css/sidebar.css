@@ -37,6 +37,11 @@ body.sidebar-closed .sidebar { display: none; }
 }
 .workday-text { font-size: 10.5px; color: var(--muted); letter-spacing: .04em; text-align: center; }
 .workday.is-off .workday-bar, .workday.is-off .workday-text { display: none; }
+/* Taza = descanso: el monitor solo durante la jornada; antes de empezar, al terminar o con la jornada desactivada
+   se muestra la taza de café (la del aviso de inactividad, con su vapor animado de idle.css) */
+.workday-cup { display: none; width: 76px; }
+.workday:not(.is-during) .workday-monitor { display: none; }
+.workday:not(.is-during) .workday-cup { display: block; }
 
 /* ── Franja: una cavidad dentro del panel ── */
 .sidebar-rail {
