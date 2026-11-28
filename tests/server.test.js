@@ -152,6 +152,30 @@ test('staticFile: solo /css/*.css y /js/*.js dentro de ui/', () => {
   assert.equal(staticFile('/css/logo.svg', root), null);
 });
 
+test('barcode: Code 128 B real de la versión', async () => {
+  const { CODE128, code128Values, code128B } = await import('../Manager_install/ui/js/barcode.js');
+  const sum = (p) => p.split('').reduce((a, b) => a + Number(b), 0);
+  assert.equal(CODE128.length, 107);
+  CODE128.slice(0, 106).forEach((p, i) => assert.equal(sum(p), 11, `patrón ${i}`));
+  assert.equal(sum(CODE128[106]), 13); // Stop
+  // Suma de comprobación calculada a mano con la fórmula del estándar:
+  // '8'=24 '.'=14 '1'=17 '6'=22 '.'=14 '0'=16 → 104 + 24·1 + 14·2 + 17·3 + 22·4 + 14·5 + 16·6 = 461 → 461 mod 103 = 49
+  assert.equal(code128Values('8.16.0').checksum, 49);
+  // 'PJJ123C': 104 + 48 + 42·2 + 42·3 + 17·4 + 18·5 + 19·6 + 35·7 = 879 → 879 mod 103 = 55
+  assert.equal(code128Values('PJJ123C').checksum, 55);
+  const w = code128B('8.16.0');
+  assert.equal(w.reduce((a, b) => a + b, 0), 11 * (1 + 6 + 1) + 13); // 101 módulos
+  assert.equal(w.length % 2, 1); // empieza y acaba en barra
+  // Decodificar las barras de vuelta (grupos de 6 anchos) → Start B, texto, checksum y Stop
+  const symbols = [];
+  for (let i = 0; i < w.length - 7; i += 6) symbols.push(CODE128.indexOf(w.slice(i, i + 6).join('')));
+  assert.deepEqual(symbols, [104, 24, 14, 17, 22, 14, 16, 49]);
+  assert.equal(w.slice(-7).join(''), CODE128[106]);
+  const decoded = symbols.slice(1, -1).map((v) => String.fromCharCode(v + 32)).join('');
+  assert.equal(decoded, '8.16.0');
+  assert.throws(() => code128B('ñ'), /no admite/);
+});
+
 test('favicon: hexágono con el color del tema y punto de aviso opcional', async () => {
   const { faviconSvg } = await import('../Manager_install/ui/js/favicon.js');
   const plain = faviconSvg('#b4a7f5', false);

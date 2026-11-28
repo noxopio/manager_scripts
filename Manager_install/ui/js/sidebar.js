@@ -1,6 +1,7 @@
 // Panel lateral: secciones plegables, toggle ☰, resúmenes, token git y la franja LAUNCH PAD (información de mfs).
 import { $, el, api, toast, state, runCmdKey, saveRunCmd, listName } from './core.js';
 import { refreshFavicon } from './favicon.js';
+import { barcodeSvg } from './barcode.js';
 
 // ── Franja LAUNCH PAD: al pulsarla muestra información de mfs (solo lectura) ──
 let mfsInfo = null;
@@ -31,15 +32,19 @@ function fillCommands() {
     [`mfs ui ${list}`, 'Abrir el panel con la lista activa'],
     [`mfs -b ${branch} pull ${list}`, 'Clonar o actualizar los repos de la lista'],
     [`mfs status ${list}`, 'Ver los cambios de todos los repos'],
+    [`mfs -r "mkdir test" run ${list}`, 'Ejecutar un comando cualquiera en la carpeta de cada repo (-r sustituye al comando run del .txt)'],
+    [`mfs -r "git log -1 --oneline" run ${list}`, '⚠ -r se ejecuta en TODOS los repos de la lista a la vez: nunca lo uses con rm -rf ni con comandos que borren', 'warn'],
+    [`mfs -i "npm ci" updeps ${list}`, 'Reinstalar dependencias limpias desde el lockfile'],
+    ['mfs kill', 'Cerrar todos los procesos de Node en ejecución'],
     i.sourceDir && ['mfs update', 'Actualizar mfs desde su repo de origen'],
     ['mfs version', 'Ver la versión instalada'],
   ].filter(Boolean);
-  $('#infoCmds').replaceChildren(...cmds.map(([cmd, desc]) => el('li', {},
+  $('#infoCmds').replaceChildren(...cmds.map(([cmd, desc, tone]) => el('li', {},
     el('code', {}, cmd),
     el('button', { class: 'sm', title: 'Copiar el comando', onclick: async () => {
       try { await navigator.clipboard.writeText(cmd); toast('Comando copiado'); } catch { toast('No se pudo copiar'); }
     } }, 'Copiar'),
-    el('span', { class: 'muted' }, desc),
+    el('span', { class: tone === 'warn' ? 'muted cmd-warn' : 'muted' }, desc),
   )));
 }
 function tickClock() {
@@ -69,6 +74,17 @@ export function renderMfsInfo(info) {
   mfsInfo = info;
   $('#infoVersion').textContent = info.version ? 'v' + info.version : '';
   $('#railDigits').textContent = String(info.version || ''); // versión bajo el código de barras, con sus puntos (8.11.0)
+  // Código de barras real (Code 128) de la versión: pequeño en la franja y grabado al pie de la tarjeta.
+  // Si no hay versión o no se puede codificar, la franja conserva su patrón decorativo.
+  try {
+    if (!info.version || info.version === 'desconocida') throw new Error('sin versión');
+    $('.rail-barcode').replaceChildren(barcodeSvg(info.version));
+    $('.rail-barcode').classList.add('is-real');
+    $('#infoBarcode').replaceChildren(barcodeSvg(info.version, { quiet: 10, className: 'scan' }));
+    $('#infoBarcode').hidden = false;
+  } catch {
+    $('#infoBarcode').hidden = true;
+  }
 }
 $('#mfsInfo').addEventListener('toggle', (ev) => {
   clearInterval(clockTimer);
