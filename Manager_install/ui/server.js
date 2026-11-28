@@ -1061,7 +1061,8 @@ function openRepoPath(target, dir) {
     if (target === 'folder') {
       const cmd = IS_WIN ? ['explorer.exe', [dir]] : process.platform === 'darwin' ? ['open', [dir]] : ['xdg-open', [dir]];
       try {
-        const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', windowsHide: true });
+        // Sin windowsHide: explorer.exe respeta SW_HIDE y abriría la ventana oculta
+        const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore' });
         child.on('error', (e) => reject(new Error(`No se pudo abrir el explorador: ${e.message}`)));
         child.unref();
         setTimeout(resolve, 300); // explorer.exe devuelve 1 aunque abra bien: no se mira el código
