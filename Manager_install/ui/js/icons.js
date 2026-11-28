@@ -35,6 +35,22 @@ export function icon(name) {
   }
   return svg;
 }
+// Taza de café humeante (la del aviso de inactividad y del pie): el vapor se anima con .idle-steam (idle.css)
+const CUP_SVG = `<svg viewBox="0 0 80 80" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <path class="idle-steam" d="M30 27c-4-4 4-8 0-12s4-8 0-12"/>
+  <path class="idle-steam s2" d="M42 27c-4-4 4-8 0-12s4-8 0-12"/>
+  <path d="M18 34h40v18a14 14 0 0 1-14 14h-12a14 14 0 0 1-14-14z"/>
+  <path d="M58 40h4a7 7 0 0 1 0 14h-4"/>
+  <path d="M12 74h56"/>
+</svg>`;
+export function cupSvg(className = '') {
+  const t = document.createElement('template');
+  t.innerHTML = CUP_SVG;
+  const svg = t.content.firstElementChild;
+  if (className) svg.setAttribute('class', className);
+  return svg;
+}
+
 export function emptyState(iconName, title, detail = '') {
   return el('div', { class: 'empty empty-state' }, icon(iconName), el('strong', {}, title), detail ? el('span', { class: 'empty-detail' }, detail) : null);
 }

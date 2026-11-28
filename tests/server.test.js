@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE,
+  parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -72,6 +72,20 @@ test('COMPILE_OK_RE / COMPILE_FAIL_RE', () => {
   assert.ok(COMPILE_FAIL_RE.test('Failed to compile.'));
   assert.ok(COMPILE_FAIL_RE.test('webpack 5.90.1 compiled with 2 errors in 900 ms'));
   assert.ok(!COMPILE_OK_RE.test('webpack 5.90.1 compiled with 2 errors in 900 ms'));
+});
+
+test('COMPILE_OK_RE / BUNDLER_RE: servidores Node sin empaquetador', () => {
+  assert.ok(COMPILE_OK_RE.test('[Nest] 1234  - LOG [NestApplication] Nest application successfully started +3ms'));
+  assert.ok(COMPILE_OK_RE.test(' ✓ Ready in 2.3s')); // Next
+  assert.ok(COMPILE_OK_RE.test('Server listening on port 3000'));
+  assert.ok(COMPILE_OK_RE.test('Listening on 8080'));
+  // Angular anuncia el puerto antes de terminar de compilar: no debe contar como listo
+  assert.ok(!COMPILE_OK_RE.test('** Angular Live Development Server is listening on localhost:4200 **'));
+  assert.ok(BUNDLER_RE.test('webpack 5.90.1 compiled successfully'));
+  assert.ok(BUNDLER_RE.test('Compiling...'));
+  assert.ok(BUNDLER_RE.test('  VITE v5.0.0  ready in 300 ms'));
+  assert.ok(!BUNDLER_RE.test('Server listening on port 3000'));
+  assert.ok(!BUNDLER_RE.test('$ mfs run  (api-mock)'));
 });
 
 test('staticFile: solo /css/*.css y /js/*.js dentro de ui/', () => {

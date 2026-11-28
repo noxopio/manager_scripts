@@ -239,6 +239,9 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - El campo **Lista** acepta cualquier `.txt`: relativo (`../listas/otra.txt`), `C:\ruta\lista.txt` o `/c/ruta/lista.txt`. Recuerda las últimas usadas.
 - **📂 Buscar…** abre un explorador para navegar carpetas y unidades (`C:`, `D:`…), buscar `.txt` por nombre en subcarpetas (ignora `node_modules` y `.git`), usar el archivo como lista, editarlo o crear uno nuevo.
 - Cada repo corre como un proceso independiente, con su propio log en el panel y su botón **Detener**. Los repos marcados con `#NEW` siguen abriendo su propia ventana, como en `mfs run`.
+- Al hacer **Run**, la tarjeta muestra *compilando…* hasta que el servidor está **listo**, y entonces activa el enlace `localhost:PUERTO`. Se reconoce por los mensajes de webpack, Angular, Vite, Next o Nest, o por "listening on 3000". Si el servidor no muestra ninguno de esos mensajes (por ejemplo, un Express o un mock con `node server.js`), el panel lo da por listo cuando el puerto acepta conexiones.
+- Mientras se cargan los repos, el panel muestra una taza de café humeante en lugar de quedarse en blanco.
+- **Colores**: en la tarjeta de LAUNCH PAD → Apariencia hay violeta, verde neón, cian, rosa, rojo y blanco. En tema claro, el blanco se muestra como grafito.
 - **Git**: los botones *Ver cambios*, *Commit…*, *Push*, *Checkout* y *Nueva rama* actúan sobre los repos seleccionados, y cada tarjeta tiene además *Cambios*, *Commit* y *Push*. *Nueva rama* pide el nombre y permite elegir una base común; por defecto parte de la rama actual de cada repo.
   - Las tarjetas muestran `● N cambios`, `↑N` (commits por subir) y `↓N` (commits por traer).
   - Commit solo actúa sobre los repos con cambios. Antes de confirmar, el diálogo muestra los archivos de cada repo y el resumen de líneas (`git diff --stat`). Push y checkout piden confirmación con la lista de repos y su rama.

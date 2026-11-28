@@ -1,17 +1,31 @@
 // Lista de repos: carga, pintado (cards y grupos), selección, log y acciones.
 import { $, el, api, toast, state, STATUS_LABEL, COMPILE_LABEL, ACTION_LABEL, listName, saveCollapsed, saveRunCmd, isBusy } from './core.js';
-import { icon, emptyState } from './icons.js';
+import { icon, emptyState, cupSvg } from './icons.js';
 import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
 
+// Loader del panel de repos (primera carga o cambio de lista): la taza de café humeante.
+// Solo aparece si la carga tarda más de 150 ms, para no parpadear en cargas rápidas.
+const LOADER_DELAY_MS = 150;
+export function showLoader() {
+  $('#repos').replaceChildren(el('div', { class: 'repos-loading', role: 'status' },
+    cupSvg('loader-cup'), el('span', { class: 'loader-text engraved' }, 'Cargando repos…')));
+}
+
 export async function loadRepos() {
+  const loaderTimer = state.first ? setTimeout(showLoader, LOADER_DELAY_MS) : null;
   try {
     const data = await api('/api/repos?list=' + encodeURIComponent(listName()));
     state.repos = data.repos;
     if (state.first || $('#selectAll').checked) state.checked = new Set(data.repos.map((r) => r.name));
     state.first = false;
+    clearTimeout(loaderTimer);
     render(data.missing ? `No existe ${data.file}. Usa "Editar lista" para crearlo.` : null);
-  } catch (e) { toast(e.message); }
+  } catch (e) {
+    clearTimeout(loaderTimer);
+    if ($('#repos .repos-loading')) $('#repos').replaceChildren(emptyState('repo', 'No se pudo cargar la lista', e.message));
+    toast(e.message);
+  }
 }
 
 let refreshTimer;

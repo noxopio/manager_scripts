@@ -1,7 +1,7 @@
 // Punto de entrada: enlaza los eventos globales y arranca el panel.
 import { $, api, state, listName, loadCollapsed, saveCollapsed, saveRunCmd } from './core.js';
 import { icon } from './icons.js';
-import { loadRepos, render, runAction, stop, setGroupsBtn } from './repos.js';
+import { loadRepos, render, runAction, stop, setGroupsBtn, showLoader } from './repos.js';
 import './git.js';
 import { loadRunCmd, showTokenState, renderMfsInfo } from './sidebar.js';
 import './tools.js';
@@ -44,6 +44,7 @@ const brandTitle = () => pickQuip(state.repos) + (brandWorkDir ? '\nDirectorio d
 $('#brand').addEventListener('mouseenter', () => { $('#brand').title = brandTitle(); });
 
 (async function init() {
+  showLoader(); // taza de café hasta que lleguen los repos (antes se veía el panel en blanco)
   $('#branch').value = localStorage.getItem('mfs.branch') || '';
   $('#installCmd').value = localStorage.getItem('mfs.installCmd') || '';
   $('#brand').title = brandTitle();

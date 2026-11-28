@@ -126,7 +126,16 @@
   --accent: #ff5a4e; --accent-strong: #ff3b2f; --accent-text: #1a0503; --accent-soft: rgba(255, 90, 78, .15);
   --bg-blob-1: rgba(210, 60, 45, .30);
 }
+/* Blanco: líneas monocromas. En tema claro el blanco no se vería, así que pasa a grafito */
+:root[data-accent="blanco"] {
+  --accent: #f2f4f8; --accent-strong: #ffffff; --accent-text: #0d1017; --accent-soft: rgba(255, 255, 255, .14);
+  --bg-blob-1: rgba(120, 130, 150, .26);
+}
 @media (prefers-color-scheme: light) {
+  :root[data-accent="blanco"] {
+    --accent: #2a2f3a; --accent-strong: #161a22; --accent-text: #fff; --accent-soft: rgba(42, 47, 58, .12);
+    --bg-blob-1: rgba(150, 160, 180, .30);
+  }
   :root[data-accent="rojo"] {
     --accent: #d6372b; --accent-strong: #b82c22; --accent-text: #fff; --accent-soft: rgba(214, 55, 43, .12);
     --bg-blob-1: rgba(255, 140, 120, .30);

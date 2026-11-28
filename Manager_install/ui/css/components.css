@@ -121,6 +121,10 @@ pre.log, div.log {
 .empty-state > .icon { width: 28px; height: 28px; flex-basis: 28px; opacity: .8; }
 .empty-state strong { color: var(--text); font-size: 13px; font-weight: 600; }
 .empty-detail { max-width: 420px; font-size: 12px; }
+/* Loader del panel de repos: taza de café en neón con el vapor animado (.idle-steam, idle.css) */
+.repos-loading { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 220px; }
+.loader-cup { width: 84px; height: auto; overflow: visible; color: var(--accent); filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 10px var(--accent-soft)); }
+.loader-text { font: 800 15px/1 var(--font-display); letter-spacing: .3em; text-transform: uppercase; }
 .list > .empty-state { background: var(--field-bg); border-radius: var(--radius); box-shadow: var(--neu-in); }
 
 /* ── Toast ── */

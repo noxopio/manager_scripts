@@ -79,7 +79,7 @@ $('#mfsInfo').addEventListener('toggle', (ev) => {
 
 // ── Color de acento (violeta, verde neón, cian, rosa, rojo); el selector está en la tarjeta de LAUNCH PAD
 //    y la elección se guarda en este navegador ──
-const ACCENTS = ['violeta', 'verde', 'cian', 'rosa', 'rojo'];
+const ACCENTS = ['violeta', 'verde', 'cian', 'rosa', 'rojo', 'blanco'];
 function applyAccent(name) {
   const accent = ACCENTS.includes(name) ? name : 'violeta';
   if (accent === 'violeta') document.documentElement.removeAttribute('data-accent');

@@ -323,9 +323,40 @@ function broadcast(event) {
 
 // Run: el puerto se anuncia ANTES de terminar de compilar, así que se sigue la compilación aparte.
 // compile: 'compiling' (aún no listo) | 'ready' (compilado, se puede abrir) | 'failed' (compiló con errores)
-const COMPILE_OK_RE = /compiled successfully|compiled with \d+ warnings?|Compiled successfully|Application bundle generation complete|ready in \d|webpack [\d.]+ compiled(?! with \d+ errors?)/i;
+// Incluye servidores Node sin empaquetador: Nest, Next ("Ready in 2s") y "listening on (port) 3000" (Express y similares).
+// "listening on localhost:4200" (Angular, aún compilando) NO encaja: exige el número justo después.
+const COMPILE_OK_RE = /compiled successfully|compiled with \d+ warnings?|Compiled successfully|Application bundle generation complete|ready in \d|webpack [\d.]+ compiled(?! with \d+ errors?)|Nest application successfully started|listening on (?:port )?:?\d{2,5}\b/i;
 const COMPILE_FAIL_RE = /compiled with \d+ errors?|Failed to compile|webpack [\d.]+ compiled with \d+ errors?/i;
 const PORT_RE = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d{2,5})/;
+// Si el log menciona un empaquetador, el puerto puede abrirse antes de terminar de compilar:
+// entonces "listo" lo deciden solo los mensajes (COMPILE_OK_RE), no la comprobación por TCP.
+const BUNDLER_RE = /webpack|vite|compil|bundl|angular|ng serve|rspack|esbuild|turbopack/i;
+const READY_PROBE_MS = 1500;
+const READY_PROBE_MAX_MS = 180000;
+
+// Servidores que no anuncian que están listos: cuando el puerto acepta conexiones, pasa a 'ready'.
+function probeReady(name) {
+  const job = jobs.get(name);
+  if (!job || job.readyProbe) return;
+  job.readyProbe = true;
+  const net = require('net');
+  const started = Date.now();
+  const alive = () => jobs.get(name) === job && job.status === 'running' && job.compile === 'compiling' && !job.bundler && job.port;
+  const tick = () => {
+    if (!alive() || Date.now() - started > READY_PROBE_MAX_MS) return;
+    const sock = net.connect({ host: 'localhost', port: job.port });
+    sock.setTimeout(1000);
+    const done = (ok) => {
+      sock.destroy();
+      if (!alive()) return;
+      if (ok) { job.compile = 'ready'; broadcast(statusEvent(name)); } else setTimeout(tick, READY_PROBE_MS);
+    };
+    sock.once('connect', () => done(true));
+    sock.once('error', () => done(false));
+    sock.once('timeout', () => done(false));
+  };
+  setTimeout(tick, READY_PROBE_MS);
+}
 
 function statusEvent(name) {
   const job = jobs.get(name);
@@ -341,9 +372,10 @@ function pushLog(name, text) {
     if (job.log.length > MAX_LOG_LINES) job.log.shift();
     if (job.action === 'run') {
       let changed = false;
+      if (!job.bundler && BUNDLER_RE.test(piece)) job.bundler = true;
       if (!job.port) {
         const m = piece.match(PORT_RE);
-        if (m) { job.port = parseInt(m[1], 10); changed = true; }
+        if (m) { job.port = parseInt(m[1], 10); changed = true; if (job.compile === 'compiling') probeReady(name); }
       }
       const compile = COMPILE_FAIL_RE.test(piece) ? 'failed' : COMPILE_OK_RE.test(piece) ? 'ready' : null;
       if (compile && compile !== job.compile) { job.compile = compile; changed = true; }
@@ -1002,4 +1034,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE };
+module.exports = { parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE };
