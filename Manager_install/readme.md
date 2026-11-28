@@ -200,7 +200,7 @@ mfs unlock          # lista los repos bloqueados y, tras confirmar, quita los bl
 ### Repos Privados sin Guardar el Token en la Lista
 En `listRep.txt` pon solo el usuario en la URL, y da el token por variable de entorno:
 ```text
-https://carlos.camacho@dev.azure.com/AXAColpatriaInsurance/ARLSource/_git/txnportal-app-home
+https://user@dev.azure.com/AXAColpatriaInsurance/ARLSource/_git/txnportal-app-home
 ```
 ```bash
 read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN   # pide el token sin mostrarlo
