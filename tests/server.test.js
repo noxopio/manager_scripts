@@ -299,6 +299,20 @@ test('palette: filtro de comandos por palabras, sin tildes', async () => {
   assert.deepEqual(filterCommands(cmds, 'nada'), []);
 });
 
+test('empty-art: personaje al azar sin repetir y frases suficientes', async () => {
+  const { EMPTY_ARTS, pickEmptyArt, pickPhrase } = await import('../Manager_install/ui/js/empty-art.js');
+  const ids = EMPTY_ARTS.map((a) => a.id);
+  assert.deepEqual(ids, ['pulpo', 'gato', 'astronauta', 'terminal']);
+  for (const a of EMPTY_ARTS) assert.ok(a.phrases.length >= 3, `${a.id}: pocas frases`);
+  for (const prev of [null, ...ids]) {
+    for (const r of [0, 0.3, 0.6, 0.9999]) {
+      const id = pickEmptyArt(prev, () => r);
+      assert.ok(ids.includes(id)); assert.notEqual(id, prev);
+    }
+  }
+  assert.ok(EMPTY_ARTS[1].phrases.includes(pickPhrase('gato', () => 0.5)));
+});
+
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
   const out = parseCurlOutput([
     'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',

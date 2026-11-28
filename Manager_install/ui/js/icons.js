@@ -51,33 +51,7 @@ export function cupSvg(className = '') {
   return svg;
 }
 
-// Pulpo dormido (dibujo propio): ojos cerrados y "Z z z" que suben. Para los vacíos del panel de repos.
-const SLEEPY_SVG = `<svg viewBox="0 0 110 92" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-  <g class="sleepy-body">
-    <path d="M20 58V44a30 30 0 0 1 60 0v14"/>
-    <path d="M20 58q30 7 60 0"/>
-    <path d="M20 58c0 9-4 14-9 16M36 61c0 9 3 13-1 18M52 62c0 9-3 13 1 18M68 61c0 9 3 13-1 18M80 58c0 9 4 14 9 16"/>
-    <path d="M34 43q5 4 10 0M56 43q5 4 10 0"/>
-    <path d="M46 52q4 3 8 0"/>
-  </g>
-  <g class="sleepy-z" fill="currentColor" stroke="none" font-family="var(--font-display)" font-weight="800">
-    <text class="z1" x="82" y="34" font-size="10">z</text>
-    <text class="z2" x="89" y="22" font-size="13">z</text>
-    <text class="z3" x="97" y="9" font-size="16">Z</text>
-  </g>
-</svg>`;
-export function sleepySvg(className = 'sleepy') {
-  const t = document.createElement('template');
-  t.innerHTML = SLEEPY_SVG;
-  const svg = t.content.firstElementChild;
-  svg.setAttribute('class', className);
-  return svg;
-}
-// Vacío del panel de repos: el pulpo dormido en lugar del icono
-export function sleepyState(title, detail = '') {
-  return el('div', { class: 'empty empty-state sleepy-state' }, sleepySvg(), el('strong', {}, title), detail ? el('span', { class: 'empty-detail' }, detail) : null);
-}
-
+// Los vacíos del panel de repos (pulpo, gato, astronauta, terminal) están en empty-art.js
 export function emptyState(iconName, title, detail = '') {
   return el('div', { class: 'empty empty-state' }, icon(iconName), el('strong', {}, title), detail ? el('span', { class: 'empty-detail' }, detail) : null);
 }

@@ -1,6 +1,7 @@
 // Lista de repos: carga, pintado (cards y grupos), selección, log y acciones.
 import { $, el, api, toast, state, STATUS_LABEL, COMPILE_LABEL, ACTION_LABEL, listName, saveCollapsed, saveRunCmd, isBusy } from './core.js';
-import { icon, cupSvg, sleepyState } from './icons.js';
+import { icon, cupSvg } from './icons.js';
+import { emptyArtState, resetEmptyArt } from './empty-art.js';
 import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
 import { setLog } from './logview.js';
@@ -25,7 +26,7 @@ export async function loadRepos() {
     render(data.missing ? `No existe ${data.file}. Usa "Editar lista" para crearlo.` : null);
   } catch (e) {
     clearTimeout(loaderTimer);
-    if ($('#repos .repos-loading')) $('#repos').replaceChildren(sleepyState('No se pudo cargar la lista', e.message));
+    if ($('#repos .repos-loading')) $('#repos').replaceChildren(emptyArtState('error', 'No se pudo cargar la lista', e.message));
     toast(e.message);
   }
 }
@@ -92,7 +93,7 @@ export function render(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
   updateActivityIndicator();
   if (!state.repos.length) {
-    box.append(sleepyState(emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
+    box.append(emptyArtState(emptyMsg ? 'missing' : 'empty', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
     $('#toggleGroups').hidden = true;
     $('#repoFilterCount').textContent = '';
     return;
@@ -101,9 +102,10 @@ export function render(emptyMsg) {
   const visible = state.repos.filter((r) => repoMatches(r, query));
   $('#repoFilterCount').textContent = query ? `${visible.length}/${state.repos.length}` : '';
   if (!visible.length) {
-    box.append(sleepyState('Ningún repo coincide con el filtro', `"${query}" · Esc en el filtro para limpiarlo`));
+    box.append(emptyArtState('filter', 'Ningún repo coincide con el filtro', `"${query}" · Esc en el filtro para limpiarlo`));
     return;
   }
+  resetEmptyArt(); // hay repos visibles: el próximo vacío elegirá otro personaje
   const hasGroups = visible.some((r) => r.group);
   $('#toggleGroups').hidden = !hasGroups;
   if (!hasGroups) { for (const r of visible) box.append(repoCard(r)); return; }
