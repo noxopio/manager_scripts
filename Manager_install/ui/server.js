@@ -475,6 +475,13 @@ function saveLog(name, job) {
   } catch (e) { console.error('[WARNING] No se pudo guardar el log de', name, e.message); }
 }
 
+// Detección de comandos destructivos: la comparte el panel (js/danger.js es ESM, se carga con import())
+let dangerModule = null;
+async function dangerCheck() {
+  if (!dangerModule) dangerModule = await import(require('url').pathToFileURL(path.join(__dirname, 'js', 'danger.js')).href);
+  return dangerModule.isDangerousCmd;
+}
+
 function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, commitMsg } = {}, batchId = null) {
   const existing = jobs.get(repo.name);
   if (existing && (existing.status === 'running' || existing.status === 'stopping')) return false;
@@ -484,7 +491,9 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
   if (BRANCH_ACTIONS.has(action) && branch) opts.push('-b', branch);
   if (action === 'newbranch' && baseBranch) opts.push('-B', baseBranch);
   if ((action === 'install' || action === 'updeps') && installCmd) opts.push('-i', installCmd);
-  if (action === 'run' && runCmd) opts.push('-r', runCmd);
+  // -y: el panel ya pidió la confirmación (y el proceso no tiene terminal donde preguntar).
+  // Va después del par -r "cmd" para que el log muestre bien las comillas (opciones con valor en pares).
+  if (action === 'run' && runCmd) opts.push('-r', runCmd, '-y');
   if (action === 'commit') opts.push('-m', commitMsg);
   scriptArgs.push(...opts, action, toPosix(list));
 
@@ -971,6 +980,10 @@ const server = http.createServer(async (req, res) => {
       if (action === 'newbranch' && baseBranch && !(await isValidGitBranchName(baseBranch))) return send(res, 400, { error: 'El nombre de la rama base no es válido para Git' });
       if (action === 'run' && (runCmd.length > 500 || /[\r\n\0]/.test(runCmd))) {
         return send(res, 400, { error: 'El comando de Run no es válido (máx. 500 caracteres, sin saltos de línea ni NUL)' });
+      }
+      // Comando destructivo (rm -rf, git reset --hard…): solo con la confirmación reforzada del panel
+      if (action === 'run' && runCmd && (await dangerCheck())(runCmd) && body.confirmDanger !== true) {
+        return send(res, 409, { error: 'Comando destructivo: confírmalo en el panel (escribe EJECUTAR)' });
       }
       const commitMsg = String(body.commitMsg || '').trim();
       if (action === 'commit' && (!commitMsg || commitMsg.length > 2000)) {

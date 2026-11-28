@@ -377,6 +377,19 @@ test('empty-art: personaje al azar sin repetir y frases suficientes', async () =
   assert.ok(EMPTY_ARTS[1].phrases.includes(pickPhrase('gato', () => 0.5)));
 });
 
+test('danger: detecta comandos destructivos para Run con (-r)', async () => {
+  const { isDangerousCmd } = await import('../Manager_install/ui/js/danger.js');
+  for (const cmd of ['rm -rf node_modules', 'rm -fr x', 'RM -R x', 'rm --force a', 'cd src && rm -r dist', 'git reset --hard', 'git reset --hard origin/main',
+    'git push -f', 'git push origin main --force', 'git push origin +main', 'git clean -fdx', 'rmdir /s x', 'rd /S /Q build', 'del /q *.log',
+    'Remove-Item x -Recurse', 'find . -name "*.tmp" -delete', 'ls | xargs rm', 'git checkout -- .', 'git restore .', 'mkfs.ext4 /dev/sdb1', 'dd if=/dev/zero of=x', 'format D:']) {
+    assert.equal(isDangerousCmd(cmd), true, cmd);
+  }
+  for (const cmd of ['mkdir test', 'npm run start', 'git log -1 --oneline', 'git push', 'git push -u origin HEAD', 'rmdir vacia', 'npm run rm-cache',
+    'echo rm', 'git checkout develop', 'git restore src/a.js', 'npm ci', 'git clean -n', 'node server.js', '']) {
+    assert.equal(isDangerousCmd(cmd), false, cmd);
+  }
+});
+
 test('list-art: ilustración del final de la lista al azar sin repetir la anterior', async () => {
   const { LIST_ARTS, pickListArt } = await import('../Manager_install/ui/js/list-art.js');
   assert.deepEqual(LIST_ARTS, ['audifonos', 'auriculares', 'cerebro']);

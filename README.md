@@ -203,6 +203,17 @@ mfs run
 mfs run ../listas/otra.txt
 ```
 
+### Comandos Personalizados (`-r`)
+`-r` reemplaza el comando de run del `.txt` y lo ejecuta **a la vez en la carpeta de todos los repos** de la lista. Por eso primero muestra una vista previa con el comando y los repos, y pide confirmación:
+```bash
+mfs -r "mkdir test" run           # vista previa + ¿Continuar? [s/N]
+mfs -r "git log -1 --oneline" run
+mfs -y -r "npm run lint" run      # -y (o MFS_YES=1) omite la confirmación
+```
+- Los comandos **destructivos** (`rm -rf`, `rmdir /s`, `git reset --hard`, `git clean -f`, `git push --force`, `git checkout -- .`…) muestran un aviso de peligro y piden escribir `EJECUTAR`.
+- Sin terminal (scripts o CI), un comando normal se ejecuta con un aviso, pero uno destructivo **se cancela** salvo que se use `-y`.
+- En el panel, **Run con** hace lo mismo: diálogo con la vista previa al ejecutarlo en varios repos y `EJECUTAR` para los destructivos, aunque sea en un solo repo. El servidor rechaza los destructivos que no lleguen confirmados.
+
 ### Actualizar Dependencias
 ```bash
 mfs updeps listRep.txt
@@ -280,7 +291,7 @@ mfs ui --port 5000 --no-open     # puerto fijo, sin abrir el navegador
 - **Acciones globales** sobre los repos seleccionados: Pull (con rama), Install, Updeps, Run y Detener todo.
 - **Log independiente por repo**, en vivo. La casilla **Seguir** desplaza el log hasta la última línea; desmárcala para leer líneas anteriores sin que la vista se mueva.
 - **Install con**: comando de instalación personalizado (equivale a `-i`), con sugerencias.
-- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`.
+- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`. Con varios repos pide confirmación con la vista previa; si el comando es destructivo (`rm -rf`, `git reset --hard`…) hay que escribir `EJECUTAR`.
 - Indicador discreto de actividad a la derecha del estado del token mientras hay comandos activos; respeta la preferencia del sistema para reducir movimiento.
 - Consola vacía con marca de agua MFS, estados vacíos ilustrados e indicadores de estado sutiles en las tarjetas.
 - **Git**:

@@ -166,7 +166,11 @@ show_usage() {
     # Ejemplo de install/updeps con comando personalizado
     log_description "Instala/actualiza dependencias con un comando personalizado (por defecto 'npm install')."
     printf "${CIAN}  %-10s %-60s ${RESET}\n" "${COMMANDS[2]} (-i):" "mfs -i \"npm i --legacy-peer-deps\" ${COMMANDS[2]} [opcional: custom.txt]"
-     
+
+    # Run con un comando personalizado: vista previa y confirmación
+    log_description "Ejecuta un comando propio en TODOS los repos a la vez (muestra vista previa y pide confirmación; -y la omite). Los destructivos (rm -rf, git reset --hard…) piden escribir EJECUTAR."
+    printf "${CIAN}  %-10s %-60s ${RESET}\n" "run (-r):" "mfs -r \"mkdir test\" run [opcional: custom.txt]   ·   mfs -y -r \"...\" run (sin confirmar)"
+
 
     # Ejemplo de uso para el comando "kill"
     log_description "Mata los procesos de Node en ejecución."

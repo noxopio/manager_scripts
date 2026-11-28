@@ -7,6 +7,8 @@ import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
 import { setLog } from './logview.js';
 import { elapsedText } from './time.js';
+import { ask } from './dialogs.js';
+import { isDangerousCmd } from './danger.js';
 
 // Loader del panel de repos (primera carga o cambio de lista): la taza de café humeante.
 // Solo aparece si la carga tarda más de 150 ms, para no parpadear en cargas rápidas.
@@ -361,6 +363,24 @@ export async function runAction(action, names, extra = {}) {
   const branch = $('#branch').value.trim();
   const installCmd = $('#installCmd').value.trim();
   const runCmd = action === 'run' ? $('#runCmd').value.trim() : '';
+  // "Run con" ejecuta un comando propio en todos los repos elegidos a la vez: vista previa y confirmación.
+  // Varios repos → confirmar; comando destructivo (incluso en uno) → escribir EJECUTAR.
+  if (runCmd) {
+    const preview = `Comando:  ${runCmd}\n\nSe ejecutará a la vez en ${names.length} repo(s):\n${names.map((n) => '  · ' + n).join('\n')}`;
+    if (isDangerousCmd(runCmd)) {
+      const typed = await ask({
+        title: '⚠ Comando destructivo',
+        message: `${preview}\n\nParece borrar archivos, reescribir historial git o tocar discos, y no se puede deshacer.\nEscribe EJECUTAR para confirmar.`,
+        okText: `Ejecutar en ${names.length} repo(s)`, danger: true, input: true,
+      });
+      if (typed === null) return;
+      if (typed !== 'EJECUTAR') return toast('Cancelado: no escribiste EJECUTAR');
+      extra = { ...extra, confirmDanger: true };
+    } else if (names.length > 1) {
+      const ok = await ask({ title: 'Run con comando personalizado', message: preview, okText: `Ejecutar en ${names.length} repos` });
+      if (!ok) return;
+    }
+  }
   localStorage.setItem('mfs.branch', branch);
   localStorage.setItem('mfs.installCmd', installCmd);
   if (action === 'run') saveRunCmd();

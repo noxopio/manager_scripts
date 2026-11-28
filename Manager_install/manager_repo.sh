@@ -92,6 +92,9 @@ set -e
 ## Uso de un comando de instalación personalizado:
 # Con la opción -i se cambia el comando que usan 'install' y 'updeps' (por defecto 'npm install').
 # Con -r se sobrescribe el comando de 'run'; si se omite, se usa el comando de cada línea del .txt.
+# Con -r se muestra una vista previa (comando y repos) y se pide confirmación; los comandos destructivos
+# (rm -rf, git reset --hard, git push --force…) piden escribir EJECUTAR. -y (o MFS_YES=1) omite la confirmación;
+# sin terminal (scripts/CI) un comando normal sigue con aviso y uno destructivo se cancela salvo con -y.
 # Ejemplos:
 # ./manager_repo.sh -i "npm i --legacy-peer-deps" install listRep.txt
 # ./manager_repo.sh -i "npm ci" updeps
@@ -122,6 +125,7 @@ BASE_BRANCH=""  # Rama base opcional solo para newbranch; vacío = HEAD actual
 INSTALL_CMD="npm install"  # Comando de instalación por defecto (install / updeps)
 RUN_CMD=""  # Sobrescritura opcional del comando run (vacío = usar el comando de la lista)
 COMMIT_MSG=""  # Mensaje para 'commit' (opción -m)
+ASSUME_YES="${MFS_YES:-0}"  # -y o MFS_YES=1: no pedir confirmación antes de run con -r
 
 ## Token git sin guardarlo en la lista: si MFS_GIT_TOKEN está definido, git lo pide vía GIT_ASKPASS
 ## solo cuando el remoto exige credenciales. Las URLs que ya traen usuario:token siguen funcionando igual.
@@ -168,8 +172,9 @@ ps_process() {
 }
  
 ## Procesar las opciones de línea de comandos
-while getopts ":b:B:i:r:m:" opt; do
+while getopts ":b:B:i:r:m:y" opt; do
     case "$opt" in
+        y) ASSUME_YES=1 ;;  # Sin confirmación para -r (scripts/CI y el panel, que ya confirmó)
         b) BRANCH="$OPTARG"; BRANCH_SET=1 ;;  # Rama objetivo personalizada
         B) BASE_BRANCH="$OPTARG" ;;  # Rama base de newbranch
         i) INSTALL_CMD="$OPTARG" ;;  # Comando de instalación personalizado
@@ -575,8 +580,68 @@ open_external_terminal() {
     nohup bash -c "$inner" > "$dir/mfs-run.log" 2>&1 &
 }
 
+## ¿El comando es destructivo? (borra archivos, reescribe historial git o toca discos)
+## La misma lista está en ui/js/danger.js (panel y servidor): si cambias una, cambia la otra.
+is_dangerous_cmd() {
+    local a='([^|;&]*[[:space:]])?'
+    printf '%s' "$1" | grep -Eiq \
+        -e "\brm[[:space:]]+${a}(-[a-z]*[rf][a-z]*|--recursive|--force)" \
+        -e "\b(rmdir|rd)[[:space:]]+${a}/s\b" \
+        -e "\bdel[[:space:]]+${a}/[sfq]\b" \
+        -e '\bremove-item\b[^|;&]*-recurse' \
+        -e '\bfind\b[^|;&]*[[:space:]]-delete\b' \
+        -e '\bxargs[[:space:]]+(-[^[:space:]]+[[:space:]]+)*rm\b' \
+        -e "\bgit[[:space:]]+clean[[:space:]]+${a}-[a-z]*f" \
+        -e "\bgit[[:space:]]+reset[[:space:]]+${a}--hard\b" \
+        -e '\bgit[[:space:]]+push\b[^|;&]*[[:space:]](--force|-f\b|\+[^[:space:]])' \
+        -e "\bgit[[:space:]]+checkout[[:space:]]+${a}--[[:space:]]+\." \
+        -e "\bgit[[:space:]]+restore[[:space:]]+${a}\.([[:space:]]|$)" \
+        -e '\bmkfs\b' \
+        -e '\bdd[[:space:]]+[^|;&]*\bif=' \
+        -e '\bformat[[:space:]]+[a-z]:'
+}
+
+## Vista previa y confirmación antes de "run" con -r: el comando se ejecuta en TODOS los repos de la lista a la vez.
+## -y / MFS_YES=1 la omiten. Sin terminal (scripts/CI): un comando normal sigue con aviso; uno destructivo se cancela.
+confirm_custom_run() {
+    [[ -z "$RUN_CMD" ]] && return 0
+    local targets=() repo_url name answer danger=0
+    for repo_url in "${!source_repos[@]}"; do
+        name=$(basename "$repo_url" .git)
+        [ -d "$name" ] && targets+=("$name")
+    done
+    [ "${#targets[@]}" -eq 0 ] && return 0   # nada que ejecutar: run_repos ya avisa repo por repo
+    is_dangerous_cmd "$RUN_CMD" && danger=1
+
+    log_warning "Comando personalizado (-r) en ${#targets[@]} repo(s) a la vez:"
+    printf '  comando: %s\n  repos:   %s\n' "$RUN_CMD" "${targets[*]}"
+    [ "$danger" -eq 1 ] && log_error "PELIGRO: el comando parece destructivo (borra archivos, reescribe historial git o toca discos)."
+
+    if [ "$ASSUME_YES" = "1" ]; then
+        log_info "Confirmación omitida (-y)."
+        return 0
+    fi
+    if [ ! -t 0 ]; then
+        if [ "$danger" -eq 1 ]; then
+            log_error "Cancelado: sin terminal no se ejecutan comandos destructivos. Usa -y si de verdad quieres ejecutarlo."
+            exit 1
+        fi
+        log_warning "Sin terminal para confirmar: se ejecuta (usa -y para ocultar este aviso)."
+        return 0
+    fi
+    if [ "$danger" -eq 1 ]; then
+        read -r -p "Escribe EJECUTAR para continuar: " answer
+        [ "$answer" = "EJECUTAR" ] || { log_info "Cancelado. No se ejecutó nada."; exit 1; }
+    else
+        read -r -p "¿Continuar? [s/N] " answer
+        answer=$(echo "$answer" | tr '[:upper:]' '[:lower:]')
+        [[ "$answer" == "s" || "$answer" == "si" || "$answer" == "sí" ]] || { log_info "Cancelado. No se ejecutó nada."; exit 1; }
+    fi
+}
+
 ##Función para ejecutar los repositorios.
 run_repos() {
+    confirm_custom_run
     for repo_url in "${!source_repos[@]}"; do
         repo_name=$(basename "$repo_url" .git)  # git clone crea la carpeta sin ".git"
         run_command="${source_repos[$repo_url]}"

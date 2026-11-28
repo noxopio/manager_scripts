@@ -224,6 +224,17 @@ mfs -b develop -i "pnpm install" install
 mfs run
 ```
 
+### Comandos Personalizados (`-r`)
+`-r` reemplaza el comando de run del `.txt` y lo ejecuta **a la vez en la carpeta de todos los repos** de la lista. Por eso primero muestra una vista previa con el comando y los repos, y pide confirmación:
+```bash
+mfs -r "mkdir test" run           # vista previa + ¿Continuar? [s/N]
+mfs -r "git log -1 --oneline" run
+mfs -y -r "npm run lint" run      # -y (o MFS_YES=1) omite la confirmación
+```
+- Los comandos **destructivos** (`rm -rf`, `rmdir /s`, `git reset --hard`, `git clean -f`, `git push --force`, `git checkout -- .`…) muestran un aviso de peligro y piden escribir `EJECUTAR`.
+- Sin terminal (scripts o CI), un comando normal se ejecuta con un aviso, pero uno destructivo **se cancela** salvo que se use `-y`.
+- En el panel, **Run con** hace lo mismo: diálogo con la vista previa al ejecutarlo en varios repos y `EJECUTAR` para los destructivos, aunque sea en un solo repo. El servidor rechaza los destructivos que no lleguen confirmados.
+
 ### Actualizar Dependencias
 ```bash
 mfs updeps listRep.txt
@@ -266,7 +277,7 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - Las listas nuevas solo se pueden crear dentro de la carpeta de trabajo; las que ya existen se pueden editar estén donde estén.
 - **Token git**: campo de la cabecera para repos privados (URL `https://usuario@host/...`). Se guarda solo en la memoria del panel mientras está abierto, nunca en disco. También lo usa "Importar de GitHub" si su campo de token está vacío. Si un push necesita credenciales y no hay token ni gestor de credenciales, falla con un mensaje en lugar de quedarse esperando.
 - **Install con**: comando que usan Install y Updeps (equivale a `mfs -i`). Si se deja vacío, se usa `npm install`. Trae sugerencias como `npm i --legacy-peer-deps` o `npm ci`.
-- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`.
+- **Run con**: comando opcional para los repos seleccionados. Vacío conserva el comando de cada repo (o `npm run start` si no está definido). Se recuerda por lista en este navegador y no modifica el `.txt`. Con varios repos pide confirmación con la vista previa; si el comando es destructivo (`rm -rf`, `git reset --hard`…) hay que escribir `EJECUTAR`.
 - Un indicador discreto a la derecha del estado del token muestra cuántas operaciones siguen activas y respeta la preferencia del sistema para reducir movimiento.
 - La consola vacía muestra una marca de agua MFS; los estados vacíos tienen iconos y las tarjetas usan acentos sutiles según su estado.
 - **Seguir** (en el panel de logs): desplaza el log automáticamente hasta la última línea. Desmárcalo para leer líneas anteriores sin que la salida nueva mueva la vista.
