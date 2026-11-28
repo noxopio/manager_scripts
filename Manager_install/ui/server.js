@@ -321,6 +321,8 @@ async function describeRepo(r) {
     port: job ? job.port : null,
     compile: job ? job.compile : null,
     healthState: job ? job.healthState || null : null,
+    startedAt: job ? job.startedAt || null : null,
+    endedAt: job ? job.endedAt || null : null,
   };
 }
 
@@ -397,7 +399,10 @@ function probeReady(name) {
 
 function statusEvent(name) {
   const job = jobs.get(name);
-  return { type: 'status', repo: name, status: job.status, action: job.action, port: job.port, compile: job.compile, healthState: job.healthState || null };
+  return {
+    type: 'status', repo: name, status: job.status, action: job.action, port: job.port, compile: job.compile,
+    healthState: job.healthState || null, startedAt: job.startedAt || null, endedAt: job.endedAt || null,
+  };
 }
 
 function pushLog(name, text) {
@@ -496,6 +501,7 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
     compile: action === 'run' && !repo.isNew ? 'compiling' : null,
     closed: false, killDone: false, batchId,
     health: action === 'run' ? repo.health || null : null, healthState: null, // "#> health:" del .txt
+    startedAt: new Date().toISOString(), endedAt: null, // tiempo en la tarjeta ("arriba 1 h", "pull ok en 8 s")
   });
   setStatus(repo.name, 'running');
   const shown = opts.map((o, i) => (i % 2 ? `"${o}"` : o)).join(' ');
@@ -506,6 +512,8 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
   child.stderr.on('data', (d) => pushLog(repo.name, d.toString()));
   child.on('error', (err) => {
     pushLog(repo.name, `[ERROR] No se pudo ejecutar "${BASH}": ${err.message}. Define MFS_BASH con la ruta a bash.exe.`);
+    const failed = jobs.get(repo.name);
+    if (failed && failed.child === child) failed.endedAt = new Date().toISOString();
     setStatus(repo.name, 'error');
     if (batchId) batchDone(batchId, repo.name, 'error');
   });
@@ -513,6 +521,7 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
     const job = jobs.get(repo.name);
     if (!job || job.child !== child) return;
     job.closed = true;
+    job.endedAt = new Date().toISOString();
     pushLog(repo.name, `── proceso terminado (código ${code}) ──`);
     saveLog(repo.name, job);
     if (job.stopping) finishStop(repo.name); // "detenido" solo cuando además el puerto quede libre
@@ -1013,6 +1022,17 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { stopped: stopJob(String(body.repo || '')) ? 1 : 0 });
     }
 
+    if (req.method === 'POST' && p === '/api/open') {
+      const body = await readBody(req);
+      const target = body.target === 'folder' ? 'folder' : 'code';
+      const { repos } = readRepos(body.list);
+      const dir = resolveRepoDir(body.repo, repos, WORK_DIR);
+      if (!dir) return send(res, 400, { error: 'Repo no válido para esta lista' });
+      if (!fs.existsSync(dir)) return send(res, 400, { error: `${body.repo} no está clonado (haz Pull primero)` });
+      try { await openRepoPath(target, dir); } catch (e) { return send(res, 400, { error: e.message }); }
+      return send(res, 200, { opened: true, target, dir });
+    }
+
     if (req.method === 'POST' && p === '/api/curl') {
       const body = await readBody(req);
       let parsed;
@@ -1025,6 +1045,39 @@ const server = http.createServer(async (req, res) => {
     return send(res, 500, { error: err.message });
   }
 });
+
+// ── Abrir un repo en VS Code o en el explorador de archivos (botones de la tarjeta) ──
+// Carpeta del repo si está en la lista y dentro del directorio de trabajo; si no, null. Pura, para los tests.
+function resolveRepoDir(name, repos, workDir) {
+  const n = String(name || '');
+  if (!n || /[\\/]/.test(n) || n === '.' || n === '..') return null;
+  if (!repos.some((r) => r.name === n)) return null;
+  const dir = path.join(workDir, n);
+  return isInside(workDir, dir) && dir !== path.resolve(workDir) ? dir : null;
+}
+
+function openRepoPath(target, dir) {
+  return new Promise((resolve, reject) => {
+    if (target === 'folder') {
+      const cmd = IS_WIN ? ['explorer.exe', [dir]] : process.platform === 'darwin' ? ['open', [dir]] : ['xdg-open', [dir]];
+      try {
+        const child = spawn(cmd[0], cmd[1], { detached: true, stdio: 'ignore', windowsHide: true });
+        child.on('error', (e) => reject(new Error(`No se pudo abrir el explorador: ${e.message}`)));
+        child.unref();
+        setTimeout(resolve, 300); // explorer.exe devuelve 1 aunque abra bien: no se mira el código
+      } catch (e) { reject(e); }
+      return;
+    }
+    // VS Code: en Windows "code" es un .cmd, así que se lanza a través de cmd /c
+    const cmd = IS_WIN ? ['cmd', ['/c', 'code', dir]] : ['code', [dir]];
+    const notFound = new Error('No se encuentra el comando "code". En VS Code: Ctrl+Shift+P → "Shell Command: Install \'code\' command in PATH" y reinicia el panel.');
+    let child;
+    try { child = spawn(cmd[0], cmd[1], { detached: !IS_WIN, stdio: 'ignore', windowsHide: true }); } catch { return reject(notFound); }
+    const timer = setTimeout(() => { child.unref(); resolve(); }, 2500); // sigue vivo: VS Code se está abriendo
+    child.on('error', () => { clearTimeout(timer); reject(notFound); });
+    child.on('exit', (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(notFound); });
+  });
+}
 
 function openBrowser(url) {
   const cmd = IS_WIN ? ['cmd', ['/c', 'start', '', url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
@@ -1072,4 +1125,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, healthUrl, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE };
+module.exports = { parseList, healthUrl, resolveRepoDir, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE };

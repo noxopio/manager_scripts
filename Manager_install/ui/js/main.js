@@ -13,6 +13,7 @@ import './idle.js';
 import './workday.js';
 import { clearLog } from './logview.js';
 import './palette.js';
+import './splitter.js';
 
 $('#browseBtn').prepend(icon('folder'));
 $('#refresh').append(icon('refresh'));

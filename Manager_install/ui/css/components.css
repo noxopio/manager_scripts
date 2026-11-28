@@ -36,6 +36,44 @@
 .list-filter { display: flex; align-items: center; gap: 8px; padding: 12px 12px 0; }
 .list-filter input { flex: 1; width: auto; min-width: 0; height: 32px; padding: 0 14px; border-radius: var(--radius-pill); font-size: 12px; }
 .list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+
+/* Barra de resumen clicable (filtra por estado) */
+.repo-summary { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; }
+.sum-chip { padding: 2px 11px; font-size: 11.5px; border-radius: var(--radius-pill); border-color: transparent; color: var(--muted); }
+.sum-chip.run { color: var(--run); } .sum-chip.warn { color: var(--warn); } .sum-chip.err { color: var(--err); }
+.sum-chip:hover { border-color: currentColor; background: var(--control-bg-hover); }
+.sum-chip.active { box-shadow: var(--neu-in-sm); background: color-mix(in srgb, currentColor 14%, var(--field-bg)); border-color: currentColor; }
+
+/* Botones solo con icono (VS Code, carpeta, vista compacta) */
+button.icon-only { display: inline-flex; align-items: center; justify-content: center; padding: 3px 7px; }
+button.icon-only .icon { width: 14px; height: 14px; flex-basis: 14px; }
+#compactToggle { height: 32px; padding: 0 10px; border-radius: var(--radius-pill); }
+#compactToggle .icon { width: 17px; height: 17px; flex-basis: 17px; }
+#compactToggle[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); box-shadow: var(--neu-in-sm); }
+.card .act-open { display: inline-flex; gap: 4px; margin-left: 2px; }
+
+/* Tarjeta enfocada con el teclado */
+.card:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--neu-in), 0 0 0 3px var(--accent-soft); }
+/* Tiempo en la tarjeta */
+.card .elapsed { font-variant-numeric: tabular-nums; color: var(--muted); }
+.card .port-compact { display: none; }
+
+/* Vista compacta: una fila por repo (nombre, health, puerto, estado y acciones básicas) */
+.compact-list .list { gap: 6px; }
+.compact-list .card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 6px 10px 6px 14px; }
+.compact-list .card::before { top: 7px; bottom: 7px; }
+.compact-list .card .meta, .compact-list .card .act-git { display: none; }
+/* En compacta el estado es solo el punto de color (texto en el tooltip) y el nombre tiene sitio garantizado */
+.compact-list .card .status { padding: 4px; }
+.compact-list .card .status .st-text { display: none; }
+.compact-list .card .health { font-size: 0; gap: 0; padding: 4px; } /* solo el punto verde/rojo */
+.compact-list .card .top { min-width: 0; overflow: hidden; gap: 6px; }
+.compact-list .card .name { min-width: 4em; }
+.compact-list .card .top > :not(.name) { flex: none; }
+.compact-list .card .actions { margin-top: 0; flex-wrap: nowrap; }
+.compact-list .card .port-compact { display: inline; font-size: 12px; }
+.compact-list .group > summary { padding-block: 3px; }
+.compact-list .group > .card { margin-top: 6px; }
 .card {
   position: relative; flex: none; padding: 11px 12px 11px 16px; cursor: pointer;
   background: var(--field-bg); border: 1px solid transparent; border-radius: var(--radius);
@@ -56,6 +94,7 @@
 .card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); align-items: center; }
 .card .actions { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
 .card .actions .sep { height: 16px; }
+.card .actions button.sm { padding-inline: 8px; } /* que Pull…Push quepan en una fila con el ancho por defecto */
 
 /* ── Grupos (## Nombre en el .txt) ── */
 .group { display: flex; flex-direction: column; }

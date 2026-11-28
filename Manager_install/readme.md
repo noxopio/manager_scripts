@@ -247,6 +247,12 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
   #> health: /health
   ```
 - **Filtro de repos**: la caja sobre la lista filtra por nombre, rama, grupo, estado (`run`, `error`, `listo`…) o comando. Atajo `/`, y Esc para limpiarlo. Se recuerda por lista.
+- **Barra de resumen** sobre la lista: "N en ejecución · N con cambios · N con error · N sin clonar · N bloqueados". Al pulsar una píldora, la lista se filtra por ese estado; al volver a pulsarla se quita el filtro.
+- **Vista compacta** (botón junto al filtro): una fila por repo con nombre, estado, puerto y las acciones básicas. Útil con listas largas. Se recuerda en el navegador.
+- **Divisor** entre la lista y el log: arrástralo para dar más espacio a uno u otro (también con ← → si tiene el foco). Doble clic vuelve al ancho por defecto. Se recuerda en el navegador.
+- **Tiempo** en cada tarjeta: "⏱ arriba 1 h 12 min" mientras corre un Run, o "pull ok en 8 s · hace 3 min" al terminar.
+- Botones **VS Code** y **Carpeta** en cada tarjeta: abren el repo en VS Code (necesita el comando `code` en el PATH; en VS Code: Ctrl+Shift+P → "Shell Command: Install 'code' command in PATH") o en el explorador de archivos.
+- **Atajos en la lista** (con una tarjeta enfocada): ↑/↓ o j/k para moverse, Enter abre su log, Espacio la marca, R/P/I hacen Run/Pull/Install, D la detiene y O la abre en VS Code. Con `?` se ven todos los atajos.
 - **Ctrl+K** abre una paleta de comandos: Pull, Run, Detener todo, acciones git, herramientas, cambiar de lista, ver el log de un repo… Se escribe para filtrar, ↑/↓ para elegir y Enter para ejecutar.
 - **Log**: buscador con contador y resaltado (Enter/Shift+Enter para moverse, Ctrl+F con el foco en el log), líneas `ERROR` en rojo y `WARN` en ámbar, y botón **Descargar** para guardar el log como `.txt`.
 - **Avisos** (LAUNCH PAD → Avisos): con el panel en segundo plano, notificación del sistema y contador en el título de la pestaña cuando un repo termina, falla o queda listo. Al pulsar la notificación se abre el log de ese repo.

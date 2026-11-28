@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark light">
-<title>mfs · Panel de Repos</title>
-<link rel="icon" href="data:,">
+<title>Launch Pad</title>
+<link rel="icon" href="data:,"><!-- marcador vacío (evita el 404 de /favicon.ico); js/favicon.js pone el icono -->
 <script src="js/theme-boot.js"></script>
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -220,9 +220,14 @@
     <div class="list-filter" role="search">
       <input type="text" id="repoFilter" placeholder="Filtrar repos: nombre, rama, grupo o estado  ( / )   ·   Ctrl+K comandos" spellcheck="false" autocomplete="off" aria-label="Filtrar repos">
       <span class="log-count" id="repoFilterCount" aria-live="polite"></span>
+      <button class="sm icon-only" id="compactToggle" aria-pressed="false" title="Vista compacta: una fila por repo" aria-label="Vista compacta"></button>
     </div>
+    <!-- Resumen clicable: filtra por estado (js/repos.js) -->
+    <div class="repo-summary" id="repoSummary" hidden></div>
     <section class="list" id="repos"></section>
   </div>
+  <!-- Divisor arrastrable entre la lista y el log (js/splitter.js); doble clic restablece -->
+  <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-label="Ajustar el ancho de la lista (← →, doble clic restablece)" tabindex="0"></div>
   <section class="logpane glass">
     <div class="head">
       <strong id="logTitle">Selecciona un repo para ver su log</strong>
@@ -427,6 +432,25 @@
   <div class="row dlg-foot">
     <button id="curlClose">Cerrar</button>
   </div>
+</dialog>
+
+<!-- Ayuda de atajos de teclado ("?") -->
+<dialog id="keysHelp" class="keys-help" aria-label="Atajos de teclado">
+  <div class="row dlg-head"><strong>Atajos de teclado</strong><button id="keysHelpClose">Cerrar</button></div>
+  <table class="keys-table">
+    <tr><th colspan="2">En la lista de repos (con una tarjeta enfocada)</th></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd> · <kbd>k</kbd> <kbd>j</kbd></td><td>Repo anterior / siguiente (<kbd>Inicio</kbd> <kbd>Fin</kbd>: primero / último)</td></tr>
+    <tr><td><kbd>Enter</kbd></td><td>Ver su log</td></tr>
+    <tr><td><kbd>Espacio</kbd></td><td>Marcar / desmarcar</td></tr>
+    <tr><td><kbd>R</kbd> <kbd>P</kbd> <kbd>I</kbd></td><td>Run / Pull / Install de ese repo</td></tr>
+    <tr><td><kbd>D</kbd></td><td>Detener</td></tr>
+    <tr><td><kbd>O</kbd></td><td>Abrir en VS Code</td></tr>
+    <tr><th colspan="2">En todo el panel</th></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Paleta de comandos</td></tr>
+    <tr><td><kbd>/</kbd></td><td>Filtrar repos (<kbd>Esc</kbd> limpia)</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>F</kbd></td><td>Buscar en el log (con el foco en el log)</td></tr>
+    <tr><td><kbd>?</kbd></td><td>Esta ayuda</td></tr>
+  </table>
 </dialog>
 
 <!-- Paleta de comandos (Ctrl+K, js/palette.js) -->

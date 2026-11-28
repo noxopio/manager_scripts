@@ -81,9 +81,9 @@ body.sidebar-closed .sidebar { display: none; }
 /* LAUNCH PAD: vertical, leído de abajo arriba, grabado como el "M F S" */
 .rail-title {
   position: relative; flex: 1; min-height: 0; margin-top: 8px;
-  writing-mode: sideways-lr; /* de abajo arriba sin girar: las sombras quedan igual que en el texto horizontal */
+  writing-mode: vertical-lr; /* de abajo arriba sin girar: las sombras quedan igual que en el texto horizontal */
   font: 800 34px/1 var(--font-display); letter-spacing: .32em; white-space: nowrap; text-align: center;
-  -webkit-text-stroke: 1px transparent;
+  -webkit-text-stroke: 1px transparent;text-orientation: upright;
   transition: text-shadow .25s, -webkit-text-stroke-color .25s;
 }
 @supports not (writing-mode: sideways-lr) {

@@ -2,6 +2,7 @@
 // cuando un repo termina (ok), falla (error / compilación fallida) o queda listo (run).
 // Se activa en la tarjeta de LAUNCH PAD → Avisos y se guarda en este navegador (mfs.notify).
 import { $, toast, ACTION_LABEL } from './core.js';
+import { setFaviconBadge } from './favicon.js';
 
 const KEY = 'mfs.notify';
 
@@ -42,7 +43,7 @@ if (typeof document !== 'undefined') {
     toast('Avisos activados');
   });
 
-  const resetTitle = () => { unseen = 0; document.title = baseTitle; };
+  const resetTitle = () => { unseen = 0; document.title = baseTitle; setFaviconBadge(false); };
   document.addEventListener('visibilitychange', () => { if (!away()) resetTitle(); });
   window.addEventListener('focus', resetTitle);
 
@@ -58,6 +59,7 @@ if (typeof document !== 'undefined') {
     if (!kind || !enabled() || !away()) return;
     unseen += 1;
     document.title = `(${unseen}) ${baseTitle}`;
+    setFaviconBadge(true); // punto rojo en el favicon hasta volver al panel
     const [title, body] = TEXT[kind](repo, next.action);
     const n = new Notification(title, { body, tag: `mfs-${repo}`, silent: kind === 'ok' || kind === 'ready' });
     // Al pulsar la notificación: volver al panel y abrir el log de ese repo

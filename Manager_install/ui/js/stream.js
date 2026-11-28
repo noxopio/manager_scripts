@@ -14,6 +14,7 @@ export function connectStream() {
     } else if (msg.type === 'status' && r) {
       const prev = { status: r.status, action: r.action, compile: r.compile };
       r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile; r.healthState = msg.healthState;
+      r.startedAt = msg.startedAt; r.endedAt = msg.endedAt;
       try { notifyStatus(r.name, prev, msg); } catch (e) { console.warn('Aviso no mostrado:', e.message); } // nunca impide repintar
       render();
       if (msg.status !== 'running' && msg.status !== 'stopping') scheduleRefresh();

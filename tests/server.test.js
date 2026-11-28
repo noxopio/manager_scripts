@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, healthUrl, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE,
+  parseList, healthUrl, resolveRepoDir, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -61,6 +61,32 @@ test('healthUrl: ruta relativa al puerto o URL completa', () => {
   assert.equal(healthUrl('https://api.dev/ping', null), 'https://api.dev/ping');
   assert.equal(healthUrl('/health', null), null); // aún sin puerto
   assert.equal(healthUrl(null, 3000), null);
+});
+
+test('resolveRepoDir: solo repos de la lista y dentro del directorio de trabajo', () => {
+  const wd = path.resolve('trabajo');
+  const repos = [{ name: 'api' }, { name: 'web' }];
+  assert.equal(resolveRepoDir('api', repos, wd), path.join(wd, 'api'));
+  assert.equal(resolveRepoDir('otro', repos, wd), null);          // no está en la lista
+  assert.equal(resolveRepoDir('../api', repos, wd), null);        // intento de salir
+  assert.equal(resolveRepoDir('..', [{ name: '..' }], wd), null);
+  assert.equal(resolveRepoDir('a/b', [{ name: 'a/b' }], wd), null);
+  assert.equal(resolveRepoDir('', repos, wd), null);
+});
+
+test('time: duraciones y texto de tiempo de la tarjeta', async () => {
+  const { fmtElapsed, elapsedText } = await import('../Manager_install/ui/js/time.js');
+  assert.equal(fmtElapsed(8000), '8 s');
+  assert.equal(fmtElapsed(3 * 60000 + 5000), '3 min');
+  assert.equal(fmtElapsed(72 * 60000), '1 h 12 min');
+  assert.equal(fmtElapsed(2 * 3600000), '2 h');
+  const t0 = Date.parse('2026-11-27T10:00:00Z');
+  const iso = (ms) => new Date(t0 + ms).toISOString();
+  assert.equal(elapsedText({ status: 'running', action: 'run', startedAt: iso(0) }, t0 + 72 * 60000), '⏱ arriba 1 h 12 min');
+  assert.equal(elapsedText({ status: 'running', action: 'pull', startedAt: iso(0) }, t0 + 25000), '⏱ 25 s');
+  assert.equal(elapsedText({ status: 'ok', action: 'pull', startedAt: iso(0), endedAt: iso(8000) }, t0 + 8000 + 180000), 'pull ok en 8 s · hace 3 min');
+  assert.equal(elapsedText({ status: 'error', action: 'install', startedAt: iso(0), endedAt: iso(41000) }, t0 + 41000), 'install con error en 41 s · hace 0 s');
+  assert.equal(elapsedText({ status: 'idle' }), '');
 });
 
 test('normalizePath: rutas relativas al directorio de trabajo', () => {
@@ -122,6 +148,20 @@ test('staticFile: solo /css/*.css y /js/*.js dentro de ui/', () => {
   assert.equal(staticFile('/css/x.txt', root), null);
   assert.equal(staticFile('/server.js', root), null);
   assert.equal(staticFile('/js/sub/a.js', root), null);
+  assert.equal(staticFile('/assets/logo.svg', root), null); // el favicon se genera en js/favicon.js, no hay assets
+  assert.equal(staticFile('/css/logo.svg', root), null);
+});
+
+test('favicon: hexágono con el color del tema y punto de aviso opcional', async () => {
+  const { faviconSvg } = await import('../Manager_install/ui/js/favicon.js');
+  const plain = faviconSvg('#b4a7f5', false);
+  assert.match(plain, /stroke="#b4a7f5"/);
+  assert.doesNotMatch(plain, /<circle/);
+  assert.doesNotMatch(plain, /<rect|white/); // sin fondo y sin líneas blancas: todo en el color del tema
+  const badge = faviconSvg('#3dff9e', true);
+  assert.match(badge, /stroke="#3dff9e"/);
+  assert.match(badge, /<circle[^>]+fill="#ff4d4f"/);
+  assert.match(faviconSvg('', false), /stroke="#78DC9B"/); // sin color: el verde del logo
 });
 
 test('parseCurl: bash multilínea, comillas y $\'…\' (Copiar como cURL de Chrome)', () => {

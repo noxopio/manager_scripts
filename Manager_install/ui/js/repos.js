@@ -5,6 +5,7 @@ import { emptyArtState, resetEmptyArt } from './empty-art.js';
 import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
 import { setLog } from './logview.js';
+import { elapsedText } from './time.js';
 
 // Loader del panel de repos (primera carga o cambio de lista): la taza de café humeante.
 // Solo aparece si la carga tarda más de 150 ms, para no parpadear en cargas rápidas.
@@ -35,11 +36,13 @@ let refreshTimer;
 export const scheduleRefresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(loadRepos, 600); };
 
 export function statusNode(r) {
+  // El texto va en .st-text para que la vista compacta pueda dejar solo el punto (con el texto en el tooltip)
   if (r.status === 'running' && r.action === 'run' && r.compile) {
-    return el('span', { class: 'status ' + r.compile }, el('span', { class: 'dot' }), `${COMPILE_LABEL[r.compile]} · run`);
+    const label = `${COMPILE_LABEL[r.compile]} · run`;
+    return el('span', { class: 'status ' + r.compile, title: label }, el('span', { class: 'dot' }), el('span', { class: 'st-text' }, label));
   }
   const label = STATUS_LABEL[r.status] + (r.action && r.status !== 'idle' ? ` · ${ACTION_LABEL[r.action]}` : '');
-  return el('span', { class: 'status ' + r.status }, el('span', { class: 'dot' }), label);
+  return el('span', { class: 'status ' + r.status, title: label }, el('span', { class: 'dot' }), el('span', { class: 'st-text' }, label));
 }
 
 // Eventos del filtro (solo en el navegador)
@@ -89,7 +92,109 @@ const filterKey = () => 'mfs.filter.' + listName();
 export function loadFilter() { $('#repoFilter').value = localStorage.getItem(filterKey()) || ''; }
 const filterQuery = () => $('#repoFilter').value.trim();
 
+// ── Tiempo en la tarjeta ("⏱ arriba 1 h 12 min", "pull ok en 8 s · hace 3 min") ──
+function elapsedNode(r) {
+  const text = elapsedText(r);
+  return text ? el('span', { class: 'elapsed', 'data-repo': r.name, title: r.startedAt ? `Inicio: ${new Date(r.startedAt).toLocaleString()}` : '' }, text) : null;
+}
+// Avanza sin repintar todo
+if (typeof document !== 'undefined') {
+  setInterval(() => {
+    for (const span of document.querySelectorAll('#repos .elapsed')) {
+      const r = state.repos.find((x) => x.name === span.dataset.repo);
+      if (r) span.textContent = elapsedText(r);
+    }
+  }, 15000);
+}
+
+// ── Abrir en VS Code / carpeta ──
+export async function openRepo(name, target = 'code') {
+  try {
+    toast(target === 'code' ? `Abriendo ${name} en VS Code…` : `Abriendo la carpeta de ${name}…`);
+    await api('/api/open', { method: 'POST', body: JSON.stringify({ repo: name, list: listName(), target }) });
+  } catch (e) { toast(e.message); }
+}
+
+// ── Barra de resumen clicable: filtra la lista por estado ──
+const SUMMARY = [
+  { key: 'running', label: (n) => `${n} en ejecución`, cls: 'run', count: (rs) => rs.filter(isBusy).length },
+  { key: 'cambios', label: (n) => `${n} con cambios`, cls: 'warn', count: (rs) => rs.filter((r) => r.cloned && r.changes).length },
+  { key: 'error', label: (n) => `${n} con error`, cls: 'err', count: (rs) => rs.filter((r) => r.status === 'error' || r.compile === 'failed').length },
+  { key: 'sin clonar', label: (n) => `${n} sin clonar`, cls: 'muted', count: (rs) => rs.filter((r) => !r.cloned).length },
+  { key: 'bloqueado', label: (n) => `${n} bloqueado${n > 1 ? 's' : ''}`, cls: 'warn', count: (rs) => rs.filter((r) => r.locked).length },
+];
+function renderSummary() {
+  const box = $('#repoSummary');
+  const q = filterQuery().toLowerCase();
+  const chips = SUMMARY.map((s) => ({ ...s, n: s.count(state.repos) })).filter((s) => s.n > 0);
+  box.hidden = !chips.length;
+  box.replaceChildren(...chips.map((s) => el('button', {
+    class: `sum-chip ${s.cls}` + (q === s.key ? ' active' : ''), 'aria-pressed': String(q === s.key),
+    title: q === s.key ? 'Quitar el filtro' : `Filtrar: ${s.key}`,
+    onclick: () => {
+      const f = $('#repoFilter');
+      f.value = q === s.key ? '' : s.key;
+      f.dispatchEvent(new Event('input'));
+    },
+  }, s.label(s.n))));
+}
+
+// ── Vista compacta ──
+const COMPACT_KEY = 'mfs.compact';
+export function setCompact(on) {
+  document.querySelector('.list-panel').classList.toggle('compact-list', on);
+  const btn = $('#compactToggle');
+  btn.setAttribute('aria-pressed', String(on));
+  // El icono muestra lo que hará al pulsarlo: >< compactar, <> volver a la vista normal
+  btn.replaceChildren(icon(on ? 'expand-h' : 'compress'));
+  const label = on ? 'Vista normal: tarjetas completas' : 'Vista compacta: una fila por repo';
+  btn.title = label; btn.setAttribute('aria-label', label);
+  localStorage.setItem(COMPACT_KEY, on ? '1' : '0');
+}
+if (typeof document !== 'undefined') {
+  setCompact(localStorage.getItem(COMPACT_KEY) === '1');
+  $('#compactToggle').onclick = () => setCompact(!document.querySelector('.list-panel').classList.contains('compact-list'));
+}
+
+// ── Atajos de teclado en la lista ──
+const visibleCards = () => [...document.querySelectorAll('#repos .card')].filter((c) => c.offsetParent !== null);
+function focusCard(card) { if (card) { card.focus(); card.scrollIntoView({ block: 'nearest' }); } }
+if (typeof document !== 'undefined') {
+  $('#repos').addEventListener('keydown', (ev) => {
+    const card = ev.target.closest && ev.target.closest('.card');
+    if (!card || ev.target !== card || ev.ctrlKey || ev.metaKey || ev.altKey) return; // no interferir con botones/casillas
+    const name = card.dataset.repo;
+    const cards = visibleCards();
+    const i = cards.indexOf(card);
+    const key = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
+    const r = state.repos.find((x) => x.name === name);
+    const busy = r && isBusy(r);
+    const actions = {
+      ArrowDown: () => focusCard(cards[Math.min(cards.length - 1, i + 1)]), j: () => focusCard(cards[Math.min(cards.length - 1, i + 1)]),
+      ArrowUp: () => focusCard(cards[Math.max(0, i - 1)]), k: () => focusCard(cards[Math.max(0, i - 1)]),
+      Home: () => focusCard(cards[0]), End: () => focusCard(cards[cards.length - 1]),
+      Enter: () => selectRepo(name),
+      ' ': () => { const cb = card.querySelector('input[type=checkbox]'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); },
+      r: () => !busy && r?.cloned && runAction('run', [name]),
+      p: () => !busy && runAction('pull', [name]),
+      i: () => !busy && r?.cloned && runAction('install', [name]),
+      d: () => r?.status === 'running' && stop(name),
+      o: () => r?.cloned && openRepo(name, 'code'),
+    };
+    if (actions[key]) { ev.preventDefault(); actions[key](); }
+  });
+}
+
 export function render(emptyMsg) {
+  // Las tarjetas se rehacen en cada render: se recupera el foco del teclado en la misma tarjeta
+  const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('#repos .card');
+  const focusName = focused && document.activeElement === focused ? focused.dataset.repo : null;
+  renderList(emptyMsg);
+  renderSummary();
+  if (focusName) focusCard([...document.querySelectorAll('#repos .card')].find((c) => c.dataset.repo === focusName));
+}
+
+function renderList(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
   updateActivityIndicator();
   if (!state.repos.length) {
@@ -202,19 +307,30 @@ export function repoCard(r) {
       r.isNew ? el('span', { class: 'badge' }, '#NEW ventana externa') : null,
       el('span', { title: r.url }, r.command),
       portNode(r),
+      elapsedNode(r),
     );
-    const card = el('div', { class: `card status-${r.status}` + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
-      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), healthNode(r), statusNode(r)),
+    const open = (target) => (ev) => { ev.stopPropagation(); openRepo(r.name, target); };
+    const compactPort = portNode(r); // en vista compacta, el enlace al puerto va junto al estado
+    if (compactPort) compactPort.classList.add('port-compact');
+    const card = el('div', {
+      class: `card status-${r.status}` + (state.selected === r.name ? ' selected' : ''), 'data-repo': r.name, tabindex: '0',
+      'aria-label': `${r.name}: ${STATUS_LABEL[r.status] || r.status}`, onclick: () => selectRepo(r.name),
+    },
+      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), healthNode(r), compactPort, statusNode(r),
+        el('span', { class: 'act-open' },
+          el('button', { class: 'sm icon-only', title: 'Abrir en VS Code (O)', 'aria-label': `Abrir ${r.name} en VS Code`, onclick: open('code'), ...(r.cloned ? {} : { disabled: '' }) }, icon('code')),
+          el('button', { class: 'sm icon-only', title: 'Abrir la carpeta', 'aria-label': `Abrir la carpeta de ${r.name}`, onclick: open('folder'), ...(r.cloned ? {} : { disabled: '' }) }, icon('folder')),
+        )),
       meta,
       el('div', { class: 'actions' },
-        el('button', { class: 'sm', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
-        el('button', { class: 'sm', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
-        el('button', { class: 'sm', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
-        el('button', { class: 'sm danger', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(r.status === 'running' ? {} : { disabled: '' }) }, 'Detener'),
-        el('span', { class: 'sep' }),
-        el('button', { class: 'sm', title: 'git status', onclick: act('status'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Cambios'),
-        el('button', { class: 'sm', title: 'git add . + commit', onclick: (ev) => { ev.stopPropagation(); openCommit([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Commit'),
-        el('button', { class: 'sm', title: 'git push', onclick: (ev) => { ev.stopPropagation(); gitPush([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Push'),
+        el('button', { class: 'sm', title: 'Pull (P)', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
+        el('button', { class: 'sm', title: 'Install (I)', onclick: act('install'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Install'),
+        el('button', { class: 'sm', title: 'Run (R)', onclick: act('run'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Run'),
+        el('button', { class: 'sm danger', title: 'Detener (D)', onclick: (ev) => { ev.stopPropagation(); stop(r.name); }, ...(r.status === 'running' ? {} : { disabled: '' }) }, 'Detener'),
+        el('span', { class: 'sep act-git' }),
+        el('button', { class: 'sm act-git', title: 'git status', onclick: act('status'), ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Cambios'),
+        el('button', { class: 'sm act-git', title: 'git add . + commit', onclick: (ev) => { ev.stopPropagation(); openCommit([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Commit'),
+        el('button', { class: 'sm act-git', title: 'git push', onclick: (ev) => { ev.stopPropagation(); gitPush([r.name]); }, ...(running || !r.cloned ? { disabled: '' } : {}) }, 'Push'),
       ),
     );
     return card;

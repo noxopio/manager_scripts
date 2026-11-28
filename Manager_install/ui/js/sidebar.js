@@ -1,5 +1,6 @@
 // Panel lateral: secciones plegables, toggle ☰, resúmenes, token git y la franja LAUNCH PAD (información de mfs).
 import { $, el, api, toast, state, runCmdKey, saveRunCmd, listName } from './core.js';
+import { refreshFavicon } from './favicon.js';
 
 // ── Franja LAUNCH PAD: al pulsarla muestra información de mfs (solo lectura) ──
 let mfsInfo = null;
@@ -85,6 +86,7 @@ function applyAccent(name) {
   if (accent === 'violeta') document.documentElement.removeAttribute('data-accent');
   else document.documentElement.setAttribute('data-accent', accent);
   document.querySelectorAll('#accentPicker .accent-swatch').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.accent === accent)));
+  refreshFavicon(); // el hexágono del favicon toma el nuevo color
 }
 document.querySelectorAll('#accentPicker .accent-swatch').forEach((b) => b.addEventListener('click', () => {
   localStorage.setItem('mfs.accent', b.dataset.accent);

@@ -12,6 +12,11 @@ export const ICONS = {
   play: { paths: ['M8 5.5v13l10.5-6.5z'] },
   stop: { paths: ['M7 7h10v10H7z'] },
   search: { paths: ['M10.8 18.3a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z', 'm16.2 16.2 4.3 4.3'] },
+  code: { paths: ['m8 7-5 5 5 5', 'm16 7 5 5-5 5', 'm14 4-4 16'] },
+  // Vista compacta: flechas horizontales hacia la línea central (compactar) o hacia fuera (expandir).
+  // En horizontal para no confundirse con el ☰ del menú ni con plegar grupos (flechas verticales).
+  compress: { paths: ['M12 5v14', 'M3 12h6', 'm6 9 3 3-3 3', 'M21 12h-6', 'm18 9-3 3 3 3'] },
+  'expand-h': { paths: ['M12 5v14', 'M9 12H3', 'm6 9-3 3 3 3', 'M15 12h6', 'm18 9 3 3-3 3'] },
   file: { paths: ['M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z', 'M14 3.5V8h4', 'M9 12h6', 'M9 15.5h6'] },
 };
 export function icon(name) {

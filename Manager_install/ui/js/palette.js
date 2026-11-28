@@ -29,9 +29,16 @@ function commands() {
     { label: 'Buscar en el log', hint: 'Log', run: () => { $('#logSearch').focus(); $('#logSearch').select(); } },
     { label: 'Mostrar u ocultar el panel lateral', hint: 'Vista', run: click('#sidebarToggle') },
     { label: 'LAUNCH PAD: información y apariencia', hint: 'Vista', run: () => $('#mfsInfo').showPopover() },
+    { label: 'Vista compacta (activar o desactivar)', hint: 'Vista', run: click('#compactToggle') },
+    { label: 'Restablecer el ancho de la lista', hint: 'Vista', run: () => $('#splitter').dispatchEvent(new MouseEvent('dblclick')) },
+    { label: 'Atajos de teclado', hint: '?', run: () => $('#keysHelp').showModal() },
   ];
   if (!$('#toggleGroups').hidden) cmds.push({ label: 'Plegar o desplegar los grupos', hint: 'Vista', run: click('#toggleGroups') });
   for (const r of state.repos) cmds.push({ label: `Ver log: ${r.name}`, hint: r.group || 'Repo', run: () => import('./repos.js').then((m) => m.selectRepo(r.name)) });
+  for (const r of state.repos.filter((x) => x.cloned)) {
+    cmds.push({ label: `Abrir en VS Code: ${r.name}`, hint: 'VS Code', run: () => import('./repos.js').then((m) => m.openRepo(r.name, 'code')) });
+    cmds.push({ label: `Abrir la carpeta: ${r.name}`, hint: 'Carpeta', run: () => import('./repos.js').then((m) => m.openRepo(r.name, 'folder')) });
+  }
   return cmds;
 }
 
@@ -73,9 +80,12 @@ if (typeof document !== 'undefined') {
   const typing = (t) => t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
   document.addEventListener('keydown', (ev) => {
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); open(); return; }
+    const free = !ev.ctrlKey && !ev.metaKey && !ev.altKey && !typing(ev.target) && !document.querySelector('dialog[open]');
     // "/" enfoca el filtro de repos (si no se está escribiendo en otro campo ni hay un diálogo abierto)
-    if (ev.key === '/' && !ev.ctrlKey && !ev.metaKey && !typing(ev.target) && !document.querySelector('dialog[open]')) {
-      ev.preventDefault(); $('#repoFilter').focus(); $('#repoFilter').select();
-    }
+    if (ev.key === '/' && free) { ev.preventDefault(); $('#repoFilter').focus(); $('#repoFilter').select(); }
+    // "?" muestra la ayuda de atajos
+    if (ev.key === '?' && free) { ev.preventDefault(); $('#keysHelp').showModal(); }
   });
+  $('#keysHelpClose').onclick = () => $('#keysHelp').close();
+  $('#keysHelp').addEventListener('click', (ev) => { if (ev.target === $('#keysHelp')) $('#keysHelp').close(); });
 }
