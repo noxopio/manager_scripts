@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapa de manager_scripts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Una columna de lectura; cada diagrama es un SVG suelto de docs/ con scroll horizontal si no cabe */
+:root { --bg:#f5f7f7; --surface:#ffffff; --fg:#14201f; --muted:#556563; --line:#9fb0ae; --accent:#0d7a6f;
+  --f-display:"Segoe UI Semibold", system-ui, sans-serif; --f-body:system-ui, -apple-system, "Segoe UI", sans-serif; --f-mono:ui-monospace, "Cascadia Mono", Consolas, monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0f1716; --surface:#172221; --fg:#e3ecea; --muted:#94a6a3; --line:#4b5f5c; --accent:#4fc2b2; color-scheme:dark } }
+:root[data-theme="dark"] { --bg:#0f1716; --surface:#172221; --fg:#e3ecea; --muted:#94a6a3; --line:#4b5f5c; --accent:#4fc2b2; color-scheme:dark }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.55 var(--f-body); }
+main { max-width:1060px; margin:0 auto; padding-block:40px 64px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); display:grid; gap:44px; }
+header { display:grid; gap:10px; max-width:70ch; }
+.eyebrow { font:600 12px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
+h1, h2 { font-family:var(--f-display); text-wrap:balance; margin:0; }
+h1 { font-size:2rem; line-height:1.15; } h2 { font-size:1.3rem; }
+p { margin:0; } section > p { max-width:72ch; color:var(--muted); }
+code { font-family:var(--f-mono); font-size:.9em; }
+nav ol { margin:0; padding-left:1.2em; columns:2; column-gap:32px; }
+a { color:var(--accent); }
+section { display:grid; gap:14px; }
+figure { margin:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); }
+.scroll { overflow-x:auto; }
+.scroll img { display:block; width:100%; min-width:760px; height:auto; }
+figcaption { padding:10px 16px; border-top:1px solid var(--line); font:13px var(--f-mono); }
+@media (max-width:600px) { nav ol { columns:1; } }
+</style></head><body>
+<main>
+  <header>
+    <span class="eyebrow">manager_scripts · docs</span>
+    <h1>Cómo está montado mfs</h1>
+    <p>Siete vistas del mismo sistema, de lo general a lo concreto. Cada diagrama es un SVG de esta carpeta. Todos los nombres son archivos, rutas, funciones o variables reales de <code>Manager_install/</code>.</p>
+    <nav><ol><li><a href="#arquitectura">Arquitectura de mfs</a></li><li><a href="#flujo-accion">Flujo de una acción</a></li><li><a href="#instalacion">Instalación y actualización</a></li><li><a href="#estados-job">Estados de un job del panel</a></li><li><a href="#procesos-parada">Árbol de procesos y parada</a></li><li><a href="#seguridad">Límites de seguridad del panel</a></li><li><a href="#secuencia-panel">Secuencia de un run desde el panel</a></li></ol></nav>
+  </header>
+
+  <section id="arquitectura">
+    <h2>Arquitectura de mfs</h2>
+    <p>El núcleo es <code>manager_repo.sh</code>. La terminal llega a él por la función <code>mfs</code>. El panel es opcional: <code>mfs ui</code> arranca <code>server.js</code>, que vuelve a llamar a <code>manager_repo.sh</code> una vez por repo.</p>
+    <figure><div class="scroll"><img src="arquitectura.svg" alt="La terminal entra por mfs a manager_repo.sh; el navegador usa el frontend y server.js, que lanza manager_repo.sh por repo; debajo, remotos git, repos clonados, listRep.txt y procesos del sistema." width="980" height="584"></div>
+    <figcaption><a href="arquitectura.svg">arquitectura.svg</a></figcaption></figure>
+  </section>
+
+  <section id="flujo-accion">
+    <h2>Flujo de una acción</h2>
+    <p>La terminal y el panel llegan al mismo script. El panel además valida la petición, lanza un proceso por repo con <code>MFS_ONLY</code> y lleva la salida al navegador en directo.</p>
+    <figure><div class="scroll"><img src="flujo-accion.svg" alt="La terminal o el panel lanzan manager_repo.sh; el panel valida y lanza un job por repo libre; el script lee listRep.txt y ejecuta pull, deps, run, git o unlock; la salida va a la terminal o al panel por SSE." width="980" height="1044"></div>
+    <figcaption><a href="flujo-accion.svg">flujo-accion.svg</a></figcaption></figure>
+  </section>
+
+  <section id="instalacion">
+    <h2>Instalación y actualización</h2>
+    <p>El instalador copia todo <code>Manager_install/</code> a <code>~/manager_scripts</code> y añade a <code>.bashrc</code> un bloque que carga <code>manager_rc.sh</code>. <code>mfs update</code> reutiliza la rama <code>--force</code> sin hacer preguntas.</p>
+    <figure><div class="scroll"><img src="instalacion.svg" alt="manager_install.sh comprueba si existe ~/manager_scripts; si no, copia, fecha, da permisos y añade el bloque a .bashrc; con --force desinstala y reinstala; mfs update hace git pull y reinstala con --force." width="990" height="764"></div>
+    <figcaption><a href="instalacion.svg">instalacion.svg</a></figcaption></figure>
+  </section>
+
+  <section id="estados-job">
+    <h2>Estados de un job del panel</h2>
+    <p>Cada tarjeta del panel es un job de <code>server.js</code>. Mientras está en <code>running</code> o <code>stopping</code> no admite otra acción. En <code>run</code> se siguen además la compilación y el health check.</p>
+    <figure><div class="scroll"><img src="estados-job.svg" alt="Un job empieza en running; al cerrar pasa a ok o error; con stop pasa a stopping y a stopped cuando el proceso cerró, el kill terminó y el puerto quedó libre; en run hay subestados de compilación y health." width="980" height="604"></div>
+    <figcaption><a href="estados-job.svg">estados-job.svg</a></figcaption></figure>
+  </section>
+
+  <section id="procesos-parada">
+    <h2>Árbol de procesos y parada</h2>
+    <p>Es la parte más delicada. En Git Bash los subshells se crean con <code>fork</code> y pierden el padre de Windows, así que <code>taskkill /T</code> sobre el bash no llega a npm ni a node. El panel busca el grupo de procesos de MSYS y mata cada árbol por separado.</p>
+    <figure><div class="scroll"><img src="procesos-parada.svg" alt="node server.js lanza bash manager_repo.sh, que abre un subshell con npm y el node del microfrontend; en Windows el panel busca el grupo de procesos con ps y mata cada árbol con taskkill; en Unix mata el grupo con SIGTERM." width="980" height="624"></div>
+    <figcaption><a href="procesos-parada.svg">procesos-parada.svg</a></figcaption></figure>
+  </section>
+
+  <section id="seguridad">
+    <h2>Límites de seguridad del panel</h2>
+    <p>El panel ejecuta comandos en tu máquina, así que cada petición pasa por varias capas antes de llegar a bash. Lo que no protege: los comandos de <code>listRep.txt</code> y de <code>-r</code> se ejecutan con <code>eval</code>, así que hay que confiar en la lista.</p>
+    <figure><div class="scroll"><img src="seguridad.svg" alt="Las peticiones pasan por escuchar solo en 127.0.0.1, la comprobación de Host y cabecera X-MFS, la validación de /api/action y las rutas confinadas a WORK_DIR antes de llegar a bash; el token git solo vive en memoria y llega a git por GIT_ASKPASS." width="980" height="644"></div>
+    <figcaption><a href="seguridad.svg">seguridad.svg</a></figcaption></figure>
+  </section>
+
+  <section id="secuencia-panel">
+    <h2>Secuencia de un run desde el panel</h2>
+    <p>Un <code>run</code> de principio a fin. Las flechas verdes son eventos SSE. El navegador no pregunta por el estado: todo le llega por <code>/api/stream</code>.</p>
+    <figure><div class="scroll"><img src="secuencia-panel.svg" alt="El navegador abre el SSE, pide run, server.js lanza bash, que arranca el microfrontend; la salida vuelve por SSE con puerto, compilación y health; al detener, server.js mata el árbol, espera a que se libere el puerto y avisa de stopped." width="980" height="764"></div>
+    <figcaption><a href="secuencia-panel.svg">secuencia-panel.svg</a></figcaption></figure>
+  </section>
+</main>
+</body></html>

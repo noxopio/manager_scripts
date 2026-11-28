@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 604" width="980" height="604" role="img" aria-label="Un job empieza en running; al cerrar pasa a ok o error; con stop pasa a stopping y a stopped cuando el proceso cerró, el kill terminó y el puerto quedó libre; en run hay subestados de compilación y health.">
+<title>Estados de un job del panel</title>
+<style>
+.bg{fill:#f5f7f7}
+.ttl{font:700 16px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f}
+.n{fill:#ffffff;stroke:#9fb0ae;stroke-width:1.2}
+.n.hl{fill:#e2f2ef;stroke:#0d7a6f;stroke-width:1.6}
+.n.bad{fill:#fbecea;stroke:#b5503f;stroke-width:1.4}
+.n.dash{stroke-dasharray:5 4}
+.t{font:700 13px ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;fill:#14201f;text-anchor:middle}
+.s{font:400 11.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;text-anchor:middle}
+.d{font:600 12.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f;text-anchor:middle}
+.l{font:500 11px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;paint-order:stroke;stroke:#f5f7f7;stroke-width:4px;stroke-linejoin:round}
+.st{text-anchor:start}
+.e{fill:none;stroke:#14201f;stroke-width:1.3}
+.e.dash{stroke-dasharray:5 4}
+.e.acc{stroke:#0d7a6f}
+.e.life{stroke:#9fb0ae;stroke-dasharray:3 4}
+.ah{fill:#14201f}
+.dot{fill:#14201f}
+@media (prefers-color-scheme:dark){
+.bg{fill:#0f1716}
+.ttl,.t,.d{fill:#e3ecea}
+.s,.l{fill:#94a6a3}
+.l{stroke:#0f1716}
+.n{fill:#172221;stroke:#4b5f5c}
+.n.hl{fill:#163631;stroke:#4fc2b2}
+.n.bad{fill:#3a1f1b;stroke:#e0806f}
+.e{stroke:#e3ecea}
+.e.acc{stroke:#4fc2b2}
+.e.life{stroke:#4b5f5c}
+.ah,.dot{fill:#e3ecea}
+}
+</style>
+<defs><marker id="ar-estados-job" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="980" height="604" rx="10"/>
+<text class="ttl" x="40" y="30">Estados de un job del panel</text>
+<g transform="translate(0,44)">
+<circle class="dot" cx="60" cy="200" r="8"/>
+<line class="e " x1="68" y1="200" x2="218" y2="200" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="143" y="192" text-anchor="middle">POST /api/action</text>
+<text class="l" x="143" y="216" text-anchor="middle">spawn bash</text>
+<rect class="n hl" x="220" y="160" width="180" height="80" rx="18"/>
+<text class="t" x="310" y="196">running</text><text class="s" x="310" y="214">busy: no admite otra acción</text>
+<rect class="n " x="560" y="40" width="160" height="52" rx="6"/><text class="t" x="640" y="62">ok</text><text class="s" x="640" y="79">proceso cerrado con 0</text>
+<rect class="n bad" x="560" y="174" width="160" height="52" rx="6"/><text class="t" x="640" y="196">error</text><text class="s" x="640" y="213">código ≠ 0 o fallo al lanzar</text>
+<rect class="n " x="560" y="320" width="160" height="52" rx="6"/><text class="t" x="640" y="342">stopping</text><text class="s" x="640" y="359">deteniendo el árbol</text>
+<rect class="n " x="800" y="320" width="150" height="52" rx="6"/><text class="t" x="875" y="342">stopped</text><text class="s" x="875" y="359">«detenido»</text>
+<polyline class="e " points="310,160 310,66 558,66" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="440" y="58" text-anchor="middle">close · código 0</text>
+<line class="e " x1="400" y1="200" x2="558" y2="200" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="480" y="192" text-anchor="middle">close · código ≠ 0</text>
+<text class="l" x="480" y="216" text-anchor="middle">o error de spawn</text>
+<polyline class="e " points="310,240 310,346 558,346" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="440" y="338" text-anchor="middle">POST /api/stop</text>
+<line class="e " x1="720" y1="346" x2="798" y2="346" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="759" y="338" text-anchor="middle">kill + close</text>
+<text class="l" x="759" y="364" text-anchor="middle">+ puerto libre</text>
+<rect class="n dash" x="790" y="40" width="160" height="80" rx="6"/>
+<text class="d" x="870" y="64">Estados finales</text>
+<text class="s" x="870" y="84">ok, error y stopped</text><text class="s" x="870" y="100">se pueden volver a lanzar</text>
+<rect class="n dash" x="790" y="160" width="160" height="96" rx="6"/>
+<text class="d" x="870" y="184">waitPortFree</text>
+<text class="s" x="870" y="204">espera hasta 20 s a que</text><text class="s" x="870" y="220">el puerto quede libre; si no,</text><text class="s" x="870" y="236">avisa en el log</text>
+<rect class="n dash" x="40" y="400" width="910" height="140" rx="6"/>
+<text class="d st" x="60" y="424">Solo en run, dentro de running</text>
+<rect class="n " x="60" y="446" width="170" height="56" rx="6"/><text class="t" x="145" y="470">compiling</text><text class="s" x="145" y="487">puerto: PORT_RE en el log</text>
+<rect class="n hl" x="340" y="430" width="130" height="40" rx="6"/><text class="t" x="405" y="454">ready</text>
+<rect class="n bad" x="340" y="486" width="130" height="40" rx="6"/><text class="t" x="405" y="510">failed</text>
+<line class="e " x1="230" y1="466" x2="338" y2="452" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="284" y="450" text-anchor="middle">OK o TCP</text>
+<line class="e " x1="230" y1="482" x2="338" y2="504" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="284" y="510" text-anchor="middle">error</text>
+<rect class="n " x="590" y="426" width="250" height="48" rx="6"/><text class="t" x="715" y="446">checkHealth</text><text class="s" x="715" y="463">fetch cada 15 s · timeout 3 s</text>
+<line class="e " x1="470" y1="450" x2="588" y2="450" marker-end="url(#ar-estados-job)"/>
+<text class="l" x="529" y="442" text-anchor="middle">con #> health:</text>
+</g>
+</svg>

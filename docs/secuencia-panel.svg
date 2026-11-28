@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 764" width="980" height="764" role="img" aria-label="El navegador abre el SSE, pide run, server.js lanza bash, que arranca el microfrontend; la salida vuelve por SSE con puerto, compilación y health; al detener, server.js mata el árbol, espera a que se libere el puerto y avisa de stopped.">
+<title>Secuencia de un run desde el panel</title>
+<style>
+.bg{fill:#f5f7f7}
+.ttl{font:700 16px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f}
+.n{fill:#ffffff;stroke:#9fb0ae;stroke-width:1.2}
+.n.hl{fill:#e2f2ef;stroke:#0d7a6f;stroke-width:1.6}
+.n.bad{fill:#fbecea;stroke:#b5503f;stroke-width:1.4}
+.n.dash{stroke-dasharray:5 4}
+.t{font:700 13px ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;fill:#14201f;text-anchor:middle}
+.s{font:400 11.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;text-anchor:middle}
+.d{font:600 12.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f;text-anchor:middle}
+.l{font:500 11px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;paint-order:stroke;stroke:#f5f7f7;stroke-width:4px;stroke-linejoin:round}
+.st{text-anchor:start}
+.e{fill:none;stroke:#14201f;stroke-width:1.3}
+.e.dash{stroke-dasharray:5 4}
+.e.acc{stroke:#0d7a6f}
+.e.life{stroke:#9fb0ae;stroke-dasharray:3 4}
+.ah{fill:#14201f}
+.dot{fill:#14201f}
+@media (prefers-color-scheme:dark){
+.bg{fill:#0f1716}
+.ttl,.t,.d{fill:#e3ecea}
+.s,.l{fill:#94a6a3}
+.l{stroke:#0f1716}
+.n{fill:#172221;stroke:#4b5f5c}
+.n.hl{fill:#163631;stroke:#4fc2b2}
+.n.bad{fill:#3a1f1b;stroke:#e0806f}
+.e{stroke:#e3ecea}
+.e.acc{stroke:#4fc2b2}
+.e.life{stroke:#4b5f5c}
+.ah,.dot{fill:#e3ecea}
+}
+</style>
+<defs><marker id="ar-secuencia-panel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="980" height="764" rx="10"/>
+<text class="ttl" x="40" y="30">Secuencia de un run desde el panel</text>
+<g transform="translate(0,44)">
+<rect class="n " x="30" y="10" width="180" height="40" rx="6"/><text class="t" x="120" y="34">Navegador</text><line class="e life" x1="120" y1="50" x2="120" y2="712"/>
+<rect class="n hl" x="310" y="10" width="180" height="40" rx="6"/><text class="t" x="400" y="34">ui/server.js</text><line class="e life" x1="400" y1="50" x2="400" y2="712"/>
+<rect class="n " x="550" y="10" width="180" height="40" rx="6"/><text class="t" x="640" y="34">bash</text><line class="e life" x1="640" y1="50" x2="640" y2="712"/>
+<rect class="n " x="770" y="10" width="180" height="40" rx="6"/><text class="t" x="860" y="34">npm / node del mf</text><line class="e life" x1="860" y1="50" x2="860" y2="712"/>
+<line class="e " x1="124" y1="90" x2="394" y2="90" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="84" text-anchor="middle">GET /api/stream (SSE abierto)</text>
+<line class="e " x1="124" y1="126" x2="394" y2="126" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="120" text-anchor="middle">POST /api/action {run, repos}</text>
+<rect class="n dash" x="410" y="144" width="170" height="22" rx="4"/><text class="l" x="418" y="159">valida y llama a startJob</text>
+<line class="e " x1="404" y1="196" x2="634" y2="196" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="520" y="190" text-anchor="middle">spawn bash manager_repo.sh run</text>
+<line class="e dash" x1="396" y1="226" x2="126" y2="226" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="220" text-anchor="middle">200 {started, busy}</text>
+<line class="e acc" x1="396" y1="256" x2="126" y2="256" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="250" text-anchor="middle">SSE status: running</text>
+<line class="e " x1="644" y1="286" x2="854" y2="286" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="750" y="280" text-anchor="middle">( cd; eval npm run start ) &amp;</text>
+<line class="e dash" x1="856" y1="316" x2="406" y2="316" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="630" y="310" text-anchor="middle">stdout / stderr (a través de bash)</text>
+<line class="e acc" x1="396" y1="346" x2="126" y2="346" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="340" text-anchor="middle">SSE log: cada línea (pushLog)</text>
+<rect class="n dash" x="410" y="364" width="330" height="22" rx="4"/><text class="l" x="418" y="379">PORT_RE da el puerto · COMPILE_OK_RE o TCP → ready</text>
+<line class="e acc" x1="396" y1="416" x2="126" y2="416" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="410" text-anchor="middle">SSE status: puerto y compile ready</text>
+<line class="e " x1="404" y1="446" x2="854" y2="446" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="630" y="440" text-anchor="middle">checkHealth: GET health cada 15 s</text>
+<line class="e dash" x1="856" y1="476" x2="406" y2="476" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="630" y="470" text-anchor="middle">200 o sin respuesta</text>
+<line class="e life" x1="40" y1="504" x2="940" y2="504"/>
+<text class="l" x="48" y="498" text-anchor="start">Detener</text>
+<line class="e " x1="124" y1="534" x2="394" y2="534" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="528" text-anchor="middle">POST /api/stop</text>
+<line class="e acc" x1="396" y1="564" x2="126" y2="564" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="558" text-anchor="middle">SSE status: stopping</text>
+<line class="e " x1="404" y1="594" x2="854" y2="594" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="630" y="588" text-anchor="middle">killWindowsTree: taskkill /T al grupo</text>
+<line class="e dash" x1="636" y1="624" x2="406" y2="624" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="520" y="618" text-anchor="middle">close (código)</text>
+<line class="e " x1="404" y1="654" x2="854" y2="654" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="630" y="648" text-anchor="middle">waitPortFree: ¿puerto libre?</text>
+<line class="e acc" x1="396" y1="690" x2="126" y2="690" marker-end="url(#ar-secuencia-panel)"/><text class="l" x="260" y="684" text-anchor="middle">SSE status: stopped</text>
+</g>
+</svg>

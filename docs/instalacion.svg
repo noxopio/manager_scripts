@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 990 764" width="990" height="764" role="img" aria-label="manager_install.sh comprueba si existe ~/manager_scripts; si no, copia, fecha, da permisos y añade el bloque a .bashrc; con --force desinstala y reinstala; mfs update hace git pull y reinstala con --force.">
+<title>Instalación y actualización</title>
+<style>
+.bg{fill:#f5f7f7}
+.ttl{font:700 16px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f}
+.n{fill:#ffffff;stroke:#9fb0ae;stroke-width:1.2}
+.n.hl{fill:#e2f2ef;stroke:#0d7a6f;stroke-width:1.6}
+.n.bad{fill:#fbecea;stroke:#b5503f;stroke-width:1.4}
+.n.dash{stroke-dasharray:5 4}
+.t{font:700 13px ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;fill:#14201f;text-anchor:middle}
+.s{font:400 11.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;text-anchor:middle}
+.d{font:600 12.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f;text-anchor:middle}
+.l{font:500 11px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;paint-order:stroke;stroke:#f5f7f7;stroke-width:4px;stroke-linejoin:round}
+.st{text-anchor:start}
+.e{fill:none;stroke:#14201f;stroke-width:1.3}
+.e.dash{stroke-dasharray:5 4}
+.e.acc{stroke:#0d7a6f}
+.e.life{stroke:#9fb0ae;stroke-dasharray:3 4}
+.ah{fill:#14201f}
+.dot{fill:#14201f}
+@media (prefers-color-scheme:dark){
+.bg{fill:#0f1716}
+.ttl,.t,.d{fill:#e3ecea}
+.s,.l{fill:#94a6a3}
+.l{stroke:#0f1716}
+.n{fill:#172221;stroke:#4b5f5c}
+.n.hl{fill:#163631;stroke:#4fc2b2}
+.n.bad{fill:#3a1f1b;stroke:#e0806f}
+.e{stroke:#e3ecea}
+.e.acc{stroke:#4fc2b2}
+.e.life{stroke:#4b5f5c}
+.ah,.dot{fill:#e3ecea}
+}
+</style>
+<defs><marker id="ar-instalacion" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="990" height="764" rx="10"/>
+<text class="ttl" x="40" y="30">Instalación y actualización</text>
+<g transform="translate(0,44)">
+<rect class="n hl" x="80" y="20" width="300" height="52" rx="6"/><text class="t" x="230" y="42">./manager_install.sh</text><text class="s" x="230" y="59">opciones: --force · --help</text>
+<polygon class="n" points="230,104 340,140 230,176 120,140"/><text class="d" x="230" y="144">¿existe ~/manager_scripts?</text>
+<line class="e " x1="230" y1="72" x2="230" y2="102" marker-end="url(#ar-instalacion)"/>
+<polygon class="n" points="480,106 550,140 480,174 410,140"/><text class="d" x="480" y="144">¿--force?</text>
+<line class="e " x1="340" y1="140" x2="408" y2="140" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="374" y="132" text-anchor="middle">sí</text>
+<rect class="n " x="590" y="116" width="150" height="48" rx="6"/><text class="t" x="665" y="136">aviso y sale</text><text class="s" x="665" y="153">ya instalado</text>
+<line class="e " x1="550" y1="140" x2="588" y2="140" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="569" y="132" text-anchor="middle">no</text>
+<rect class="n " x="385" y="216" width="190" height="64" rx="6"/><text class="t" x="480" y="236">manager_uninstall.sh</text><text class="s" x="480" y="253">borra la carpeta y el bloque</text><text class="s" x="480" y="268">de .bashrc; luego reinstala</text>
+<line class="e " x1="480" y1="174" x2="480" y2="214" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="488" y="198" text-anchor="start">sí</text>
+<line class="e dash" x1="385" y1="248" x2="352" y2="248" marker-end="url(#ar-instalacion)"/>
+<line class="e " x1="230" y1="176" x2="230" y2="214" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="238" y="198" text-anchor="start">no</text>
+<rect class="n " x="110" y="216" width="240" height="52" rx="6"/><text class="t" x="230" y="238">copy_scripts</text><text class="s" x="230" y="255">cp -r a INSTALL_DIR · guarda .source</text>
+<line class="e " x1="230" y1="268" x2="230" y2="294" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="110" y="296" width="240" height="52" rx="6"/><text class="t" x="230" y="318">add_dates</text><text class="s" x="230" y="335">fecha de instalación en la cabecera</text>
+<line class="e " x1="230" y1="348" x2="230" y2="374" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="110" y="376" width="240" height="52" rx="6"/><text class="t" x="230" y="398">permissions</text><text class="s" x="230" y="415">chmod +x *.sh</text>
+<line class="e " x1="230" y1="428" x2="230" y2="454" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="110" y="456" width="240" height="64" rx="6"/><text class="t" x="230" y="476">create_alias</text><text class="s" x="230" y="493">si .bashrc no tiene el bloque START:</text><text class="s" x="230" y="508">source manager_rc.sh (define mfs)</text>
+<polygon class="n" points="230,554 320,588 230,622 140,588"/><text class="d" x="230" y="592">¿MFS_UPDATE=1?</text>
+<line class="e " x1="230" y1="520" x2="230" y2="552" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="360" y="566" width="170" height="44" rx="6"/><text class="t" x="445" y="584">fin</text><text class="s" x="445" y="601">sin preguntar nada</text>
+<line class="e " x1="320" y1="588" x2="358" y2="588" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="339" y="580" text-anchor="middle">sí</text>
+<rect class="n " x="110" y="660" width="240" height="52" rx="6"/><text class="t" x="230" y="682">¿abrir la carpeta?</text><text class="s" x="230" y="699">pregunta s/n y abre el explorador</text>
+<line class="e " x1="230" y1="622" x2="230" y2="658" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="238" y="644" text-anchor="start">no</text>
+<rect class="n hl" x="770" y="20" width="180" height="52" rx="6"/><text class="t" x="860" y="42">mfs update</text><text class="s" x="860" y="59">en manager_repo.sh</text>
+<line class="e " x1="860" y1="72" x2="860" y2="108" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="770" y="110" width="180" height="52" rx="6"/><text class="t" x="860" y="132">lee .source</text><text class="s" x="860" y="149">ruta del repo clonado</text>
+<line class="e " x1="860" y1="162" x2="860" y2="198" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="770" y="200" width="180" height="52" rx="6"/><text class="t" x="860" y="222">git pull --ff-only</text><text class="s" x="860" y="239">falla si hay cambios locales</text>
+<line class="e " x1="860" y1="252" x2="860" y2="288" marker-end="url(#ar-instalacion)"/>
+<rect class="n " x="770" y="290" width="180" height="64" rx="6"/><text class="t" x="860" y="310">MFS_UPDATE=1</text><text class="s" x="860" y="327">exec manager_install.sh</text><text class="s" x="860" y="342">--force, sin preguntas</text>
+<polyline class="e acc" points="770,322 480,322 480,282" marker-end="url(#ar-instalacion)"/>
+<text class="l" x="625" y="314" text-anchor="middle">entra por --force</text>
+</g>
+</svg>
