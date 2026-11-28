@@ -118,7 +118,6 @@ https://github.com/usuario/repo1.git #NEW
 https://github.com/usuario/repo2.git
 https://github.com/usuario/repo3.git #EXCLUDE
 https://github.com/usuario/repo4.git npm run dev #NEW
-https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo5
 ```
 
 >[!NOTE]
@@ -233,7 +232,7 @@ mfs unlock          # lista los repos bloqueados y, tras confirmar, quita los bl
 ### Repos Privados sin Guardar el Token en la Lista
 En `listRep.txt` pon solo el usuario en la URL, y da el token por variable de entorno:
 ```text
-https://carlos.camacho@dev.azure.com/org/proyecto/_git/repo
+https://user@dev.azure.com/org/proyecto/_git/repo
 ```
 ```bash
 read -s MFS_GIT_TOKEN; export MFS_GIT_TOKEN   # pide el token sin mostrarlo
