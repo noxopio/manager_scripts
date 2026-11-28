@@ -47,6 +47,7 @@ $('#tplBtn').onclick = async () => {
     "# EXCLUDE # Utiliza '#NEW' para abrir el repositorio en una nueva ventana de terminal.",
     '# EXCLUDE # Se puede indicar el comando a ejecutar al final de la URL.',
     "# EXCLUDE # '## Nombre' agrupa en el panel los repos de debajo (la terminal lo ignora).",
+    "# EXCLUDE # '#> health: /ruta' bajo un repo: el panel comprueba esa ruta mientras corre (punto verde/rojo).",
     '## Grupo A',
     'https://github.com/usuario/repo1.git #NEW',
     'https://github.com/usuario/repo2.git',
@@ -54,6 +55,7 @@ $('#tplBtn').onclick = async () => {
     'https://github.com/usuario/repo3.git #EXCLUDE',
     'https://github.com/usuario/repo4.git npm run dev #NEW',
     'https://github.com/usuario/repo5.git npm run dev',
+    '#> health: /health',
     '',
   ].join('\n');
 };

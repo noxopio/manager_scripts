@@ -1,6 +1,8 @@
 // Tiempo real: eventos SSE del servidor, barra de resumen de lotes y recarga al volver a la pestaña.
 import { $, el, state, ACTION_LABEL } from './core.js';
 import { render, scheduleRefresh, runAction } from './repos.js';
+import { appendLog } from './logview.js';
+import { notifyStatus } from './notify.js';
 
 export function connectStream() {
   const es = new EventSource('/api/stream');
@@ -8,12 +10,11 @@ export function connectStream() {
     const msg = JSON.parse(ev.data);
     const r = state.repos.find((x) => x.name === msg.repo);
     if (msg.type === 'log') {
-      if (msg.repo === state.selected) {
-        const log = $('#log'); log.append(msg.line + '\n');
-        if ($('#follow').checked) log.scrollTop = log.scrollHeight;
-      }
+      if (msg.repo === state.selected) appendLog(msg.line);
     } else if (msg.type === 'status' && r) {
-      r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile;
+      const prev = { status: r.status, action: r.action, compile: r.compile };
+      r.status = msg.status; r.action = msg.action; r.port = msg.port; r.compile = msg.compile; r.healthState = msg.healthState;
+      try { notifyStatus(r.name, prev, msg); } catch (e) { console.warn('Aviso no mostrado:', e.message); } // nunca impide repintar
       render();
       if (msg.status !== 'running' && msg.status !== 'stopping') scheduleRefresh();
     } else if (msg.type === 'batch') {

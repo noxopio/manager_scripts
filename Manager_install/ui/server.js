@@ -205,6 +205,13 @@ function parseList(content) {
     const line = raw.trim();
     const header = !line.includes('#EXCLUDE') && line.match(/^##\s+(.+)$/);
     if (header) { group = header[1].trim(); continue; }
+    // Directivas del panel bajo un repo ("#> health: /health"); para bash son comentarios
+    const directive = line.match(/^#>\s*([\w-]+)\s*:\s*(.+)$/);
+    if (directive) {
+      const prev = repos[repos.length - 1];
+      if (prev && directive[1].toLowerCase() === 'health') prev.health = directive[2].trim();
+      continue;
+    }
     if (!line || line.includes('#EXCLUDE') || line.startsWith('#')) continue;
     const tokens = line.split(/\s+/);
     const url = tokens[0];
@@ -313,6 +320,7 @@ async function describeRepo(r) {
     action: job ? job.action : null,
     port: job ? job.port : null,
     compile: job ? job.compile : null,
+    healthState: job ? job.healthState || null : null,
   };
 }
 
@@ -334,6 +342,35 @@ const BUNDLER_RE = /webpack|vite|compil|bundl|angular|ng serve|rspack|esbuild|tu
 const READY_PROBE_MS = 1500;
 const READY_PROBE_MAX_MS = 180000;
 
+// ── Health check ("#> health: /health" bajo el repo en el .txt) ──
+// URL a consultar: ruta relativa al puerto del repo, o URL completa. Pura, para los tests.
+function healthUrl(health, port) {
+  if (!health) return null;
+  if (/^https?:\/\//i.test(health)) return health;
+  if (!port) return null;
+  return `http://localhost:${port}${health.startsWith('/') ? '' : '/'}${health}`;
+}
+const HEALTH_EVERY_MS = 15000;
+const HEALTH_TIMEOUT_MS = 3000;
+async function checkHealth(name) {
+  const job = jobs.get(name);
+  if (!job || job.status !== 'running' || !job.health) return;
+  const url = healthUrl(job.health, job.port);
+  if (!url) return;
+  let state;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS), redirect: 'follow' });
+    state = { ok: res.ok, code: res.status, at: new Date().toISOString(), url };
+  } catch (e) {
+    state = { ok: false, code: null, error: e.name === 'TimeoutError' ? 'sin respuesta en 3 s' : 'no responde', at: new Date().toISOString(), url };
+  }
+  if (jobs.get(name) !== job || job.status !== 'running') return;
+  const prev = job.healthState;
+  job.healthState = state;
+  if (!prev || prev.ok !== state.ok || prev.code !== state.code) broadcast(statusEvent(name));
+}
+setInterval(() => { for (const name of jobs.keys()) checkHealth(name); }, HEALTH_EVERY_MS).unref();
+
 // Servidores que no anuncian que están listos: cuando el puerto acepta conexiones, pasa a 'ready'.
 function probeReady(name) {
   const job = jobs.get(name);
@@ -349,7 +386,7 @@ function probeReady(name) {
     const done = (ok) => {
       sock.destroy();
       if (!alive()) return;
-      if (ok) { job.compile = 'ready'; broadcast(statusEvent(name)); } else setTimeout(tick, READY_PROBE_MS);
+      if (ok) { job.compile = 'ready'; broadcast(statusEvent(name)); checkHealth(name); } else setTimeout(tick, READY_PROBE_MS);
     };
     sock.once('connect', () => done(true));
     sock.once('error', () => done(false));
@@ -360,7 +397,7 @@ function probeReady(name) {
 
 function statusEvent(name) {
   const job = jobs.get(name);
-  return { type: 'status', repo: name, status: job.status, action: job.action, port: job.port, compile: job.compile };
+  return { type: 'status', repo: name, status: job.status, action: job.action, port: job.port, compile: job.compile, healthState: job.healthState || null };
 }
 
 function pushLog(name, text) {
@@ -378,7 +415,7 @@ function pushLog(name, text) {
         if (m) { job.port = parseInt(m[1], 10); changed = true; if (job.compile === 'compiling') probeReady(name); }
       }
       const compile = COMPILE_FAIL_RE.test(piece) ? 'failed' : COMPILE_OK_RE.test(piece) ? 'ready' : null;
-      if (compile && compile !== job.compile) { job.compile = compile; changed = true; }
+      if (compile && compile !== job.compile) { job.compile = compile; changed = true; if (compile === 'ready') checkHealth(name); }
       if (changed && job.status === 'running') broadcast(statusEvent(name));
     }
     broadcast({ type: 'log', repo: name, line: piece });
@@ -458,6 +495,7 @@ function startJob(repo, action, list, { branch, baseBranch, installCmd, runCmd, 
     child, action, status: 'running', log: [], port: null, stopping: false,
     compile: action === 'run' && !repo.isNew ? 'compiling' : null,
     closed: false, killDone: false, batchId,
+    health: action === 'run' ? repo.health || null : null, healthState: null, // "#> health:" del .txt
   });
   setStatus(repo.name, 'running');
   const shown = opts.map((o, i) => (i % 2 ? `"${o}"` : o)).join(' ');
@@ -1034,4 +1072,4 @@ function main() {
 // Solo arranca al ejecutarse directamente (mfs ui); al importarlo (tests) solo expone las funciones puras.
 if (require.main === module) main();
 
-module.exports = { parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE };
+module.exports = { parseList, healthUrl, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE };

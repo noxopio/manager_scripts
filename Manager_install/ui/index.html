@@ -202,6 +202,12 @@
         </label>
       </div>
     </div>
+    <div class="mfs-info-wide">
+      <div class="mfs-info-section">AVISOS</div>
+      <label class="work-pref notify-pref" title="Con la pestaña del panel en segundo plano: notificación del sistema y contador en el título cuando un repo termina, falla o queda listo.">
+        <input type="checkbox" id="notifyToggle"> Avisar cuando un repo termine, falle o esté listo (con el panel en segundo plano)
+      </label>
+    </div>
   </div>
   <dl class="mfs-info-list" id="infoList"></dl>
   <div class="mfs-info-section">COMANDOS PARA GIT BASH</div>
@@ -209,17 +215,32 @@
 </div>
 
 <main>
-  <section class="list glass" id="repos"></section>
+  <!-- Panel de repos: filtro (atajo "/") + lista. El filtro queda fuera de #repos para que render() no lo borre -->
+  <div class="list-panel glass">
+    <div class="list-filter" role="search">
+      <input type="text" id="repoFilter" placeholder="Filtrar repos: nombre, rama, grupo o estado  ( / )   ·   Ctrl+K comandos" spellcheck="false" autocomplete="off" aria-label="Filtrar repos">
+      <span class="log-count" id="repoFilterCount" aria-live="polite"></span>
+    </div>
+    <section class="list" id="repos"></section>
+  </div>
   <section class="logpane glass">
     <div class="head">
       <strong id="logTitle">Selecciona un repo para ver su log</strong>
       <label class="field" title="Desplaza el log automáticamente a la última línea. Desmárcalo para leer líneas anteriores sin que la vista se mueva."><input type="checkbox" id="follow" checked> Seguir</label>
       <button class="sm" id="clearLog">Limpiar vista</button>
+      <button class="sm" id="logDownload" title="Descargar el log de este repo como .txt">Descargar</button>
+    </div>
+    <!-- Buscar en el log (Ctrl+F con el foco en el panel): Enter / Shift+Enter para moverse entre coincidencias -->
+    <div class="log-search" role="search">
+      <input type="text" id="logSearch" placeholder="Buscar en el log…" spellcheck="false" autocomplete="off" aria-label="Buscar en el log">
+      <span class="log-count" id="logCount" aria-live="polite"></span>
+      <button class="sm" id="logPrev" title="Anterior (Shift+Enter)" aria-label="Coincidencia anterior" disabled>↑</button>
+      <button class="sm" id="logNext" title="Siguiente (Enter)" aria-label="Coincidencia siguiente" disabled>↓</button>
     </div>
     <!-- "M F S" grabado detrás de la consola: fijo (no se desplaza con el log) y sin capturar clics -->
     <div class="log-wrap">
       <span class="log-mark" aria-hidden="true">MFS >_</span>
-      <pre class="log" id="log"></pre>
+      <pre class="log" id="log" tabindex="0"></pre>
     </div>
   </section>
 </main>
@@ -406,6 +427,12 @@
   <div class="row dlg-foot">
     <button id="curlClose">Cerrar</button>
   </div>
+</dialog>
+
+<!-- Paleta de comandos (Ctrl+K, js/palette.js) -->
+<dialog id="cmdPalette" class="cmd-palette" aria-label="Paleta de comandos">
+  <input type="text" id="cmdInput" placeholder="Escribe un comando…  (↑ ↓ para elegir, Enter para ejecutar, Esc para cerrar)" spellcheck="false" autocomplete="off" aria-label="Buscar comando">
+  <ul class="cmd-list" id="cmdList" role="listbox"></ul>
 </dialog>
 
 <!-- Aviso de inactividad (js/idle.js): se cierra al hacer clic fuera de la tarjeta o con Esc -->

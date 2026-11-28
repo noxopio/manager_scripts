@@ -6,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
-  parseList, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE,
+  parseList, healthUrl, normalizePath, isInside, staticFile, readInstallDate, parseCurl, parseCurlOutput, stripCreds, PORT_RE, COMPILE_OK_RE, COMPILE_FAIL_RE, BUNDLER_RE,
 } = require('../Manager_install/ui/server.js');
 
 test('parseList: ignora vacías, comentarios y #EXCLUDE', () => {
@@ -37,6 +37,30 @@ test('parseList: nombre como git clone y sin credenciales en la URL', () => {
   assert.equal(r.name, 'mi-repo');
   assert.equal(r.url, 'https://dev.azure.com/org/proj/_git/mi-repo/');
   assert.equal(stripCreds('https://github.com/u/x.git'), 'https://github.com/u/x.git');
+});
+
+test('parseList: directiva "#> health:" bajo el repo', () => {
+  const [a, b, c] = parseList([
+    '#> health: /ignorada',              // sin repo anterior: se ignora
+    'https://github.com/u/api.git npm run dev',
+    '  #> health: /actuator/health  ',
+    'https://github.com/u/web.git',
+    '# comentario normal',
+    'https://github.com/u/otra.git',
+    '#> HEALTH: http://localhost:9000/ping',
+  ].join('\n'));
+  assert.equal(a.health, '/actuator/health');
+  assert.equal(a.command, 'npm run dev');
+  assert.equal(b.health, undefined);
+  assert.equal(c.health, 'http://localhost:9000/ping');
+});
+
+test('healthUrl: ruta relativa al puerto o URL completa', () => {
+  assert.equal(healthUrl('/health', 3000), 'http://localhost:3000/health');
+  assert.equal(healthUrl('health', 3000), 'http://localhost:3000/health');
+  assert.equal(healthUrl('https://api.dev/ping', null), 'https://api.dev/ping');
+  assert.equal(healthUrl('/health', null), null); // aún sin puerto
+  assert.equal(healthUrl(null, 3000), null);
 });
 
 test('normalizePath: rutas relativas al directorio de trabajo', () => {
@@ -234,6 +258,45 @@ test('workday: estado y avance de la jornada', async () => {
   assert.equal(night.progress, 0.5);
   assert.equal(workProgress(at(21), '22:00', 8).state, 'before');
   assert.equal(fmtRemaining(45 * 60000), '45 min');
+});
+
+test('logview: color de las líneas del log', async () => {
+  const { lineClass: cls } = await import('../Manager_install/ui/js/logview.js');
+  assert.equal(cls('[ERROR] No se pudo clonar'), 'err');
+  assert.equal(cls('npm ERR! code ENOENT'), 'err');
+  assert.equal(cls('TypeError: Exception in thread'), 'err');
+  assert.equal(cls('fatal: not a git repository'), 'err');
+  assert.equal(cls('webpack compiled with 2 errors'), 'err');
+  assert.equal(cls('[WARNING] Rama inexistente'), 'warn');
+  assert.equal(cls('WARN deprecated package'), 'warn');
+  assert.equal(cls('Found 0 errors. Watching for file changes.'), '');
+  assert.equal(cls('[INFO] Procesando app'), '');
+});
+
+test('notify: qué cambios de estado generan aviso', async () => {
+  const { notifyKind } = await import('../Manager_install/ui/js/notify.js');
+  const run = (compile) => ({ status: 'running', action: 'run', compile });
+  assert.equal(notifyKind(run('compiling'), run('ready')), 'ready');
+  assert.equal(notifyKind(run('ready'), run('ready')), null); // sin repetir
+  assert.equal(notifyKind(run('compiling'), run('failed')), 'failed');
+  assert.equal(notifyKind({ status: 'running', action: 'pull' }, { status: 'ok', action: 'pull' }), 'ok');
+  assert.equal(notifyKind({ status: 'running', action: 'install' }, { status: 'error', action: 'install' }), 'error');
+  assert.equal(notifyKind({ status: 'stopping', action: 'run' }, { status: 'stopped', action: 'run' }), null); // detener no avisa
+  assert.equal(notifyKind({ status: 'idle' }, { status: 'running', action: 'pull' }), null);
+});
+
+test('palette: filtro de comandos por palabras, sin tildes', async () => {
+  const { filterCommands } = await import('../Manager_install/ui/js/palette.js');
+  const cmds = [
+    { label: 'Run en los marcados', hint: 'Acción' },
+    { label: 'Nueva rama…', hint: 'Git' },
+    { label: 'Ver log: api-pagos', hint: 'APIs' },
+  ];
+  assert.deepEqual(filterCommands(cmds, '').length, 3);
+  assert.deepEqual(filterCommands(cmds, 'accion').map((c) => c.label), ['Run en los marcados']);
+  assert.deepEqual(filterCommands(cmds, 'git rama').map((c) => c.label), ['Nueva rama…']);
+  assert.deepEqual(filterCommands(cmds, 'LOG pagos').map((c) => c.label), ['Ver log: api-pagos']);
+  assert.deepEqual(filterCommands(cmds, 'nada'), []);
 });
 
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {

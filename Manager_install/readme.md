@@ -241,6 +241,15 @@ mfs ui --port 5000 --no-open     # puerto distinto, sin abrir el navegador
 - Cada repo corre como un proceso independiente, con su propio log en el panel y su botón **Detener**. Los repos marcados con `#NEW` siguen abriendo su propia ventana, como en `mfs run`.
 - Al hacer **Run**, la tarjeta muestra *compilando…* hasta que el servidor está **listo**, y entonces activa el enlace `localhost:PUERTO`. Se reconoce por los mensajes de webpack, Angular, Vite, Next o Nest, o por "listening on 3000". Si el servidor no muestra ninguno de esos mensajes (por ejemplo, un Express o un mock con `node server.js`), el panel lo da por listo cuando el puerto acepta conexiones.
 - Mientras se cargan los repos, el panel muestra una taza de café humeante en lugar de quedarse en blanco.
+- **Health check** (opcional): una línea `#> health: /health` debajo de un repo en el `.txt` hace que el panel consulte esa ruta cada 15 s mientras el repo corre (`http://localhost:PUERTO/health`, o una URL completa). La tarjeta muestra un punto verde (responde 2xx) o rojo (no responde o devuelve error). La terminal trata esa línea como un comentario.
+  ```
+  https://github.com/org/api-mock.git npm run dev
+  #> health: /health
+  ```
+- **Filtro de repos**: la caja sobre la lista filtra por nombre, rama, grupo, estado (`run`, `error`, `listo`…) o comando. Atajo `/`, y Esc para limpiarlo. Se recuerda por lista.
+- **Ctrl+K** abre una paleta de comandos: Pull, Run, Detener todo, acciones git, herramientas, cambiar de lista, ver el log de un repo… Se escribe para filtrar, ↑/↓ para elegir y Enter para ejecutar.
+- **Log**: buscador con contador y resaltado (Enter/Shift+Enter para moverse, Ctrl+F con el foco en el log), líneas `ERROR` en rojo y `WARN` en ámbar, y botón **Descargar** para guardar el log como `.txt`.
+- **Avisos** (LAUNCH PAD → Avisos): con el panel en segundo plano, notificación del sistema y contador en el título de la pestaña cuando un repo termina, falla o queda listo. Al pulsar la notificación se abre el log de ese repo.
 - **Colores**: en la tarjeta de LAUNCH PAD → Apariencia hay violeta, verde neón, cian, rosa, rojo y blanco. En tema claro, el blanco se muestra como grafito.
 - **Git**: los botones *Ver cambios*, *Commit…*, *Push*, *Checkout* y *Nueva rama* actúan sobre los repos seleccionados, y cada tarjeta tiene además *Cambios*, *Commit* y *Push*. *Nueva rama* pide el nombre y permite elegir una base común; por defecto parte de la rama actual de cada repo.
   - Las tarjetas muestran `● N cambios`, `↑N` (commits por subir) y `↓N` (commits por traer).

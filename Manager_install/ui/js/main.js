@@ -11,6 +11,8 @@ import { connectStream } from './stream.js';
 import { pickQuip } from './quips.js';
 import './idle.js';
 import './workday.js';
+import { clearLog } from './logview.js';
+import './palette.js';
 
 $('#browseBtn').prepend(icon('folder'));
 $('#refresh').append(icon('refresh'));
@@ -36,7 +38,7 @@ $('#toggleGroups').onclick = () => {
 };
 $('#list').addEventListener('change', loadRunCmd);
 $('#runCmd').addEventListener('change', saveRunCmd);
-$('#clearLog').onclick = () => { $('#log').textContent = ''; };
+$('#clearLog').onclick = clearLog;
 
 // Tooltip del 👾: frase según el estado del panel, nueva en cada hover (ver quips.js)
 let brandWorkDir = '';

@@ -3,6 +3,7 @@ import { $, el, api, toast, state, STATUS_LABEL, COMPILE_LABEL, ACTION_LABEL, li
 import { icon, emptyState, cupSvg } from './icons.js';
 import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
+import { setLog } from './logview.js';
 
 // Loader del panel de repos (primera carga o cambio de lista): la taza de café humeante.
 // Solo aparece si la carga tarda más de 150 ms, para no parpadear en cargas rápidas.
@@ -14,6 +15,7 @@ export function showLoader() {
 
 export async function loadRepos() {
   const loaderTimer = state.first ? setTimeout(showLoader, LOADER_DELAY_MS) : null;
+  if (state.first) loadFilter(); // primera carga o cambio de lista: el filtro guardado de esa lista
   try {
     const data = await api('/api/repos?list=' + encodeURIComponent(listName()));
     state.repos = data.repos;
@@ -39,6 +41,30 @@ export function statusNode(r) {
   return el('span', { class: 'status ' + r.status }, el('span', { class: 'dot' }), label);
 }
 
+// Eventos del filtro (solo en el navegador)
+if (typeof document !== 'undefined') {
+  $('#repoFilter').addEventListener('input', () => {
+    const q = filterQuery();
+    if (q) localStorage.setItem(filterKey(), q); else localStorage.removeItem(filterKey());
+    render();
+  });
+  $('#repoFilter').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && $('#repoFilter').value) { ev.stopPropagation(); $('#repoFilter').value = ''; $('#repoFilter').dispatchEvent(new Event('input')); }
+  });
+}
+
+// Health check ("#> health:" en el .txt): punto verde/rojo mientras el repo corre; gris hasta la primera respuesta.
+export function healthNode(r) {
+  if (!r.health || r.status !== 'running' || r.action !== 'run') return null;
+  const h = r.healthState;
+  const cls = !h ? 'pending' : h.ok ? 'up' : 'down';
+  const when = h ? new Date(h.at).toLocaleTimeString() : '';
+  const title = !h ? `Health: comprobando ${r.health}…`
+    : h.ok ? `Health OK (${h.code}) · ${h.url} · ${when}`
+    : `Health caído (${h.code || h.error}) · ${h.url} · ${when}`;
+  return el('span', { class: `health ${cls}`, title, 'aria-label': title }, el('span', { class: 'health-dot' }), 'health');
+}
+
 // Enlace al puerto solo cuando ya compiló; mientras tanto, un aviso sin enlace.
 export function portNode(r) {
   if (!r.port || r.status !== 'running') return null;
@@ -48,20 +74,42 @@ export function portNode(r) {
   return el('a', { href: 'http://localhost:' + r.port, target: '_blank', onclick: (ev) => ev.stopPropagation() }, 'localhost:' + r.port);
 }
 
+// ── Filtro de repos (por lista, en este navegador) ──
+const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+// ¿El repo encaja con el filtro? Todas las palabras deben aparecer en nombre, rama, grupo, estado o comando. Pura, para los tests.
+export function repoMatches(r, query) {
+  const terms = norm(query).split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const hay = norm([r.name, r.branch, r.group, r.status, STATUS_LABEL[r.status], r.compile, COMPILE_LABEL[r.compile],
+    r.command, r.changes ? 'cambios' : '', r.cloned ? '' : 'sin clonar', r.locked ? 'bloqueado' : ''].join(' '));
+  return terms.every((t) => hay.includes(t));
+}
+const filterKey = () => 'mfs.filter.' + listName();
+export function loadFilter() { $('#repoFilter').value = localStorage.getItem(filterKey()) || ''; }
+const filterQuery = () => $('#repoFilter').value.trim();
+
 export function render(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
   updateActivityIndicator();
   if (!state.repos.length) {
     box.append(emptyState('repo', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
     $('#toggleGroups').hidden = true;
+    $('#repoFilterCount').textContent = '';
     return;
   }
-  const hasGroups = state.repos.some((r) => r.group);
+  const query = filterQuery();
+  const visible = state.repos.filter((r) => repoMatches(r, query));
+  $('#repoFilterCount').textContent = query ? `${visible.length}/${state.repos.length}` : '';
+  if (!visible.length) {
+    box.append(emptyState('search', 'Ningún repo coincide con el filtro', `"${query}" · Esc en el filtro para limpiarlo`));
+    return;
+  }
+  const hasGroups = visible.some((r) => r.group);
   $('#toggleGroups').hidden = !hasGroups;
-  if (!hasGroups) { for (const r of state.repos) box.append(repoCard(r)); return; }
+  if (!hasGroups) { for (const r of visible) box.append(repoCard(r)); return; }
   // Agrupa respetando el orden del .txt; los repos antes de la primera cabecera van a "Sin grupo"
   const groups = new Map();
-  for (const r of state.repos) {
+  for (const r of visible) {
     const g = r.group || 'Sin grupo';
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(r);
@@ -154,7 +202,7 @@ export function repoCard(r) {
       portNode(r),
     );
     const card = el('div', { class: `card status-${r.status}` + (state.selected === r.name ? ' selected' : ''), onclick: () => selectRepo(r.name) },
-      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), statusNode(r)),
+      el('div', { class: 'top' }, cb, el('span', { class: 'name', title: r.url }, r.name), healthNode(r), statusNode(r)),
       meta,
       el('div', { class: 'actions' },
         el('button', { class: 'sm', onclick: act('pull'), ...(running ? { disabled: '' } : {}) }, 'Pull'),
@@ -184,9 +232,8 @@ export async function selectRepo(name) {
   $('#logTitle').textContent = name;
   render();
   const { lines, fromDisk, savedAt } = await api('/api/log?repo=' + encodeURIComponent(name));
-  const head = fromDisk && lines.length ? `── log guardado de la última ejecución (${new Date(savedAt).toLocaleString()}) ──\n` : '';
-  $('#log').textContent = head + lines.join('\n') + (lines.length ? '\n' : '');
-  if ($('#follow').checked) $('#log').scrollTop = $('#log').scrollHeight;
+  const head = fromDisk && lines.length ? `── log guardado de la última ejecución (${new Date(savedAt).toLocaleString()}) ──` : '';
+  setLog(lines, head);
 }
 
 export async function runAction(action, names, extra = {}) {

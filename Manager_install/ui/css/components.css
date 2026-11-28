@@ -32,7 +32,10 @@
 
 /* ── Lista de repos ── */
 /* La lista es un panel de vidrio; dentro, cada repo es una tarjeta hundida */
-.list { overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.list-panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.list-filter { display: flex; align-items: center; gap: 8px; padding: 12px 12px 0; }
+.list-filter input { flex: 1; width: auto; min-width: 0; height: 32px; padding: 0 14px; border-radius: var(--radius-pill); font-size: 12px; }
+.list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 12px; }
 .card {
   position: relative; flex: none; padding: 11px 12px 11px 16px; cursor: pointer;
   background: var(--field-bg); border: 1px solid transparent; border-radius: var(--radius);
@@ -93,9 +96,28 @@
 .status.failed { color: var(--err); } .status.failed .dot { background: var(--err); }
 @keyframes pulse { 50% { opacity: .3; } }
 
+/* Health check: píldora pequeña con punto verde (up), rojo (down) o gris (comprobando) */
+.health { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px 1px 6px; border-radius: var(--radius-pill); font-size: 11px; color: var(--muted); background: var(--field-bg); box-shadow: var(--neu-in-sm); }
+.health-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.health.up { color: var(--ok); } .health.up .health-dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.health.down { color: var(--err); } .health.down .health-dot { background: var(--err); box-shadow: 0 0 6px var(--err); animation: pulse 1.2s infinite; }
+.health.pending .health-dot { animation: pulse 1.2s infinite; }
+
 /* ── Log ── */
 .logpane { display: flex; flex-direction: column; min-height: 300px; overflow: hidden; }
 .logpane .head { padding: 10px 14px; display: flex; gap: 8px; align-items: center; }
+/* Buscar en el log */
+.log-search { display: flex; align-items: center; gap: 6px; padding: 0 14px 8px; }
+.log-search input { flex: 1; width: auto; min-width: 0; height: 30px; padding: 0 12px; border-radius: var(--radius-pill); font-size: 12px; }
+.log-search input.no-match { border-color: var(--err); }
+.log-count { min-width: 44px; font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+::highlight(log-search) { background-color: color-mix(in srgb, var(--accent) 40%, transparent); color: #fff; }
+::highlight(log-search-current) { background-color: var(--warn); color: #111; }
+/* Líneas del log: ERROR/WARN en color; la nota de "log guardado" atenuada */
+pre.log .ln.err { color: var(--err); }
+pre.log .ln.warn { color: var(--warn); }
+pre.log .ln.note { color: var(--muted); }
+pre.log:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: -2px; }
 .logpane .head strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 pre.log, div.log {
   position: relative; margin: 0; overflow: auto; padding: 12px;
@@ -150,6 +172,6 @@ pre.log, div.log {
 @keyframes matrix-fall { from { transform: translateY(-4px); opacity: .45; } to { transform: translateY(4px); opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column, #brand:hover .brand-icon { animation: none; }
+  .status.running .dot, .status.stopping .dot, .status.compiling .dot, .matrix-column, #brand:hover .brand-icon, .health-dot { animation: none !important; }
   .toast, .card, button { transition: none; }
 }
