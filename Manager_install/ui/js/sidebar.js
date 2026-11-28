@@ -74,17 +74,13 @@ export function renderMfsInfo(info) {
   mfsInfo = info;
   $('#infoVersion').textContent = info.version ? 'v' + info.version : '';
   $('#railDigits').textContent = String(info.version || ''); // versión bajo el código de barras, con sus puntos (8.11.0)
-  // Código de barras real (Code 128) de la versión: pequeño en la franja y grabado al pie de la tarjeta.
+  // Código de barras real (Code 128) de la versión en la franja.
   // Si no hay versión o no se puede codificar, la franja conserva su patrón decorativo.
   try {
-    if (!info.version || info.version === 'desconocida') throw new Error('sin versión');
+    if (!info.version || info.version === 'desconocida') return;
     $('.rail-barcode').replaceChildren(barcodeSvg(info.version));
     $('.rail-barcode').classList.add('is-real');
-    $('#infoBarcode').replaceChildren(barcodeSvg(info.version, { quiet: 10, className: 'scan' }));
-    $('#infoBarcode').hidden = false;
-  } catch {
-    $('#infoBarcode').hidden = true;
-  }
+  } catch { /* se queda el patrón decorativo */ }
 }
 $('#mfsInfo').addEventListener('toggle', (ev) => {
   clearInterval(clockTimer);

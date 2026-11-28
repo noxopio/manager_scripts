@@ -377,6 +377,17 @@ test('empty-art: personaje al azar sin repetir y frases suficientes', async () =
   assert.ok(EMPTY_ARTS[1].phrases.includes(pickPhrase('gato', () => 0.5)));
 });
 
+test('list-art: ilustración del final de la lista al azar sin repetir la anterior', async () => {
+  const { LIST_ARTS, pickListArt } = await import('../Manager_install/ui/js/list-art.js');
+  assert.deepEqual(LIST_ARTS, ['audifonos', 'auriculares', 'cerebro']);
+  for (const prev of [null, ...LIST_ARTS]) {
+    for (const r of [0, 0.5, 0.9999]) {
+      const id = pickListArt(prev, () => r);
+      assert.ok(LIST_ARTS.includes(id)); assert.notEqual(id, prev);
+    }
+  }
+});
+
 test('parseCurlOutput: último bloque de cabeceras, cuerpo y métricas', () => {
   const out = parseCurlOutput([
     'HTTP/1.1 301 Moved', 'Location: /b', '', 'HTTP/2 200', 'content-type: application/json', 'x-a: 1:2', '', '{"ok":true}',

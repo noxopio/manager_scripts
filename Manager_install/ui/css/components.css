@@ -227,6 +227,18 @@ pre.log, div.log {
   .sleepy-body, .sleepy-z text, .cat-tail, .astro-body, .astro-stars path, .term-cursor { animation: none; }
   .sleepy-z text { opacity: .8; }
 }
+/* Final de la lista: ilustración grabada abajo a la derecha (js/list-art.js); neón al pasar el ratón */
+.list-tail { margin-top: auto; flex: none; display: flex; justify-content: flex-end; padding: 18px 28px 4px 0; }
+.list-tail.art-auriculares .list-art { width: 44px; }
+.list-tail.art-cerebro .list-art { width: 76px; }
+.list-art {
+  width: 72px; height: auto; color: var(--engrave-fill);
+  filter: drop-shadow(1px 1px 0 var(--engrave-light)) drop-shadow(-1px -1px 0 var(--engrave-dark));
+  transition: color .25s, filter .25s;
+}
+.list-tail:hover .list-art { color: var(--accent); filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 8px var(--accent-soft)); }
+.no-list-art .list-tail { display: none; }
+@media (prefers-reduced-motion: reduce) { .list-art { transition: none; } }
 .list > .empty-state { background: var(--field-bg); border-radius: var(--radius); box-shadow: var(--neu-in); }
 
 /* ── Toast ── */

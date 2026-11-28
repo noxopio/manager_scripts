@@ -2,6 +2,7 @@
 import { $, el, api, toast, state, STATUS_LABEL, COMPILE_LABEL, ACTION_LABEL, listName, saveCollapsed, saveRunCmd, isBusy } from './core.js';
 import { icon, cupSvg } from './icons.js';
 import { emptyArtState, resetEmptyArt } from './empty-art.js';
+import { listArtNode } from './list-art.js';
 import { updateSummaries } from './sidebar.js';
 import { openCommit, gitPush, unlockRepo } from './git.js';
 import { setLog } from './logview.js';
@@ -198,7 +199,7 @@ function renderList(emptyMsg) {
   const box = $('#repos'); box.innerHTML = '';
   updateActivityIndicator();
   if (!state.repos.length) {
-    box.append(emptyArtState(emptyMsg ? 'missing' : 'empty', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'));
+    box.append(emptyArtState(emptyMsg ? 'missing' : 'empty', emptyMsg ? 'No se pudo cargar la lista' : 'No hay repos activos', emptyMsg || 'Agrega repositorios a la lista para verlos aquí.'), listArtNode());
     $('#toggleGroups').hidden = true;
     $('#repoFilterCount').textContent = '';
     return;
@@ -207,13 +208,13 @@ function renderList(emptyMsg) {
   const visible = state.repos.filter((r) => repoMatches(r, query));
   $('#repoFilterCount').textContent = query ? `${visible.length}/${state.repos.length}` : '';
   if (!visible.length) {
-    box.append(emptyArtState('filter', 'Ningún repo coincide con el filtro', `"${query}" · Esc en el filtro para limpiarlo`));
+    box.append(emptyArtState('filter', 'Ningún repo coincide con el filtro', `"${query}" · Esc en el filtro para limpiarlo`), listArtNode());
     return;
   }
   resetEmptyArt(); // hay repos visibles: el próximo vacío elegirá otro personaje
   const hasGroups = visible.some((r) => r.group);
   $('#toggleGroups').hidden = !hasGroups;
-  if (!hasGroups) { for (const r of visible) box.append(repoCard(r)); return; }
+  if (!hasGroups) { for (const r of visible) box.append(repoCard(r)); box.append(listArtNode()); return; }
   // Agrupa respetando el orden del .txt; los repos antes de la primera cabecera van a "Sin grupo"
   const groups = new Map();
   for (const r of visible) {
@@ -222,6 +223,7 @@ function renderList(emptyMsg) {
     groups.get(g).push(r);
   }
   for (const [g, repos] of groups) box.append(groupNode(g, repos));
+  box.append(listArtNode());
   const allCollapsed = [...groups.keys()].every((g) => state.collapsed.has(g));
   setGroupsBtn(allCollapsed);
 }
