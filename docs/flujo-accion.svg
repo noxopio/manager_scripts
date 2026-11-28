@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 1044" width="980" height="1044" role="img" aria-label="La terminal o el panel lanzan manager_repo.sh; el panel valida y lanza un job por repo libre; el script lee listRep.txt y ejecuta pull, deps, run, git o unlock; la salida va a la terminal o al panel por SSE.">
+<title>Flujo de una acción</title>
+<style>
+.bg{fill:#f5f7f7}
+.ttl{font:700 16px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f}
+.n{fill:#ffffff;stroke:#9fb0ae;stroke-width:1.2}
+.n.hl{fill:#e2f2ef;stroke:#0d7a6f;stroke-width:1.6}
+.n.bad{fill:#fbecea;stroke:#b5503f;stroke-width:1.4}
+.n.dash{stroke-dasharray:5 4}
+.t{font:700 13px ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;fill:#14201f;text-anchor:middle}
+.s{font:400 11.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;text-anchor:middle}
+.d{font:600 12.5px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#14201f;text-anchor:middle}
+.l{font:500 11px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#556563;paint-order:stroke;stroke:#f5f7f7;stroke-width:4px;stroke-linejoin:round}
+.st{text-anchor:start}
+.e{fill:none;stroke:#14201f;stroke-width:1.3}
+.e.dash{stroke-dasharray:5 4}
+.e.acc{stroke:#0d7a6f}
+.e.life{stroke:#9fb0ae;stroke-dasharray:3 4}
+.ah{fill:#14201f}
+.dot{fill:#14201f}
+@media (prefers-color-scheme:dark){
+.bg{fill:#0f1716}
+.ttl,.t,.d{fill:#e3ecea}
+.s,.l{fill:#94a6a3}
+.l{stroke:#0f1716}
+.n{fill:#172221;stroke:#4b5f5c}
+.n.hl{fill:#163631;stroke:#4fc2b2}
+.n.bad{fill:#3a1f1b;stroke:#e0806f}
+.e{stroke:#e3ecea}
+.e.acc{stroke:#4fc2b2}
+.e.life{stroke:#4b5f5c}
+.ah,.dot{fill:#e3ecea}
+}
+</style>
+<defs><marker id="ar-flujo-accion" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+<rect class="bg" x="0" y="0" width="980" height="1044" rx="10"/>
+<text class="ttl" x="40" y="30">Flujo de una acción</text>
+<g transform="translate(0,44)">
+<rect class="n hl" x="40" y="20" width="300" height="52" rx="6"/><text class="t" x="190" y="42">Terminal</text><text class="s" x="190" y="59">mfs [-b rama] acción lista.txt</text>
+<rect class="n hl" x="600" y="20" width="340" height="52" rx="6"/><text class="t" x="770" y="42">Panel web</text><text class="s" x="770" y="59">botón, atajo o paleta de comandos</text>
+<rect class="n " x="600" y="110" width="340" height="56" rx="6"/><text class="t" x="770" y="134">POST /api/action</text><text class="s" x="770" y="151">valida acción, rama, install, run y commit</text>
+<line class="e " x1="770" y1="72" x2="770" y2="108" marker-end="url(#ar-flujo-accion)"/>
+<polygon class="n" points="770,204 860,240 770,276 680,240"/><text class="d" x="770" y="244">¿repo ocupado?</text>
+<line class="e " x1="770" y1="166" x2="770" y2="202" marker-end="url(#ar-flujo-accion)"/>
+<rect class="n " x="420" y="216" width="200" height="48" rx="6"/><text class="t" x="520" y="236">busy</text><text class="s" x="520" y="253">ya está corriendo: no se lanza</text>
+<line class="e " x1="680" y1="240" x2="622" y2="240" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="651" y="232" text-anchor="middle">sí</text>
+<rect class="n " x="600" y="316" width="340" height="56" rx="6"/><text class="t" x="770" y="340">startJob (uno por repo)</text><text class="s" x="770" y="357">spawn bash manager_repo.sh … · MFS_ONLY=repo</text>
+<line class="e " x1="770" y1="276" x2="770" y2="314" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="778" y="300" text-anchor="start">no</text>
+<rect class="n hl" x="300" y="420" width="380" height="52" rx="6"/><text class="t" x="490" y="442">manager_repo.sh</text><text class="s" x="490" y="459">lee las opciones (ver recuadro de la derecha)</text>
+<polyline class="e " points="190,72 190,446 298,446" marker-end="url(#ar-flujo-accion)"/>
+<polyline class="e " points="770,372 770,446 682,446" marker-end="url(#ar-flujo-accion)"/>
+<rect class="n dash" x="710" y="480" width="230" height="200" rx="6"/>
+<text class="d" x="825" y="504">Opciones de manager_repo.sh</text>
+<text class="t st" x="726" y="530">-b</text><text class="s st" x="754" y="530">rama para pull, checkout y</text><text class="s st" x="754" y="544">newbranch (por defecto main)</text>
+<text class="t st" x="726" y="562">-B</text><text class="s st" x="754" y="562">rama base de newbranch</text><text class="s st" x="754" y="576">(vacío = HEAD actual)</text>
+<text class="t st" x="726" y="594">-i</text><text class="s st" x="754" y="594">comando de install / updeps</text><text class="s st" x="754" y="608">(por defecto npm install)</text>
+<text class="t st" x="726" y="626">-r</text><text class="s st" x="754" y="626">comando de run; sustituye</text><text class="s st" x="754" y="640">al de cada línea del .txt</text>
+<text class="t st" x="726" y="658">-m</text><text class="s st" x="754" y="658">mensaje de commit</text><text class="s st" x="754" y="672">(obligatorio en commit)</text>
+<polygon class="n" points="490,504 590,540 490,576 390,540"/><text class="d" x="490" y="544">¿comando sin lista?</text>
+<line class="e " x1="490" y1="472" x2="490" y2="502" marker-end="url(#ar-flujo-accion)"/>
+<rect class="n " x="40" y="516" width="260" height="48" rx="6"/><text class="t" x="170" y="536">handle_non_list_command</text><text class="s" x="170" y="553">ui · kill · ps · list · version · update</text>
+<line class="e " x1="390" y1="540" x2="302" y2="540" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="346" y="532" text-anchor="middle">sí</text>
+<rect class="n " x="300" y="616" width="380" height="56" rx="6"/><text class="t" x="490" y="640">lee listRep.txt</text><text class="s" x="490" y="657">salta # y #EXCLUDE · filtra MFS_ONLY · marca #NEW</text>
+<line class="e " x1="490" y1="576" x2="490" y2="614" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="498" y="600" text-anchor="start">no</text>
+<line class="e " x1="490" y1="672" x2="490" y2="700"/>
+<line class="e " x1="126" y1="700" x2="854" y2="700"/>
+<text class="l" x="498" y="692" text-anchor="start">según la acción</text>
+<line class="e " x1="126" y1="700" x2="126" y2="718" marker-end="url(#ar-flujo-accion)"/>
+<line class="e " x1="308" y1="700" x2="308" y2="718" marker-end="url(#ar-flujo-accion)"/>
+<line class="e " x1="490" y1="700" x2="490" y2="718" marker-end="url(#ar-flujo-accion)"/>
+<line class="e " x1="672" y1="700" x2="672" y2="718" marker-end="url(#ar-flujo-accion)"/>
+<line class="e " x1="854" y1="700" x2="854" y2="718" marker-end="url(#ar-flujo-accion)"/>
+<rect class="n " x="40" y="720" width="172" height="64" rx="6"/><text class="t" x="126" y="740">pull_repos</text><text class="s" x="126" y="757">clona o actualiza</text><text class="s" x="126" y="772">en la rama -b</text>
+<rect class="n " x="222" y="720" width="172" height="64" rx="6"/><text class="t" x="308" y="740">manage_deps</text><text class="s" x="308" y="757">install / updeps</text><text class="s" x="308" y="772">en paralelo</text>
+<rect class="n " x="404" y="720" width="172" height="64" rx="6"/><text class="t" x="490" y="740">run_repos</text><text class="s" x="490" y="757">un subshell por repo</text><text class="s" x="490" y="772">#NEW: terminal externa</text>
+<rect class="n " x="586" y="720" width="172" height="64" rx="6"/><text class="t" x="672" y="740">for_each_repo</text><text class="s" x="672" y="757">status · commit · push</text><text class="s" x="672" y="772">checkout · newbranch</text>
+<rect class="n " x="768" y="720" width="172" height="64" rx="6"/><text class="t" x="854" y="740">unlock_repos</text><text class="s" x="854" y="757">borra index.lock</text><text class="s" x="854" y="772">si git no está corriendo</text>
+<line class="e " x1="126" y1="784" x2="126" y2="806"/>
+<line class="e " x1="308" y1="784" x2="308" y2="806"/>
+<line class="e " x1="490" y1="784" x2="490" y2="806"/>
+<line class="e " x1="672" y1="784" x2="672" y2="806"/>
+<line class="e " x1="854" y1="784" x2="854" y2="806"/>
+<line class="e " x1="126" y1="806" x2="854" y2="806"/>
+<line class="e " x1="255" y1="806" x2="255" y2="834" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="263" y="825" text-anchor="start">desde la terminal</text>
+<line class="e acc" x1="725" y1="806" x2="725" y2="834" marker-end="url(#ar-flujo-accion)"/>
+<text class="l" x="733" y="825" text-anchor="start">desde el panel</text>
+<rect class="n " x="40" y="836" width="430" height="52" rx="6"/><text class="t" x="255" y="858">Salida en la terminal</text><text class="s" x="255" y="875">mensajes de manager_logs.sh · código de salida</text>
+<rect class="n " x="510" y="836" width="430" height="52" rx="6"/><text class="t" x="725" y="858">pushLog → SSE /api/stream</text><text class="s" x="725" y="875">tarjeta y visor de log · en run: puerto, compilación y health</text>
+<rect class="n " x="510" y="928" width="430" height="52" rx="6"/><text class="t" x="725" y="950">Al cerrar el proceso</text><text class="s" x="725" y="967">0 → ok · otro código → error · guarda log · resumen del lote</text>
+<line class="e " x1="725" y1="888" x2="725" y2="926" marker-end="url(#ar-flujo-accion)"/>
+<rect class="n dash" x="40" y="928" width="430" height="52" rx="6"/><text class="t" x="255" y="950">Detener: POST /api/stop</text><text class="s" x="255" y="967">taskkill /T del árbol · «detenido» al liberar el puerto</text>
+<line class="e dash" x1="470" y1="954" x2="508" y2="954" marker-end="url(#ar-flujo-accion)"/>
+</g>
+</svg>

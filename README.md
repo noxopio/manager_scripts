@@ -366,11 +366,23 @@ cd /proyectos/otro && mfs ui          # 4777 ocupado -> usa 4778 automáticament
 
 ----
 
+## Arquitectura
 
+Los diagramas están en [`docs/`](docs/). Para verlos todos juntos, abre [`docs/diagramas.html`](docs/diagramas.html) en el navegador.
 
->[!NOTE]Flujo de instalación 
+![Arquitectura de mfs](./docs/arquitectura.svg "Arquitectura de mfs")
+
+![Flujo de una acción](./docs/flujo-accion.svg "Flujo de una acción")
+
+Más detalle:
+- [Estados de un job del panel](docs/estados-job.svg)
+- [Árbol de procesos y parada](docs/procesos-parada.svg)
+- [Límites de seguridad del panel](docs/seguridad.svg)
+- [Secuencia de un run desde el panel](docs/secuencia-panel.svg)
+
+>[!NOTE]Flujo de instalación
 ><div align="center" >
 >
->![Diagrama del flujo de instalación](./bashFlujo.svg "Flujo de instalación")
+>![Instalación y actualización](./docs/instalacion.svg "Instalación y actualización")
 >
 ></div>
